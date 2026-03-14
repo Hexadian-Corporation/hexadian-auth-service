@@ -1,8 +1,6 @@
 import hashlib
 import secrets
 
-from opyoid import Injectable
-
 from src.application.ports.inbound.auth_service import AuthService
 from src.application.ports.outbound.user_repository import UserRepository
 from src.domain.exceptions.user_exceptions import (
@@ -13,7 +11,7 @@ from src.domain.exceptions.user_exceptions import (
 from src.domain.models.user import User
 
 
-class AuthServiceImpl(AuthService, Injectable):
+class AuthServiceImpl(AuthService):
 
     def __init__(self, repository: UserRepository) -> None:
         self._repository = repository
