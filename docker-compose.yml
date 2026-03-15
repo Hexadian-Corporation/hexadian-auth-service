@@ -1,22 +1,26 @@
 # Standalone deployment — run auth service with its own MongoDB
 # Usage: docker compose up
+#
+# Exposes the 'hexadian-net' network so other compose projects (e.g. hhh-main)
+# can reach auth-service without being in the same compose file.
 services:
   auth-service:
     build: .
     ports:
       - "8006:8006"
     environment:
-      - HEXADIAN_AUTH_MONGO_URI=mongodb://mongo:27017
+      - HEXADIAN_AUTH_MONGO_URI=mongodb://auth-mongo:27017
       - HEXADIAN_AUTH_MONGO_DB=hexadian_auth
       - HEXADIAN_AUTH_JWT_SECRET=${HEXADIAN_AUTH_JWT_SECRET:-change-me-in-production}
     depends_on:
-      mongo:
+      auth-mongo:
         condition: service_healthy
+    networks:
+      - default
+      - hexadian-net
 
-  mongo:
+  auth-mongo:
     image: mongo:7
-    ports:
-      - "27017:27017"
     volumes:
       - auth-data:/data/db
     healthcheck:
@@ -27,3 +31,7 @@ services:
 
 volumes:
   auth-data:
+
+networks:
+  hexadian-net:
+    name: hexadian-net

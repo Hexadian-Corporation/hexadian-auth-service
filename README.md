@@ -57,14 +57,21 @@ docker compose up
 ```
 
 This starts the auth service with its own MongoDB instance — no external dependencies.
+The service is exposed on the `hexadian-net` Docker network so other compose projects can reach it.
 
-## Run in Docker (H³ full stack)
+## Integration with H³
 
-From the monorepo root (`hhh-main`):
+The H³ monorepo (`hhh-main`) auto-starts this service via `uv run hhh up`.
+Clone this repo as a sibling of `hhh-main`:
 
-```bash
-uv run hhh up
 ```
+hhh-workspace/
+├── hhh-main/                  # H³ monorepo
+└── hexadian-auth-service/     # This repo (auto-started by hhh CLI)
+```
+
+The CLI detects whether auth is running and starts it automatically if needed.
+To stop everything: `uv run hhh down` (stops both H³ and auth).
 
 ## Environment Variables
 
