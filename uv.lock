@@ -255,7 +255,7 @@ wheels = [
 ]
 
 [[package]]
-name = "hhh-auth-service"
+name = "hexadian-auth-service"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

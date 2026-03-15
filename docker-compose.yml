@@ -1,0 +1,29 @@
+# Standalone deployment — run auth service with its own MongoDB
+# Usage: docker compose up
+services:
+  auth-service:
+    build: .
+    ports:
+      - "8006:8006"
+    environment:
+      - HEXADIAN_AUTH_MONGO_URI=mongodb://mongo:27017
+      - HEXADIAN_AUTH_MONGO_DB=hexadian_auth
+      - HEXADIAN_AUTH_JWT_SECRET=${HEXADIAN_AUTH_JWT_SECRET:-change-me-in-production}
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - auth-data:/data/db
+    healthcheck:
+      test: mongosh --eval "db.runCommand('ping')" --quiet
+      interval: 5s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  auth-data:

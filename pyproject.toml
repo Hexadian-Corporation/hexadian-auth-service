@@ -1,7 +1,7 @@
 [project]
-name = "hhh-auth-service"
+name = "hexadian-auth-service"
 version = "0.1.0"
-description = "Authentication and user management for H³ – Hexadian Hauling Helper"
+description = "Authentication and user management service for Hexadian Corporation"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

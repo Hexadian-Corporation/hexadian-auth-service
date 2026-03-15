@@ -1,15 +1,17 @@
-# hhh-auth-service
+# hexadian-auth-service
 
-Authentication and user management microservice for **H³ – Hexadian Hauling Helper**.
+Authentication and user management microservice by **Hexadian Corporation**.
+
+Designed as a standalone, reusable service across Hexadian projects. Includes RSI account verification for Star Citizen integration.
 
 ## Domain
 
-Handles user registration, login, and role-based access control. Uses PBKDF2-SHA256 for password hashing.
+Handles user registration, login, role-based access control, and RSI profile verification. Uses PBKDF2-SHA256 for password hashing.
 
 ## Stack
 
 - Python 3.11+ / FastAPI
-- MongoDB (database: `hhh_auth`)
+- MongoDB (database: `hexadian_auth`)
 - opyoid (dependency injection)
 - Hexagonal architecture (Ports & Adapters)
 
@@ -48,7 +50,15 @@ uv run ruff check .
 uv run ruff format .
 ```
 
-## Run in Docker (full stack)
+## Run Standalone (Docker)
+
+```bash
+docker compose up
+```
+
+This starts the auth service with its own MongoDB instance — no external dependencies.
+
+## Run in Docker (H³ full stack)
 
 From the monorepo root (`hhh-main`):
 
@@ -60,12 +70,12 @@ uv run hhh up
 
 | Variable | Default | Description |
 |---|---|---|
-| `HHH_AUTH_MONGO_URI` | `mongodb://localhost:27017` | MongoDB connection string |
-| `HHH_AUTH_MONGO_DB` | `hhh_auth` | Database name |
-| `HHH_AUTH_PORT` | `8006` | Service port |
-| `HHH_AUTH_JWT_SECRET` | `change-me-in-production` | JWT signing secret |
-| `HHH_AUTH_JWT_ALGORITHM` | `HS256` | JWT algorithm |
-| `HHH_AUTH_JWT_EXPIRATION_MINUTES` | `60` | Token expiration |
+| `HEXADIAN_AUTH_MONGO_URI` | `mongodb://localhost:27017` | MongoDB connection string |
+| `HEXADIAN_AUTH_MONGO_DB` | `hexadian_auth` | Database name |
+| `HEXADIAN_AUTH_PORT` | `8006` | Service port |
+| `HEXADIAN_AUTH_JWT_SECRET` | `change-me-in-production` | JWT signing secret |
+| `HEXADIAN_AUTH_JWT_ALGORITHM` | `HS256` | JWT algorithm |
+| `HEXADIAN_AUTH_JWT_EXPIRATION_MINUTES` | `60` | Token expiration |
 
 ## API
 
