@@ -7,6 +7,8 @@ class UserDTO(BaseModel):
     email: str
     roles: list[str] = Field(default_factory=lambda: ["user"])
     is_active: bool = True
+    rsi_handle: str | None = None
+    rsi_verified: bool = False
 
     model_config = {"populate_by_name": True}
 
@@ -25,3 +27,13 @@ class LoginDTO(BaseModel):
 class TokenDTO(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+class StartVerificationDTO(BaseModel):
+    rsi_handle: str = Field(pattern=r"^[A-Za-z0-9_-]{3,30}$")
+
+
+class VerificationResultDTO(BaseModel):
+    verification_code: str | None = None
+    verified: bool
+    message: str

@@ -4,7 +4,6 @@ from src.domain.models.user import User
 
 
 class UserRepository(ABC):
-
     @abstractmethod
     def save(self, user: User) -> User: ...
 

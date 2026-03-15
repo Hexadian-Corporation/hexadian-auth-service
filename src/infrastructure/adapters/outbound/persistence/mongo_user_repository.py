@@ -7,7 +7,6 @@ from src.infrastructure.adapters.outbound.persistence.user_persistence_mapper im
 
 
 class MongoUserRepository(UserRepository):
-
     def __init__(self, collection: Collection) -> None:
         self._collection = collection
 

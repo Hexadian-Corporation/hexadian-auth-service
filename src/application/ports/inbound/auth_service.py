@@ -4,7 +4,6 @@ from src.domain.models.user import User
 
 
 class AuthService(ABC):
-
     @abstractmethod
     def register(self, username: str, email: str, password: str) -> User: ...
 
@@ -19,3 +18,13 @@ class AuthService(ABC):
 
     @abstractmethod
     def delete_user(self, user_id: str) -> None: ...
+
+    @abstractmethod
+    def start_verification(self, user_id: str, rsi_handle: str) -> str:
+        """Generate a verification code and store it on the user. Returns the code."""
+        ...
+
+    @abstractmethod
+    def confirm_verification(self, user_id: str) -> bool:
+        """Fetch the user's RSI profile and check for the verification code. Returns True if verified."""
+        ...
