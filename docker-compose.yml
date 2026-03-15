@@ -16,7 +16,7 @@ services:
       auth-mongo:
         condition: service_healthy
     networks:
-      - default
+      - auth-inner-net
       - hexadian-net
 
   auth-mongo:
@@ -28,10 +28,15 @@ services:
       interval: 5s
       timeout: 5s
       retries: 3
+    networks:
+      - auth-inner-net
 
 volumes:
   auth-data:
 
 networks:
+  auth-inner-net:
+    name: hexadian-auth-inner-net
+    internal: true
   hexadian-net:
     name: hexadian-shared-net
