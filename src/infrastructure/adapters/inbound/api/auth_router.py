@@ -7,7 +7,14 @@ from src.domain.exceptions.user_exceptions import (
     UserNotFoundError,
 )
 from src.infrastructure.adapters.inbound.api.auth_api_mapper import AuthApiMapper
-from src.infrastructure.adapters.inbound.api.auth_dto import LoginDTO, RegisterDTO, TokenDTO, UserDTO
+from src.infrastructure.adapters.inbound.api.auth_dto import (
+    LoginDTO,
+    RegisterDTO,
+    StartVerificationDTO,
+    TokenDTO,
+    UserDTO,
+    VerificationResultDTO,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -57,3 +64,34 @@ def delete_user(user_id: str) -> None:
         _auth_service.delete_user(user_id)
     except UserNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
+
+
+@router.post("/verify/start", response_model=VerificationResultDTO)
+def start_verification(dto: StartVerificationDTO, user_id: str) -> VerificationResultDTO:
+    try:
+        code = _auth_service.start_verification(user_id, dto.rsi_handle)
+    except UserNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return VerificationResultDTO(
+        verification_code=code,
+        verified=False,
+        message=(
+            "Add the verification code to your RSI profile bio at "
+            "https://robertsspaceindustries.com/account/profile and then call /auth/verify/confirm"
+        ),
+    )
+
+
+@router.post("/verify/confirm", response_model=VerificationResultDTO)
+def confirm_verification(user_id: str) -> VerificationResultDTO:
+    try:
+        verified = _auth_service.confirm_verification(user_id)
+    except UserNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    if verified:
+        return VerificationResultDTO(verified=True, message="RSI account verified successfully")
+    return VerificationResultDTO(verified=False, message="Verification code not found in RSI profile bio")
