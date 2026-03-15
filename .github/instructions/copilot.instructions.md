@@ -1,14 +1,14 @@
 <critical>Note: This is a living document and will be updated as we refine our processes. Always refer back to this for the latest guidelines. Update whenever necessary.</critical>
 
-# Copilot Instructions — hhh-auth-service
+# Copilot Instructions — hexadian-auth-service
 
 ## Project Context
 
-**H³ (Hexadian Hauling Helper)** is a Star Citizen companion app for managing hauling contracts, owned by **Hexadian Corporation** (GitHub org: `Hexadian-Corporation`).
+**Hexadian Auth Service** is a standalone authentication microservice by **Hexadian Corporation** (GitHub org: `Hexadian-Corporation`). Used across Hexadian projects including H³ (Hexadian Hauling Helper).
 
 This service handles **user authentication** — registration, login, JWT tokens, and RSI account verification.
 
-- **Repo:** `Hexadian-Corporation/hhh-auth-service`
+- **Repo:** `Hexadian-Corporation/hexadian-auth-service`
 - **Port:** 8006
 - **Stack:** Python · FastAPI · MongoDB · pymongo · opyoid (DI) · pydantic-settings
 
@@ -27,7 +27,7 @@ src/
 │   └── services/                    # Implementations of inbound ports
 └── infrastructure/
     ├── config/
-    │   ├── settings.py              # pydantic-settings (env prefix: HHH_AUTH_)
+    │   ├── settings.py              # pydantic-settings (env prefix: HEXADIAN_AUTH_)
     │   └── dependencies.py          # opyoid DI Module
     └── adapters/
         ├── inbound/api/             # FastAPI router, DTOs (Pydantic), API mappers
@@ -60,12 +60,12 @@ Handle validation: `^[A-Za-z0-9_-]{3,30}$` (strict, to prevent SSRF).
 
 | Variable | Default | Description |
 |---|---|---|
-| `HHH_AUTH_MONGO_URI` | `mongodb://localhost:27017` | MongoDB connection string |
-| `HHH_AUTH_MONGO_DB` | `hhh_auth` | Database name |
-| `HHH_AUTH_PORT` | `8006` | Service port |
-| `HHH_AUTH_JWT_SECRET` | *(must be set)* | JWT signing secret |
-| `HHH_AUTH_JWT_ALGORITHM` | `HS256` | JWT algorithm |
-| `HHH_AUTH_JWT_EXPIRATION_MINUTES` | `60` | Token expiration |
+| `HEXADIAN_AUTH_MONGO_URI` | `mongodb://localhost:27017` | MongoDB connection string |
+| `HEXADIAN_AUTH_MONGO_DB` | `hexadian_auth` | Database name |
+| `HEXADIAN_AUTH_PORT` | `8006` | Service port |
+| `HEXADIAN_AUTH_JWT_SECRET` | *(must be set)* | JWT signing secret |
+| `HEXADIAN_AUTH_JWT_ALGORITHM` | `HS256` | JWT algorithm |
+| `HEXADIAN_AUTH_JWT_EXPIRATION_MINUTES` | `60` | Token expiration |
 
 ## API
 
