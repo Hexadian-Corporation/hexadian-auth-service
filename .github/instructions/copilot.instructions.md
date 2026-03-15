@@ -1,4 +1,4 @@
-<critical>Note: This is a living document and will be updated as we refine our processes. Always refer back to this for the latest guidelines. Update whenever necessary. Anytime you discover a new bug or issue, document it here to maintain a comprehensive history.</critical>
+<critical>Note: This is a living document and will be updated as we refine our processes. Always refer back to this for the latest guidelines. Update whenever necessary.</critical>
 
 # Copilot Instructions — hhh-auth-service
 
@@ -56,6 +56,28 @@ src/
 
 Handle validation: `^[A-Za-z0-9_-]{3,30}$` (strict, to prevent SSRF).
 
+## Environment Variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `HHH_AUTH_MONGO_URI` | `mongodb://localhost:27017` | MongoDB connection string |
+| `HHH_AUTH_MONGO_DB` | `hhh_auth` | Database name |
+| `HHH_AUTH_PORT` | `8006` | Service port |
+| `HHH_AUTH_JWT_SECRET` | *(must be set)* | JWT signing secret |
+| `HHH_AUTH_JWT_ALGORITHM` | `HS256` | JWT algorithm |
+| `HHH_AUTH_JWT_EXPIRATION_MINUTES` | `60` | Token expiration |
+
+## API
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/auth/register` | Register a new user |
+| `POST` | `/auth/login` | Authenticate and get token |
+| `GET` | `/auth/users/{id}` | Get user by ID |
+| `GET` | `/auth/users` | List all users |
+| `DELETE` | `/auth/users/{id}` | Delete a user |
+| `GET` | `/health` | Health check |
+
 ## Issue & PR Title Format
 
 **Format:** `<type>(auth): description`
@@ -76,8 +98,10 @@ The issue title and PR title must be **identical**. PR body must include `Fixes 
 
 ## Tooling
 
-| Tool | Command |
-|------|---------|
-| Run tests | `uv run pytest` |
-| Lint | `uv run --with ruff ruff check .` |
-| Format | `uv run --with ruff ruff format .` |
+| Action | Command |
+|--------|---------|
+| Setup | `uv sync` |
+| Run (dev) | `uv run uvicorn src.main:app --reload --port 8006` |
+| Test | `uv run pytest` |
+| Lint | `uv run ruff check .` |
+| Format | `uv run ruff format .` |
