@@ -61,12 +61,12 @@ The service is exposed on the `hexadian-net` Docker network so other compose pro
 
 ## Integration with H³
 
-The H³ monorepo (`hhh-main`) auto-starts this service via `uv run hhh up`.
-Clone this repo as a sibling of `hhh-main`:
+The H³ monorepo (`hexadian-hauling-helper`) auto-starts this service via `uv run hhh up`.
+Clone this repo as a sibling of `hexadian-hauling-helper`:
 
 ```
 hhh-workspace/
-├── hhh-main/                  # H³ monorepo
+├── hexadian-hauling-helper/       # H³ monorepo
 └── hexadian-auth-service/     # This repo (auto-started by hhh CLI)
 ```
 

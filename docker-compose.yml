@@ -1,7 +1,7 @@
 # Standalone deployment — run auth service with its own MongoDB
 # Usage: docker compose up
 #
-# Exposes the 'hexadian-net' network so other compose projects (e.g. hhh-main)
+# Exposes the 'hexadian-net' network so other compose projects (e.g. hexadian-hauling-helper)
 # can reach auth-service without being in the same compose file.
 services:
   auth-service:
