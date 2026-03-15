@@ -34,4 +34,4 @@ volumes:
 
 networks:
   hexadian-net:
-    name: hexadian-net
+    name: hexadian-shared-net
