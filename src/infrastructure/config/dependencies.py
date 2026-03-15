@@ -20,6 +20,8 @@ class AppModule(Module):
         client = MongoClient(self._settings.mongo_uri)
         db = client[self._settings.mongo_db]
         collection = db["users"]
+        collection.create_index("username", unique=True)
+        collection.create_index("email", unique=True)
 
         self.bind(Collection, to_instance=collection, scope=SingletonScope)
         self.bind(UserRepository, to_class=MongoUserRepository, scope=SingletonScope)

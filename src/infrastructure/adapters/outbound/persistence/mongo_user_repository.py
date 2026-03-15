@@ -1,7 +1,9 @@
 from bson import ObjectId
 from pymongo.collection import Collection
+from pymongo.errors import DuplicateKeyError
 
 from src.application.ports.outbound.user_repository import UserRepository
+from src.domain.exceptions.user_exceptions import UserAlreadyExistsError
 from src.domain.models.user import User
 from src.infrastructure.adapters.outbound.persistence.user_persistence_mapper import UserPersistenceMapper
 
@@ -12,12 +14,15 @@ class MongoUserRepository(UserRepository):
 
     def save(self, user: User) -> User:
         doc = UserPersistenceMapper.to_document(user)
-        if user.id:
-            self._collection.replace_one({"_id": ObjectId(user.id)}, doc, upsert=True)
+        try:
+            if user.id:
+                self._collection.replace_one({"_id": ObjectId(user.id)}, doc, upsert=True)
+                return user
+            result = self._collection.insert_one(doc)
+            user.id = str(result.inserted_id)
             return user
-        result = self._collection.insert_one(doc)
-        user.id = str(result.inserted_id)
-        return user
+        except DuplicateKeyError as exc:
+            raise UserAlreadyExistsError(user.username) from exc
 
     def find_by_id(self, user_id: str) -> User | None:
         doc = self._collection.find_one({"_id": ObjectId(user_id)})
