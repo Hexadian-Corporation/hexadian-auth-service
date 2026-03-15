@@ -26,6 +26,7 @@ class TestRsiProfileFetcherImpl:
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.text = html
+        mock_response.url.host = "robertsspaceindustries.com"
         mock_get.return_value = mock_response
 
         bio = self.fetcher.fetch_profile_bio("ValidHandle")
@@ -68,6 +69,29 @@ class TestRsiProfileFetcherImpl:
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.text = html
+        mock_response.url.host = "robertsspaceindustries.com"
         mock_get.return_value = mock_response
 
         assert self.fetcher.fetch_profile_bio("Handle123") == "spaced bio"
+
+    @patch("src.infrastructure.adapters.outbound.http.rsi_profile_fetcher_impl.httpx.get")
+    def test_redirect_to_different_host_returns_none(self, mock_get: MagicMock) -> None:
+        html = '<span class="value" id="bioval">bio text</span>'
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.text = html
+        mock_response.url.host = "evil.example.com"
+        mock_get.return_value = mock_response
+
+        assert self.fetcher.fetch_profile_bio("ValidHandle") is None
+
+    @patch("src.infrastructure.adapters.outbound.http.rsi_profile_fetcher_impl.httpx.get")
+    def test_same_host_redirect_succeeds(self, mock_get: MagicMock) -> None:
+        html = '<span class="value" id="bioval">bio text</span>'
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.text = html
+        mock_response.url.host = "robertsspaceindustries.com"
+        mock_get.return_value = mock_response
+
+        assert self.fetcher.fetch_profile_bio("ValidHandle") == "bio text"
