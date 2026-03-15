@@ -16,7 +16,6 @@ _RSI_HANDLE_PATTERN = re.compile(r"^[A-Za-z0-9_-]{3,30}$")
 
 
 class AuthServiceImpl(AuthService):
-
     def __init__(self, repository: UserRepository, rsi_profile_fetcher: RsiProfileFetcher) -> None:
         self._repository = repository
         self._rsi_profile_fetcher = rsi_profile_fetcher

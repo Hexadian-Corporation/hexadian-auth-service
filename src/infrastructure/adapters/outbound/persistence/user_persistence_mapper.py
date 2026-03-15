@@ -2,7 +2,6 @@ from src.domain.models.user import User
 
 
 class UserPersistenceMapper:
-
     @staticmethod
     def to_document(user: User) -> dict:
         return {

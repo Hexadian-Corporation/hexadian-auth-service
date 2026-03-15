@@ -49,9 +49,7 @@ class TestStartVerification:
         with pytest.raises(ValueError, match="Invalid RSI handle format"):
             service.start_verification("user-1", "a" * 31)
 
-    def test_start_verification_user_not_found(
-        self, service: AuthServiceImpl, mock_repository: MagicMock
-    ) -> None:
+    def test_start_verification_user_not_found(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
         mock_repository.find_by_id.return_value = None
 
         with pytest.raises(UserNotFoundError):
@@ -136,17 +134,13 @@ class TestConfirmVerification:
         assert result is False
         assert user.rsi_verified is False
 
-    def test_confirm_verification_user_not_found(
-        self, service: AuthServiceImpl, mock_repository: MagicMock
-    ) -> None:
+    def test_confirm_verification_user_not_found(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
         mock_repository.find_by_id.return_value = None
 
         with pytest.raises(UserNotFoundError):
             service.confirm_verification("nonexistent")
 
-    def test_confirm_verification_not_started(
-        self, service: AuthServiceImpl, mock_repository: MagicMock
-    ) -> None:
+    def test_confirm_verification_not_started(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
         user = User(id="user-1", username="test", email="test@example.com")
         mock_repository.find_by_id.return_value = user
 

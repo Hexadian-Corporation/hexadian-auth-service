@@ -3,7 +3,6 @@ from src.infrastructure.adapters.inbound.api.auth_dto import UserDTO
 
 
 class AuthApiMapper:
-
     @staticmethod
     def to_dto(user: User) -> UserDTO:
         return UserDTO(

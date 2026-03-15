@@ -4,7 +4,11 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.application.ports.inbound.auth_service import AuthService
-from src.domain.exceptions.user_exceptions import UserNotFoundError
+from src.domain.exceptions.user_exceptions import (
+    InvalidCredentialsError,
+    UserAlreadyExistsError,
+    UserNotFoundError,
+)
 from src.infrastructure.adapters.inbound.api.auth_router import init_router, router
 
 
@@ -88,3 +92,42 @@ class TestVerifyConfirmEndpoint:
         response = client.post("/auth/verify/confirm?user_id=user-1")
 
         assert response.status_code == 400
+
+
+class TestRegisterEndpoint:
+    def test_register_duplicate_returns_409(self, client: TestClient, mock_auth_service: MagicMock) -> None:
+        mock_auth_service.register.side_effect = UserAlreadyExistsError("taken")
+
+        response = client.post(
+            "/auth/register",
+            json={"username": "taken", "email": "t@e.com", "password": "pw"},
+        )
+
+        assert response.status_code == 409
+
+
+class TestLoginEndpoint:
+    def test_login_invalid_credentials_returns_401(self, client: TestClient, mock_auth_service: MagicMock) -> None:
+        mock_auth_service.authenticate.side_effect = InvalidCredentialsError()
+
+        response = client.post("/auth/login", json={"username": "u", "password": "wrong"})
+
+        assert response.status_code == 401
+
+
+class TestGetUserEndpoint:
+    def test_get_user_not_found_returns_404(self, client: TestClient, mock_auth_service: MagicMock) -> None:
+        mock_auth_service.get_user.side_effect = UserNotFoundError("missing")
+
+        response = client.get("/auth/users/missing")
+
+        assert response.status_code == 404
+
+
+class TestDeleteUserEndpoint:
+    def test_delete_user_not_found_returns_404(self, client: TestClient, mock_auth_service: MagicMock) -> None:
+        mock_auth_service.delete_user.side_effect = UserNotFoundError("gone")
+
+        response = client.delete("/auth/users/gone")
+
+        assert response.status_code == 404

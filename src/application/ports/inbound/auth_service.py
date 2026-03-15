@@ -4,7 +4,6 @@ from src.domain.models.user import User
 
 
 class AuthService(ABC):
-
     @abstractmethod
     def register(self, username: str, email: str, password: str) -> User: ...
 

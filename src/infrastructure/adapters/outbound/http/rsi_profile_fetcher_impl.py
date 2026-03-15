@@ -9,7 +9,6 @@ _BIO_PATTERN = re.compile(r'<span\s+class="value"\s+id="bioval">(.*?)</span>', r
 
 
 class RsiProfileFetcherImpl(RsiProfileFetcher):
-
     _ALLOWED_HOST = "robertsspaceindustries.com"
 
     def fetch_profile_bio(self, rsi_handle: str) -> str | None:
