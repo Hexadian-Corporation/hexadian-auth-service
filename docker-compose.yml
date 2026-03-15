@@ -3,6 +3,8 @@
 #
 # Exposes the 'hexadian-net' network so other compose projects (e.g. hexadian-hauling-helper)
 # can reach auth-service without being in the same compose file.
+name: hexadian-auth-service
+
 services:
   auth-service:
     build: .
