@@ -18,6 +18,27 @@ def repository(mock_collection: MagicMock) -> MongoUserRepository:
     return MongoUserRepository(collection=mock_collection)
 
 
+class TestSaveSuccessPaths:
+    def test_insert_new_user_sets_id(self, repository: MongoUserRepository, mock_collection: MagicMock) -> None:
+        user = User(username="newuser", email="new@example.com", hashed_password="hash")
+        mock_collection.insert_one.return_value = MagicMock(inserted_id="generated_id")
+
+        result = repository.save(user)
+
+        assert result.id == "generated_id"
+        mock_collection.insert_one.assert_called_once()
+
+    def test_replace_existing_user_returns_user(
+        self, repository: MongoUserRepository, mock_collection: MagicMock
+    ) -> None:
+        user = User(id="507f1f77bcf86cd799439011", username="existing", email="e@example.com", hashed_password="hash")
+
+        result = repository.save(user)
+
+        assert result is user
+        mock_collection.replace_one.assert_called_once()
+
+
 class TestSaveDuplicateKeyHandling:
     def test_insert_duplicate_username_raises_user_already_exists(
         self, repository: MongoUserRepository, mock_collection: MagicMock
