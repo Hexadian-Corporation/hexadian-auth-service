@@ -8,7 +8,6 @@ import type {
   User,
   VerificationStartRequest,
   VerificationStartResponse,
-  VerificationConfirmRequest,
   ChangePasswordRequest,
 } from "@/types/auth";
 
@@ -20,14 +19,20 @@ async function request<T>(
   options: RequestInit = {},
 ): Promise<T> {
   const res = await fetch(`${AUTH_API_URL}${path}`, {
-    headers: { "Content-Type": "application/json", ...options.headers },
     ...options,
+    headers: { "Content-Type": "application/json", ...options.headers },
   });
 
   if (!res.ok) {
     const body = await res.json().catch(() => null);
-    throw new Error(
-      (body as { detail?: string } | null)?.detail ?? `Request failed: ${res.status}`,
+    const detail = (body as { detail?: unknown } | null)?.detail;
+    const message =
+      typeof detail === "string"
+        ? detail
+        : Array.isArray(detail)
+          ? detail.map((e: { msg?: string }) => e.msg ?? JSON.stringify(e)).join("; ")
+          : `Request failed: ${res.status}`;
+    throw new Error(message,
     );
   }
 
@@ -80,10 +85,11 @@ export function revokeToken(token: string): Promise<void> {
 }
 
 export function startVerification(
+  userId: string,
   data: VerificationStartRequest,
   token: string,
 ): Promise<VerificationStartResponse> {
-  return request<VerificationStartResponse>("/auth/verify/start", {
+  return request<VerificationStartResponse>(`/auth/verify/start?user_id=${encodeURIComponent(userId)}`, {
     method: "POST",
     body: JSON.stringify(data),
     headers: { Authorization: `Bearer ${token}` },
@@ -91,12 +97,11 @@ export function startVerification(
 }
 
 export function confirmVerification(
-  data: VerificationConfirmRequest,
+  userId: string,
   token: string,
 ): Promise<VerificationStartResponse> {
-  return request<VerificationStartResponse>("/auth/verify/confirm", {
+  return request<VerificationStartResponse>(`/auth/verify/confirm?user_id=${encodeURIComponent(userId)}`, {
     method: "POST",
-    body: JSON.stringify(data),
     headers: { Authorization: `Bearer ${token}` },
   });
 }

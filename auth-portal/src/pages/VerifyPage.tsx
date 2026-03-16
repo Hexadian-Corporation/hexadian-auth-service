@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import AuthLayout from "@/layouts/AuthLayout";
 import { startVerification, confirmVerification } from "@/api/auth";
 import {
@@ -52,6 +52,7 @@ function VerificationCodeDisplay({
 
 export default function VerifyPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const tokenPayload = parseAccessToken();
 
   const [verificationCode, setVerificationCode] = useState<string | null>(null);
@@ -74,9 +75,9 @@ export default function VerifyPage() {
 
   useEffect(() => {
     if (!tokenPayload) {
-      navigate("/login?redirect_uri=/verify", { replace: true });
+      navigate(`/login?${searchParams.toString()}`, { replace: true });
     }
-  }, [tokenPayload, navigate]);
+  }, [tokenPayload, navigate, searchParams]);
 
   if (!tokenPayload) {
     return null;
@@ -100,7 +101,7 @@ export default function VerifyPage() {
     setSubmitting(true);
     try {
       const token = getAccessToken()!;
-      const res = await startVerification({ rsi_handle: rsiHandle }, token);
+      const res = await startVerification(tokenPayload!.sub, { rsi_handle: rsiHandle }, token);
       if (res.verified) {
         setVerified(true);
       } else if (res.verification_code) {
@@ -121,11 +122,13 @@ export default function VerifyPage() {
     setSubmitting(true);
     try {
       const token = getAccessToken()!;
-      const res = await confirmVerification({ rsi_handle: rsiHandle }, token);
+      const res = await confirmVerification(tokenPayload!.sub, token);
       if (res.verified) {
         setVerified(true);
         setVerificationCode(null);
         await refreshUserState();
+        navigate(`/login?${searchParams.toString()}`, { replace: true });
+        return;
       } else {
         setError(
           "Code not found in your RSI profile bio. Make sure you saved your profile.",
@@ -228,9 +231,18 @@ export default function VerifyPage() {
       )}
 
       {verified && (
-        <p className="text-sm text-slate-400">
-          Your RSI identity has been verified.
-        </p>
+        <div className="space-y-4">
+          <p className="text-sm text-slate-400">
+            Your RSI identity has been verified.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate(`/login?${searchParams.toString()}`, { replace: true })}
+            className={buttonClass}
+          >
+            Continue
+          </button>
+        </div>
       )}
     </AuthLayout>
   );

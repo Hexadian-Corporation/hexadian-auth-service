@@ -49,8 +49,8 @@ export default function UsersPage() {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      await deleteUser(deleteTarget.id);
-      setUsers((prev) => prev.filter((u) => u.id !== deleteTarget.id));
+      await deleteUser(deleteTarget._id);
+      setUsers((prev) => prev.filter((u) => u._id !== deleteTarget._id));
       setDeleteTarget(null);
     } catch (err) {
       setError(
@@ -119,7 +119,7 @@ export default function UsersPage() {
           </thead>
           <tbody className="divide-y divide-gray-200 bg-white">
             {filteredUsers.map((user) => (
-              <tr key={user.id} className="hover:bg-gray-50">
+              <tr key={user._id} className="hover:bg-gray-50">
                 <td className="px-4 py-3 text-sm font-medium whitespace-nowrap">
                   {user.username}
                 </td>
@@ -166,7 +166,7 @@ export default function UsersPage() {
                 <td className="px-4 py-3 text-sm whitespace-nowrap">
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => navigate(`/users/${user.id}`)}
+                      onClick={() => navigate(`/users/${user._id}`)}
                       className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50"
                       title="View / Edit"
                     >

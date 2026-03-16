@@ -1,7 +1,8 @@
 import { type FormEvent, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import AuthLayout from "@/layouts/AuthLayout";
-import { register } from "@/api/auth";
+import { register, login } from "@/api/auth";
+import { storeTokens } from "@/lib/auth";
 import {
   validateRegistrationForm,
   hasErrors,
@@ -10,6 +11,7 @@ import {
 
 export default function RegisterPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -35,7 +37,9 @@ export default function RegisterPage() {
     setSubmitting(true);
     try {
       await register({ username, password, rsi_handle: rsiHandle });
-      navigate("/login", { state: { registered: true } });
+      const tokens = await login({ username, password });
+      storeTokens(tokens);
+      navigate(`/verify?${searchParams.toString()}`);
     } catch (err) {
       setApiError(err instanceof Error ? err.message : "Registration failed");
     } finally {
@@ -154,7 +158,7 @@ export default function RegisterPage() {
 
       <p className="mt-4 text-center text-sm text-slate-400">
         Already have an account?{" "}
-        <Link to="/login" className="text-cyan-400 hover:underline">
+        <Link to={`/login?${searchParams.toString()}`} className="text-cyan-400 hover:underline">
           Log in
         </Link>
       </p>

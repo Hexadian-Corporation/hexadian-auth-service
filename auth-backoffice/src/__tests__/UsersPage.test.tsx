@@ -8,7 +8,7 @@ import type { Group } from "@/types/rbac";
 
 const mockUsers: User[] = [
   {
-    id: "u1",
+    _id: "u1",
     username: "alice",
     group_ids: ["g1"],
     is_active: true,
@@ -16,7 +16,7 @@ const mockUsers: User[] = [
     rsi_verified: true,
   },
   {
-    id: "u2",
+    _id: "u2",
     username: "bob",
     group_ids: ["g1", "g2"],
     is_active: false,
@@ -24,7 +24,7 @@ const mockUsers: User[] = [
     rsi_verified: false,
   },
   {
-    id: "u3",
+    _id: "u3",
     username: "charlie",
     group_ids: [],
     is_active: true,

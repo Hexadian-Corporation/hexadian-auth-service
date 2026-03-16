@@ -7,7 +7,7 @@ import type { User } from "@/types/user";
 import type { Group } from "@/types/rbac";
 
 const mockUser: User = {
-  id: "u1",
+  _id: "u1",
   username: "alice",
   group_ids: ["g1"],
   is_active: true,
