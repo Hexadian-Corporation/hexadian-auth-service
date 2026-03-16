@@ -10,9 +10,16 @@ export interface LoginRequest {
 }
 
 export interface AuthorizeRequest {
-  client_id: string;
+  username: string;
+  password: string;
   redirect_uri: string;
-  scope?: string;
+  state?: string;
+}
+
+export interface AuthorizeResponse {
+  code: string;
+  state: string;
+  redirect_uri: string;
 }
 
 export interface TokenExchangeRequest {
@@ -22,7 +29,9 @@ export interface TokenExchangeRequest {
 
 export interface TokenResponse {
   access_token: string;
+  refresh_token: string;
   token_type: string;
+  expires_in: number;
 }
 
 export interface User {

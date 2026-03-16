@@ -2,6 +2,7 @@ import type {
   RegisterRequest,
   LoginRequest,
   AuthorizeRequest,
+  AuthorizeResponse,
   TokenExchangeRequest,
   TokenResponse,
   User,
@@ -48,8 +49,8 @@ export function login(data: LoginRequest): Promise<TokenResponse> {
   });
 }
 
-export function authorize(data: AuthorizeRequest): Promise<{ code: string }> {
-  return request<{ code: string }>("/auth/authorize", {
+export function authorize(data: AuthorizeRequest): Promise<AuthorizeResponse> {
+  return request<AuthorizeResponse>("/auth/authorize", {
     method: "POST",
     body: JSON.stringify(data),
   });
@@ -58,7 +59,7 @@ export function authorize(data: AuthorizeRequest): Promise<{ code: string }> {
 export function exchangeCode(
   data: TokenExchangeRequest,
 ): Promise<TokenResponse> {
-  return request<TokenResponse>("/auth/token", {
+  return request<TokenResponse>("/auth/token/exchange", {
     method: "POST",
     body: JSON.stringify(data),
   });
