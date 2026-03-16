@@ -29,7 +29,9 @@ describe("RegisterPage", () => {
         <RegisterPage />
       </MemoryRouter>,
     );
-    expect(screen.getByText("Create Account")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Create Account" }),
+    ).toBeInTheDocument();
   });
 });
 

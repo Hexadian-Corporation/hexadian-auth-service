@@ -1,7 +1,7 @@
 export interface RegisterRequest {
   username: string;
-  email: string;
   password: string;
+  rsi_handle: string;
 }
 
 export interface LoginRequest {
@@ -28,7 +28,6 @@ export interface TokenResponse {
 export interface User {
   _id: string | null;
   username: string;
-  email: string;
   roles: string[];
   is_active: boolean;
   rsi_handle: string | null;
