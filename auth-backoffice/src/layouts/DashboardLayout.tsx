@@ -1,6 +1,7 @@
 import { Link, Outlet, useLocation } from "react-router";
 import { Users, Shield, KeyRound, Layers, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { clearTokens, redirectToPortal } from "@/lib/auth";
 
 const navItems = [
   { to: "/users", label: "Users", icon: Users },
@@ -40,7 +41,10 @@ export default function DashboardLayout() {
         </nav>
 
         <div className="border-t p-2">
-          <button className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900">
+          <button
+            onClick={() => { clearTokens(); redirectToPortal(); }}
+            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
+          >
             <LogOut className="h-4 w-4" />
             Sign out
           </button>

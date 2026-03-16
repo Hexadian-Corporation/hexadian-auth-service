@@ -1,9 +1,10 @@
 import type { User, UserCreate, UserUpdate } from "@/types/user";
+import { authFetch } from "@/lib/auth";
 
 const API_BASE = "/api/auth";
 
 export async function listUsers(): Promise<User[]> {
-  const response = await fetch(`${API_BASE}/users`);
+  const response = await authFetch(`${API_BASE}/users`);
   if (!response.ok) {
     throw new Error(`Failed to list users: ${response.statusText}`);
   }
@@ -11,7 +12,7 @@ export async function listUsers(): Promise<User[]> {
 }
 
 export async function getUser(id: string): Promise<User> {
-  const response = await fetch(`${API_BASE}/users/${id}`);
+  const response = await authFetch(`${API_BASE}/users/${id}`);
   if (!response.ok) {
     throw new Error(`Failed to get user: ${response.statusText}`);
   }
@@ -19,7 +20,7 @@ export async function getUser(id: string): Promise<User> {
 }
 
 export async function createUser(data: UserCreate): Promise<User> {
-  const response = await fetch(`${API_BASE}/users`, {
+  const response = await authFetch(`${API_BASE}/users`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -31,7 +32,7 @@ export async function createUser(data: UserCreate): Promise<User> {
 }
 
 export async function updateUser(id: string, data: UserUpdate): Promise<User> {
-  const response = await fetch(`${API_BASE}/users/${id}`, {
+  const response = await authFetch(`${API_BASE}/users/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -43,7 +44,7 @@ export async function updateUser(id: string, data: UserUpdate): Promise<User> {
 }
 
 export async function deleteUser(id: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/users/${id}`, {
+  const response = await authFetch(`${API_BASE}/users/${id}`, {
     method: "DELETE",
   });
   if (!response.ok) {
@@ -52,7 +53,7 @@ export async function deleteUser(id: string): Promise<void> {
 }
 
 export async function resetPassword(id: string, newPassword: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/users/${id}/password-reset`, {
+  const response = await authFetch(`${API_BASE}/users/${id}/password-reset`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ new_password: newPassword }),
