@@ -53,12 +53,12 @@ export default function UserDetailPage() {
   }, [id]);
 
   function getGroupName(groupId: string): string {
-    return groups.find((g) => g.id === groupId)?.name ?? groupId;
+    return groups.find((g) => g._id === groupId)?.name ?? groupId;
   }
 
   function availableGroups(): Group[] {
     if (!user) return [];
-    return groups.filter((g) => !user.group_ids.includes(g.id));
+    return groups.filter((g) => !user.group_ids.includes(g._id));
   }
 
   async function handleSave() {
@@ -328,7 +328,7 @@ export default function UserDetailPage() {
               >
                 <option value="">Add group…</option>
                 {availableGroups().map((g) => (
-                  <option key={g.id} value={g.id}>
+                  <option key={g._id} value={g._id}>
                     {g.name}
                   </option>
                 ))}
