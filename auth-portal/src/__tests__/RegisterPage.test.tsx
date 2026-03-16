@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import RegisterPage from "@/pages/RegisterPage";
+import type { User } from "@/types/auth";
 
 vi.mock("@/api/auth", () => ({
   register: vi.fn(),
@@ -186,10 +187,10 @@ describe("RegisterPage", () => {
   });
 
   it("disables submit button while submitting", async () => {
-    let resolveRegister: (value: unknown) => void;
+    let resolveRegister!: (value: User) => void;
     mockRegister.mockImplementationOnce(
       () =>
-        new Promise((resolve) => {
+        new Promise<User>((resolve) => {
           resolveRegister = resolve;
         }),
     );
