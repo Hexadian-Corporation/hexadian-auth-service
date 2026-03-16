@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import AppRouter from "@/router";
 
 describe("AppRouter", () => {
@@ -37,8 +37,34 @@ describe("RegisterPage", () => {
   });
 });
 
+vi.mock("@/lib/auth", () => ({
+  parseAccessToken: vi.fn(),
+  getAccessToken: vi.fn(),
+  storeTokens: vi.fn(),
+}));
+
+vi.mock("@/api/auth", () => ({
+  startVerification: vi.fn(),
+  confirmVerification: vi.fn(),
+  refreshToken: vi.fn(),
+}));
+
+import { parseAccessToken } from "@/lib/auth";
+const mockParseAccessToken = vi.mocked(parseAccessToken);
+
 describe("VerifyPage", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it("renders the RSI verification heading", async () => {
+    mockParseAccessToken.mockReturnValue({
+      sub: "user-1",
+      username: "testuser",
+      rsi_handle: "test-handle",
+      rsi_verified: false,
+    });
+
     const { default: VerifyPage } = await import("@/pages/VerifyPage");
     render(
       <MemoryRouter>
