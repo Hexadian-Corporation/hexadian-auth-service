@@ -35,7 +35,7 @@ def settings() -> Settings:
 
 class TestSeedPermissions:
     @patch("src.infrastructure.seed.seed_rbac.MongoClient")
-    def test_creates_all_23_permissions(
+    def test_creates_all_22_permissions(
         self,
         mock_mongo_client: MagicMock,
         mock_db: MagicMock,
