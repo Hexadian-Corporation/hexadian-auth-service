@@ -16,8 +16,8 @@ const mockUser: User = {
 };
 
 const mockGroups: Group[] = [
-  { id: "g1", name: "Admins", description: "Admin group", roles: [] },
-  { id: "g2", name: "Users", description: "User group", roles: [] },
+  { _id: "g1", name: "Admins", description: "Admin group", role_ids: [] },
+  { _id: "g2", name: "Users", description: "User group", role_ids: [] },
 ];
 
 vi.mock("@/api/users", () => ({

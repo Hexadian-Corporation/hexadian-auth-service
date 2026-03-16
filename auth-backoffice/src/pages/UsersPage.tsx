@@ -34,7 +34,7 @@ export default function UsersPage() {
   }, []);
 
   function getGroupName(groupId: string): string {
-    return groups.find((g) => g.id === groupId)?.name ?? groupId;
+    return groups.find((g) => g._id === groupId)?.name ?? groupId;
   }
 
   const filteredUsers = users.filter((user) => {
