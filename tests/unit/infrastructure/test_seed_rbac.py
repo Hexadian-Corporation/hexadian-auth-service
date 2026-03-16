@@ -1,0 +1,461 @@
+from unittest.mock import MagicMock, patch
+
+import pytest
+
+from src.infrastructure.config.settings import Settings
+from src.infrastructure.seed.seed_rbac import (
+    GROUPS,
+    PERMISSIONS,
+    ROLES,
+    seed,
+)
+
+
+@pytest.fixture()
+def mock_collections() -> dict[str, MagicMock]:
+    return {
+        "permissions": MagicMock(),
+        "roles": MagicMock(),
+        "groups": MagicMock(),
+        "users": MagicMock(),
+    }
+
+
+@pytest.fixture()
+def mock_db(mock_collections: dict[str, MagicMock]) -> MagicMock:
+    db = MagicMock()
+    db.__getitem__ = MagicMock(side_effect=lambda name: mock_collections[name])
+    return db
+
+
+@pytest.fixture()
+def settings() -> Settings:
+    return Settings(jwt_secret="test-secret", admin_password="testpass123")
+
+
+class TestSeedPermissions:
+    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
+    def test_creates_all_22_permissions(
+        self,
+        mock_mongo_client: MagicMock,
+        mock_db: MagicMock,
+        mock_collections: dict[str, MagicMock],
+        settings: Settings,
+    ) -> None:
+        mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
+        mock_collections["permissions"].find_one.return_value = None
+        mock_collections["permissions"].insert_one.return_value = MagicMock(inserted_id="perm-id")
+        mock_collections["roles"].find_one.return_value = None
+        mock_collections["roles"].insert_one.return_value = MagicMock(inserted_id="role-id")
+        mock_collections["groups"].find_one.return_value = None
+        mock_collections["groups"].insert_one.return_value = MagicMock(inserted_id="group-id")
+        mock_collections["users"].find_one.return_value = None
+        mock_collections["users"].insert_one.return_value = MagicMock(inserted_id="user-id")
+
+        seed(settings)
+
+        assert mock_collections["permissions"].insert_one.call_count == 22
+
+    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
+    def test_permission_codes_match_spec(
+        self,
+        mock_mongo_client: MagicMock,
+        mock_db: MagicMock,
+        mock_collections: dict[str, MagicMock],
+        settings: Settings,
+    ) -> None:
+        mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
+        mock_collections["permissions"].find_one.return_value = None
+        mock_collections["permissions"].insert_one.return_value = MagicMock(inserted_id="perm-id")
+        mock_collections["roles"].find_one.return_value = None
+        mock_collections["roles"].insert_one.return_value = MagicMock(inserted_id="role-id")
+        mock_collections["groups"].find_one.return_value = None
+        mock_collections["groups"].insert_one.return_value = MagicMock(inserted_id="group-id")
+        mock_collections["users"].find_one.return_value = None
+        mock_collections["users"].insert_one.return_value = MagicMock(inserted_id="user-id")
+
+        seed(settings)
+
+        inserted_codes = [c[0][0]["code"] for c in mock_collections["permissions"].insert_one.call_args_list]
+        expected_codes = [p["code"] for p in PERMISSIONS]
+        assert inserted_codes == expected_codes
+
+    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
+    def test_skips_existing_permissions(
+        self,
+        mock_mongo_client: MagicMock,
+        mock_db: MagicMock,
+        mock_collections: dict[str, MagicMock],
+        settings: Settings,
+    ) -> None:
+        mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
+        mock_collections["permissions"].find_one.return_value = {"_id": "existing-id", "code": "x"}
+        mock_collections["roles"].find_one.return_value = {"_id": "existing-role", "name": "x"}
+        mock_collections["groups"].find_one.return_value = {"_id": "existing-group", "name": "x"}
+        mock_collections["users"].find_one.return_value = {"_id": "existing-user", "username": "admin"}
+
+        seed(settings)
+
+        mock_collections["permissions"].insert_one.assert_not_called()
+
+
+class TestSeedRoles:
+    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
+    def test_creates_3_roles(
+        self,
+        mock_mongo_client: MagicMock,
+        mock_db: MagicMock,
+        mock_collections: dict[str, MagicMock],
+        settings: Settings,
+    ) -> None:
+        mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
+        mock_collections["permissions"].find_one.return_value = None
+        mock_collections["permissions"].insert_one.return_value = MagicMock(inserted_id="perm-id")
+        mock_collections["roles"].find_one.return_value = None
+        mock_collections["roles"].insert_one.return_value = MagicMock(inserted_id="role-id")
+        mock_collections["groups"].find_one.return_value = None
+        mock_collections["groups"].insert_one.return_value = MagicMock(inserted_id="group-id")
+        mock_collections["users"].find_one.return_value = None
+        mock_collections["users"].insert_one.return_value = MagicMock(inserted_id="user-id")
+
+        seed(settings)
+
+        assert mock_collections["roles"].insert_one.call_count == 3
+
+    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
+    def test_role_names_match_spec(
+        self,
+        mock_mongo_client: MagicMock,
+        mock_db: MagicMock,
+        mock_collections: dict[str, MagicMock],
+        settings: Settings,
+    ) -> None:
+        mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
+        mock_collections["permissions"].find_one.return_value = None
+        mock_collections["permissions"].insert_one.return_value = MagicMock(inserted_id="perm-id")
+        mock_collections["roles"].find_one.return_value = None
+        mock_collections["roles"].insert_one.return_value = MagicMock(inserted_id="role-id")
+        mock_collections["groups"].find_one.return_value = None
+        mock_collections["groups"].insert_one.return_value = MagicMock(inserted_id="group-id")
+        mock_collections["users"].find_one.return_value = None
+        mock_collections["users"].insert_one.return_value = MagicMock(inserted_id="user-id")
+
+        seed(settings)
+
+        inserted_names = [c[0][0]["name"] for c in mock_collections["roles"].insert_one.call_args_list]
+        assert inserted_names == ["Super Admin", "Member", "Content Manager"]
+
+    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
+    def test_super_admin_has_all_permission_ids(
+        self,
+        mock_mongo_client: MagicMock,
+        mock_db: MagicMock,
+        mock_collections: dict[str, MagicMock],
+        settings: Settings,
+    ) -> None:
+        perm_counter = iter(range(1, 100))
+        mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
+        mock_collections["permissions"].find_one.return_value = None
+        mock_collections["permissions"].insert_one.side_effect = lambda _: MagicMock(
+            inserted_id=f"perm-{next(perm_counter)}"
+        )
+        mock_collections["roles"].find_one.return_value = None
+        mock_collections["roles"].insert_one.return_value = MagicMock(inserted_id="role-id")
+        mock_collections["groups"].find_one.return_value = None
+        mock_collections["groups"].insert_one.return_value = MagicMock(inserted_id="group-id")
+        mock_collections["users"].find_one.return_value = None
+        mock_collections["users"].insert_one.return_value = MagicMock(inserted_id="user-id")
+
+        seed(settings)
+
+        super_admin_call = mock_collections["roles"].insert_one.call_args_list[0]
+        super_admin_doc = super_admin_call[0][0]
+        assert super_admin_doc["name"] == "Super Admin"
+        assert len(super_admin_doc["permission_ids"]) == 22
+
+    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
+    def test_member_has_8_permission_ids(
+        self,
+        mock_mongo_client: MagicMock,
+        mock_db: MagicMock,
+        mock_collections: dict[str, MagicMock],
+        settings: Settings,
+    ) -> None:
+        perm_counter = iter(range(1, 100))
+        mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
+        mock_collections["permissions"].find_one.return_value = None
+        mock_collections["permissions"].insert_one.side_effect = lambda _: MagicMock(
+            inserted_id=f"perm-{next(perm_counter)}"
+        )
+        mock_collections["roles"].find_one.return_value = None
+        mock_collections["roles"].insert_one.return_value = MagicMock(inserted_id="role-id")
+        mock_collections["groups"].find_one.return_value = None
+        mock_collections["groups"].insert_one.return_value = MagicMock(inserted_id="group-id")
+        mock_collections["users"].find_one.return_value = None
+        mock_collections["users"].insert_one.return_value = MagicMock(inserted_id="user-id")
+
+        seed(settings)
+
+        member_call = mock_collections["roles"].insert_one.call_args_list[1]
+        member_doc = member_call[0][0]
+        assert member_doc["name"] == "Member"
+        assert len(member_doc["permission_ids"]) == 8
+
+    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
+    def test_content_manager_has_14_permission_ids(
+        self,
+        mock_mongo_client: MagicMock,
+        mock_db: MagicMock,
+        mock_collections: dict[str, MagicMock],
+        settings: Settings,
+    ) -> None:
+        perm_counter = iter(range(1, 100))
+        mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
+        mock_collections["permissions"].find_one.return_value = None
+        mock_collections["permissions"].insert_one.side_effect = lambda _: MagicMock(
+            inserted_id=f"perm-{next(perm_counter)}"
+        )
+        mock_collections["roles"].find_one.return_value = None
+        mock_collections["roles"].insert_one.return_value = MagicMock(inserted_id="role-id")
+        mock_collections["groups"].find_one.return_value = None
+        mock_collections["groups"].insert_one.return_value = MagicMock(inserted_id="group-id")
+        mock_collections["users"].find_one.return_value = None
+        mock_collections["users"].insert_one.return_value = MagicMock(inserted_id="user-id")
+
+        seed(settings)
+
+        cm_call = mock_collections["roles"].insert_one.call_args_list[2]
+        cm_doc = cm_call[0][0]
+        assert cm_doc["name"] == "Content Manager"
+        assert len(cm_doc["permission_ids"]) == 14
+
+    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
+    def test_skips_existing_roles(
+        self,
+        mock_mongo_client: MagicMock,
+        mock_db: MagicMock,
+        mock_collections: dict[str, MagicMock],
+        settings: Settings,
+    ) -> None:
+        mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
+        mock_collections["permissions"].find_one.return_value = {"_id": "existing-id", "code": "x"}
+        mock_collections["roles"].find_one.return_value = {"_id": "existing-role", "name": "x"}
+        mock_collections["groups"].find_one.return_value = {"_id": "existing-group", "name": "x"}
+        mock_collections["users"].find_one.return_value = {"_id": "existing-user", "username": "admin"}
+
+        seed(settings)
+
+        mock_collections["roles"].insert_one.assert_not_called()
+
+
+class TestSeedGroups:
+    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
+    def test_creates_2_groups(
+        self,
+        mock_mongo_client: MagicMock,
+        mock_db: MagicMock,
+        mock_collections: dict[str, MagicMock],
+        settings: Settings,
+    ) -> None:
+        mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
+        mock_collections["permissions"].find_one.return_value = None
+        mock_collections["permissions"].insert_one.return_value = MagicMock(inserted_id="perm-id")
+        mock_collections["roles"].find_one.return_value = None
+        mock_collections["roles"].insert_one.return_value = MagicMock(inserted_id="role-id")
+        mock_collections["groups"].find_one.return_value = None
+        mock_collections["groups"].insert_one.return_value = MagicMock(inserted_id="group-id")
+        mock_collections["users"].find_one.return_value = None
+        mock_collections["users"].insert_one.return_value = MagicMock(inserted_id="user-id")
+
+        seed(settings)
+
+        assert mock_collections["groups"].insert_one.call_count == 2
+
+    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
+    def test_group_names_match_spec(
+        self,
+        mock_mongo_client: MagicMock,
+        mock_db: MagicMock,
+        mock_collections: dict[str, MagicMock],
+        settings: Settings,
+    ) -> None:
+        mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
+        mock_collections["permissions"].find_one.return_value = None
+        mock_collections["permissions"].insert_one.return_value = MagicMock(inserted_id="perm-id")
+        mock_collections["roles"].find_one.return_value = None
+        mock_collections["roles"].insert_one.return_value = MagicMock(inserted_id="role-id")
+        mock_collections["groups"].find_one.return_value = None
+        mock_collections["groups"].insert_one.return_value = MagicMock(inserted_id="group-id")
+        mock_collections["users"].find_one.return_value = None
+        mock_collections["users"].insert_one.return_value = MagicMock(inserted_id="user-id")
+
+        seed(settings)
+
+        inserted_names = [c[0][0]["name"] for c in mock_collections["groups"].insert_one.call_args_list]
+        assert inserted_names == ["Admins", "Users"]
+
+    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
+    def test_skips_existing_groups(
+        self,
+        mock_mongo_client: MagicMock,
+        mock_db: MagicMock,
+        mock_collections: dict[str, MagicMock],
+        settings: Settings,
+    ) -> None:
+        mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
+        mock_collections["permissions"].find_one.return_value = {"_id": "existing-id", "code": "x"}
+        mock_collections["roles"].find_one.return_value = {"_id": "existing-role", "name": "x"}
+        mock_collections["groups"].find_one.return_value = {"_id": "existing-group", "name": "x"}
+        mock_collections["users"].find_one.return_value = {"_id": "existing-user", "username": "admin"}
+
+        seed(settings)
+
+        mock_collections["groups"].insert_one.assert_not_called()
+
+
+class TestSeedAdminUser:
+    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
+    def test_creates_admin_user(
+        self,
+        mock_mongo_client: MagicMock,
+        mock_db: MagicMock,
+        mock_collections: dict[str, MagicMock],
+        settings: Settings,
+    ) -> None:
+        mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
+        mock_collections["permissions"].find_one.return_value = None
+        mock_collections["permissions"].insert_one.return_value = MagicMock(inserted_id="perm-id")
+        mock_collections["roles"].find_one.return_value = None
+        mock_collections["roles"].insert_one.return_value = MagicMock(inserted_id="role-id")
+        mock_collections["groups"].find_one.return_value = None
+        mock_collections["groups"].insert_one.return_value = MagicMock(inserted_id="group-id")
+        mock_collections["users"].find_one.return_value = None
+        mock_collections["users"].insert_one.return_value = MagicMock(inserted_id="user-id")
+
+        seed(settings)
+
+        mock_collections["users"].insert_one.assert_called_once()
+        admin_doc = mock_collections["users"].insert_one.call_args[0][0]
+        assert admin_doc["username"] == "admin"
+        assert admin_doc["rsi_handle"] == "HexadianAdmin"
+        assert admin_doc["rsi_verified"] is False
+        assert admin_doc["is_active"] is True
+        assert admin_doc["group_ids"] == ["group-id"]
+        assert ":" in admin_doc["hashed_password"]
+
+    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
+    def test_skips_existing_admin(
+        self,
+        mock_mongo_client: MagicMock,
+        mock_db: MagicMock,
+        mock_collections: dict[str, MagicMock],
+        settings: Settings,
+    ) -> None:
+        mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
+        mock_collections["permissions"].find_one.return_value = {"_id": "existing-id", "code": "x"}
+        mock_collections["roles"].find_one.return_value = {"_id": "existing-role", "name": "x"}
+        mock_collections["groups"].find_one.return_value = {"_id": "existing-group", "name": "x"}
+        mock_collections["users"].find_one.return_value = {"_id": "existing-user", "username": "admin"}
+
+        seed(settings)
+
+        mock_collections["users"].insert_one.assert_not_called()
+
+    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
+    def test_admin_password_from_settings(
+        self,
+        mock_mongo_client: MagicMock,
+        mock_db: MagicMock,
+        mock_collections: dict[str, MagicMock],
+    ) -> None:
+        custom_settings = Settings(jwt_secret="test-secret", admin_password="custom-pw-123")
+        mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
+        mock_collections["permissions"].find_one.return_value = None
+        mock_collections["permissions"].insert_one.return_value = MagicMock(inserted_id="perm-id")
+        mock_collections["roles"].find_one.return_value = None
+        mock_collections["roles"].insert_one.return_value = MagicMock(inserted_id="role-id")
+        mock_collections["groups"].find_one.return_value = None
+        mock_collections["groups"].insert_one.return_value = MagicMock(inserted_id="group-id")
+        mock_collections["users"].find_one.return_value = None
+        mock_collections["users"].insert_one.return_value = MagicMock(inserted_id="user-id")
+
+        seed(custom_settings)
+
+        admin_doc = mock_collections["users"].insert_one.call_args[0][0]
+        # Verify password was hashed (salt:hash format)
+        salt, hashed = admin_doc["hashed_password"].split(":")
+        assert len(salt) == 32  # 16 bytes hex
+        assert len(hashed) == 64  # SHA256 hex
+
+
+class TestSeedIdempotent:
+    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
+    def test_full_idempotent_run_no_inserts(
+        self,
+        mock_mongo_client: MagicMock,
+        mock_db: MagicMock,
+        mock_collections: dict[str, MagicMock],
+        settings: Settings,
+    ) -> None:
+        """Running seed when all data exists should not insert anything."""
+        mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
+        mock_collections["permissions"].find_one.return_value = {"_id": "existing-id", "code": "x"}
+        mock_collections["roles"].find_one.return_value = {"_id": "existing-role", "name": "x"}
+        mock_collections["groups"].find_one.return_value = {"_id": "existing-group", "name": "x"}
+        mock_collections["users"].find_one.return_value = {"_id": "existing-user", "username": "admin"}
+
+        seed(settings)
+
+        mock_collections["permissions"].insert_one.assert_not_called()
+        mock_collections["roles"].insert_one.assert_not_called()
+        mock_collections["groups"].insert_one.assert_not_called()
+        mock_collections["users"].insert_one.assert_not_called()
+
+
+class TestSeedDefaults:
+    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
+    def test_seed_uses_default_settings_when_none(self, mock_mongo_client: MagicMock) -> None:
+        mock_db = MagicMock()
+        mock_col = MagicMock()
+        mock_col.find_one.return_value = {"_id": "x"}
+        mock_db.__getitem__ = MagicMock(return_value=mock_col)
+        mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
+
+        seed(None)
+
+        mock_mongo_client.assert_called_once()
+
+
+class TestSeedDataDefinitions:
+    def test_permissions_count(self) -> None:
+        assert len(PERMISSIONS) == 22
+
+    def test_roles_count(self) -> None:
+        assert len(ROLES) == 3
+
+    def test_groups_count(self) -> None:
+        assert len(GROUPS) == 2
+
+    def test_all_permission_codes_unique(self) -> None:
+        codes = [p["code"] for p in PERMISSIONS]
+        assert len(codes) == len(set(codes))
+
+    def test_all_role_names_unique(self) -> None:
+        names = [r["name"] for r in ROLES]
+        assert len(names) == len(set(names))
+
+    def test_all_group_names_unique(self) -> None:
+        names = [g["name"] for g in GROUPS]
+        assert len(names) == len(set(names))
+
+    def test_role_permission_codes_are_valid(self) -> None:
+        valid_codes = {p["code"] for p in PERMISSIONS}
+        for role in ROLES:
+            for code in role["permission_codes"]:
+                assert code in valid_codes, f"Role '{role['name']}' has invalid permission code: {code}"
+
+    def test_group_role_names_are_valid(self) -> None:
+        valid_names = {r["name"] for r in ROLES}
+        for group in GROUPS:
+            for name in group["role_names"]:
+                assert name in valid_names, f"Group '{group['name']}' has invalid role name: {name}"
