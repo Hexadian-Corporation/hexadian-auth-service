@@ -31,7 +31,7 @@ class TestUserPersistenceMapperRsiFields:
             "_id": "abc123",
             "username": "test",
             "hashed_password": "salt:hash",
-            "roles": ["user"],
+            "group_ids": [],
             "is_active": True,
             "rsi_handle": "TestPilot",
             "rsi_verified": True,
@@ -69,3 +69,42 @@ class TestUserPersistenceMapperRsiFields:
         user = UserPersistenceMapper.to_domain(doc)
 
         assert not hasattr(user, "email")
+
+
+class TestUserPersistenceMapperGroupIds:
+    def test_to_document_includes_group_ids(self) -> None:
+        user = User(id="user-1", username="test", group_ids=["grp-1", "grp-2"])
+        doc = UserPersistenceMapper.to_document(user)
+
+        assert doc["group_ids"] == ["grp-1", "grp-2"]
+
+    def test_to_document_group_ids_default(self) -> None:
+        user = User(id="user-1", username="test")
+        doc = UserPersistenceMapper.to_document(user)
+
+        assert doc["group_ids"] == []
+
+    def test_to_document_excludes_roles(self) -> None:
+        user = User(id="user-1", username="test")
+        doc = UserPersistenceMapper.to_document(user)
+
+        assert "roles" not in doc
+
+    def test_to_domain_includes_group_ids(self) -> None:
+        doc = {
+            "_id": "abc123",
+            "username": "test",
+            "group_ids": ["grp-1", "grp-2"],
+        }
+        user = UserPersistenceMapper.to_domain(doc)
+
+        assert user.group_ids == ["grp-1", "grp-2"]
+
+    def test_to_domain_missing_group_ids_defaults(self) -> None:
+        doc = {
+            "_id": "abc123",
+            "username": "test",
+        }
+        user = UserPersistenceMapper.to_domain(doc)
+
+        assert user.group_ids == []

@@ -7,7 +7,7 @@ class UserPersistenceMapper:
         return {
             "username": user.username,
             "hashed_password": user.hashed_password,
-            "roles": user.roles,
+            "group_ids": user.group_ids,
             "is_active": user.is_active,
             "rsi_handle": user.rsi_handle,
             "rsi_verified": user.rsi_verified,
@@ -20,7 +20,7 @@ class UserPersistenceMapper:
             id=str(doc["_id"]),
             username=doc.get("username", ""),
             hashed_password=doc.get("hashed_password", ""),
-            roles=doc.get("roles", ["user"]),
+            group_ids=doc.get("group_ids", []),
             is_active=doc.get("is_active", True),
             rsi_handle=doc.get("rsi_handle", ""),
             rsi_verified=doc.get("rsi_verified", False),
