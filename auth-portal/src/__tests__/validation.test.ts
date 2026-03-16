@@ -6,6 +6,7 @@ import {
   validateRsiHandle,
   validateRegistrationForm,
   validateLoginForm,
+  validateChangePasswordForm,
   hasErrors,
 } from "@/lib/validation";
 
@@ -195,5 +196,56 @@ describe("validateLoginForm", () => {
     });
     expect(errors.username).toBeUndefined();
     expect(errors.password).toBe("Password is required");
+  });
+});
+
+describe("validateChangePasswordForm", () => {
+  it("returns no errors for valid form", () => {
+    const errors = validateChangePasswordForm({
+      currentPassword: "oldpassword",
+      newPassword: "newpassword1",
+      confirmPassword: "newpassword1",
+    });
+    expect(errors).toEqual({});
+  });
+
+  it("returns all errors for empty form", () => {
+    const errors = validateChangePasswordForm({
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    });
+    expect(errors.currentPassword).toBe("Current password is required");
+    expect(errors.password).toBe("Password is required");
+    expect(errors.confirmPassword).toBe("Please confirm your password");
+  });
+
+  it("returns current password error only", () => {
+    const errors = validateChangePasswordForm({
+      currentPassword: "",
+      newPassword: "newpassword1",
+      confirmPassword: "newpassword1",
+    });
+    expect(errors.currentPassword).toBe("Current password is required");
+    expect(errors.password).toBeUndefined();
+    expect(errors.confirmPassword).toBeUndefined();
+  });
+
+  it("returns min length error for short new password", () => {
+    const errors = validateChangePasswordForm({
+      currentPassword: "oldpass",
+      newPassword: "short",
+      confirmPassword: "short",
+    });
+    expect(errors.password).toBe("Password must be at least 8 characters");
+  });
+
+  it("returns mismatch error", () => {
+    const errors = validateChangePasswordForm({
+      currentPassword: "oldpass",
+      newPassword: "newpassword1",
+      confirmPassword: "newpassword2",
+    });
+    expect(errors.confirmPassword).toBe("Passwords do not match");
   });
 });

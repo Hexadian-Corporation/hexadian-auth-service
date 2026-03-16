@@ -6,6 +6,7 @@ export interface ValidationErrors {
   password?: string;
   confirmPassword?: string;
   rsiHandle?: string;
+  currentPassword?: string;
 }
 
 export function validateUsername(username: string): string | undefined {
@@ -90,6 +91,29 @@ export function validateLoginForm(fields: {
   if (!fields.password) {
     errors.password = "Password is required";
   }
+
+  return errors;
+}
+
+export function validateChangePasswordForm(fields: {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}): ValidationErrors {
+  const errors: ValidationErrors = {};
+
+  if (!fields.currentPassword) {
+    errors.currentPassword = "Current password is required";
+  }
+
+  const passwordError = validatePassword(fields.newPassword);
+  if (passwordError) errors.password = passwordError;
+
+  const confirmPasswordError = validateConfirmPassword(
+    fields.newPassword,
+    fields.confirmPassword,
+  );
+  if (confirmPasswordError) errors.confirmPassword = confirmPasswordError;
 
   return errors;
 }

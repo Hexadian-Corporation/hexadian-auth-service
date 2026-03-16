@@ -41,12 +41,14 @@ vi.mock("@/lib/auth", () => ({
   parseAccessToken: vi.fn(),
   getAccessToken: vi.fn(),
   storeTokens: vi.fn(),
+  clearTokens: vi.fn(),
 }));
 
 vi.mock("@/api/auth", () => ({
   startVerification: vi.fn(),
   confirmVerification: vi.fn(),
   refreshToken: vi.fn(),
+  changePassword: vi.fn(),
 }));
 
 import { parseAccessToken } from "@/lib/auth";
@@ -77,6 +79,13 @@ describe("VerifyPage", () => {
 
 describe("ChangePasswordPage", () => {
   it("renders the change password heading", async () => {
+    mockParseAccessToken.mockReturnValue({
+      sub: "user-1",
+      username: "testuser",
+      rsi_handle: "test-handle",
+      rsi_verified: false,
+    });
+
     const { default: ChangePasswordPage } = await import(
       "@/pages/ChangePasswordPage"
     );
@@ -85,7 +94,9 @@ describe("ChangePasswordPage", () => {
         <ChangePasswordPage />
       </MemoryRouter>,
     );
-    expect(screen.getByText("Change Password")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Change Password" }),
+    ).toBeInTheDocument();
   });
 });
 
