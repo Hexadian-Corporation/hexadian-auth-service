@@ -104,7 +104,7 @@ Groups → Roles → Permissions
 ## JWT / Token Architecture
 
 **Access token** — JWT signed with HS256, 15-minute TTL.
-Claims: `sub` (user_id), `username`, `rsi_handle`, `rsi_verified`, `iat`, `exp`. Permissions resolved from RBAC hierarchy at token creation/refresh.
+Claims: `sub` (user_id), `username`, `groups`, `roles`, `permissions`, `rsi_handle`, `rsi_verified`, `iat`, `exp`. Permissions are resolved from the RBAC hierarchy at token creation/refresh and embedded in the JWT.
 
 **Refresh token** — Opaque UUID, 7-day TTL, stored in MongoDB `refresh_tokens` collection with TTL index on `expires_at` and unique index on `token`. Revocable. On refresh, permissions are re-resolved from the database.
 
@@ -120,7 +120,7 @@ For redirect-based authentication from external apps (e.g., H³ frontends):
 4. Auth-portal redirects to `redirect_uri?code=<code>&state=<state>`
 5. App calls `POST /auth/token/exchange {code, redirect_uri}` → `{access_token, refresh_token}`
 
-`redirect_uri` is validated against `settings.allowed_redirect_origins`.
+`redirect_uri` is validated against `HEXADIAN_AUTH_ALLOWED_REDIRECT_ORIGINS`.
 
 ## RSI Verification Flow
 
