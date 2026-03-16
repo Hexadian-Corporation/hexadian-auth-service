@@ -1,7 +1,7 @@
 export interface RegisterRequest {
   username: string;
-  email: string;
   password: string;
+  rsi_handle: string;
 }
 
 export interface LoginRequest {
