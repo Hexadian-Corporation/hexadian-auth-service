@@ -78,3 +78,44 @@ class TestSaveDuplicateKeyHandling:
             repository.save(user)
 
         assert exc_info.value.__cause__ is original
+
+
+class TestUpdateUser:
+    def test_update_returns_updated_user(self, repository: MongoUserRepository, mock_collection: MagicMock) -> None:
+        from bson import ObjectId
+
+        user_id = "507f1f77bcf86cd799439011"
+        updated_doc = {
+            "_id": ObjectId(user_id),
+            "username": "updated_name",
+            "hashed_password": "hash",
+            "group_ids": [],
+            "is_active": True,
+            "rsi_handle": "Pilot",
+            "rsi_verified": False,
+            "rsi_verification_code": None,
+        }
+        mock_collection.find_one_and_update.return_value = updated_doc
+
+        result = repository.update(user_id, {"username": "updated_name"})
+
+        assert result is not None
+        assert result.username == "updated_name"
+        mock_collection.find_one_and_update.assert_called_once()
+
+    def test_update_returns_none_when_user_not_found(
+        self, repository: MongoUserRepository, mock_collection: MagicMock
+    ) -> None:
+        mock_collection.find_one_and_update.return_value = None
+
+        result = repository.update("507f1f77bcf86cd799439011", {"username": "newname"})
+
+        assert result is None
+
+    def test_update_duplicate_key_raises_user_already_exists(
+        self, repository: MongoUserRepository, mock_collection: MagicMock
+    ) -> None:
+        mock_collection.find_one_and_update.side_effect = DuplicateKeyError("username_1 dup key")
+
+        with pytest.raises(UserAlreadyExistsError):
+            repository.update("507f1f77bcf86cd799439011", {"username": "taken"})

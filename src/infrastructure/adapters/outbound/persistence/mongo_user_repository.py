@@ -1,4 +1,5 @@
 from bson import ObjectId
+from pymongo import ReturnDocument
 from pymongo.collection import Collection
 from pymongo.errors import DuplicateKeyError
 
@@ -42,3 +43,16 @@ class MongoUserRepository(UserRepository):
     def delete(self, user_id: str) -> bool:
         result = self._collection.delete_one({"_id": ObjectId(user_id)})
         return result.deleted_count > 0
+
+    def update(self, user_id: str, fields: dict) -> User | None:
+        try:
+            result = self._collection.find_one_and_update(
+                {"_id": ObjectId(user_id)},
+                {"$set": fields},
+                return_document=ReturnDocument.AFTER,
+            )
+        except DuplicateKeyError as exc:
+            raise UserAlreadyExistsError(fields.get("username", user_id)) from exc
+        if result is None:
+            return None
+        return UserPersistenceMapper.to_domain(result)
