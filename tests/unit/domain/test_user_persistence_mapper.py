@@ -7,7 +7,6 @@ class TestUserPersistenceMapperRsiFields:
         user = User(
             id="user-1",
             username="test",
-            email="test@example.com",
             hashed_password="salt:hash",
             rsi_handle="TestPilot",
             rsi_verified=True,
@@ -19,11 +18,11 @@ class TestUserPersistenceMapperRsiFields:
         assert doc["rsi_verified"] is True
         assert doc["rsi_verification_code"] == "abc123"
 
-    def test_to_document_rsi_fields_default_none(self) -> None:
-        user = User(id="user-1", username="test", email="test@example.com")
+    def test_to_document_rsi_fields_default(self) -> None:
+        user = User(id="user-1", username="test")
         doc = UserPersistenceMapper.to_document(user)
 
-        assert doc["rsi_handle"] is None
+        assert doc["rsi_handle"] == ""
         assert doc["rsi_verified"] is False
         assert doc["rsi_verification_code"] is None
 
@@ -31,7 +30,6 @@ class TestUserPersistenceMapperRsiFields:
         doc = {
             "_id": "abc123",
             "username": "test",
-            "email": "test@example.com",
             "hashed_password": "salt:hash",
             "roles": ["user"],
             "is_active": True,
@@ -49,10 +47,25 @@ class TestUserPersistenceMapperRsiFields:
         doc = {
             "_id": "abc123",
             "username": "test",
-            "email": "test@example.com",
         }
         user = UserPersistenceMapper.to_domain(doc)
 
-        assert user.rsi_handle is None
+        assert user.rsi_handle == ""
         assert user.rsi_verified is False
         assert user.rsi_verification_code is None
+
+    def test_to_document_excludes_email(self) -> None:
+        user = User(id="user-1", username="test", rsi_handle="Pilot")
+        doc = UserPersistenceMapper.to_document(user)
+
+        assert "email" not in doc
+
+    def test_to_domain_does_not_set_email(self) -> None:
+        doc = {
+            "_id": "abc123",
+            "username": "test",
+            "rsi_handle": "Pilot",
+        }
+        user = UserPersistenceMapper.to_domain(doc)
+
+        assert not hasattr(user, "email")

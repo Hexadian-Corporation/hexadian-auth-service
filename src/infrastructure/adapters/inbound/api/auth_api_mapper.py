@@ -8,7 +8,6 @@ class AuthApiMapper:
         return UserDTO(
             _id=user.id,
             username=user.username,
-            email=user.email,
             roles=user.roles,
             is_active=user.is_active,
             rsi_handle=user.rsi_handle,
