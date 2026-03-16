@@ -36,12 +36,6 @@ class MongoUserRepository(UserRepository):
             return None
         return UserPersistenceMapper.to_domain(doc)
 
-    def find_by_email(self, email: str) -> User | None:
-        doc = self._collection.find_one({"email": email})
-        if doc is None:
-            return None
-        return UserPersistenceMapper.to_domain(doc)
-
     def find_all(self) -> list[User]:
         return [UserPersistenceMapper.to_domain(doc) for doc in self._collection.find()]
 

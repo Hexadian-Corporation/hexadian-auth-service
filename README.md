@@ -113,7 +113,7 @@ The flow generates a unique code, the user places it in their RSI bio, and the s
 ```bash
 curl -s -X POST http://localhost:8006/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"username": "testpilot", "email": "testpilot@example.com", "password": "s3cureP@ss"}' | python -m json.tool
+  -d '{"username": "testpilot", "password": "s3cureP@ss", "rsi_handle": "TestPilot"}' | python -m json.tool
 ```
 
 Example response:
@@ -122,10 +122,9 @@ Example response:
 {
     "_id": "6649a2f1c...",
     "username": "testpilot",
-    "email": "testpilot@example.com",
     "roles": ["user"],
     "is_active": true,
-    "rsi_handle": null,
+    "rsi_handle": "TestPilot",
     "rsi_verified": false
 }
 ```
@@ -200,7 +199,6 @@ The user should now show `rsi_verified: true`:
 {
     "_id": "6649a2f1c...",
     "username": "testpilot",
-    "email": "testpilot@example.com",
     "roles": ["user"],
     "is_active": true,
     "rsi_handle": "YourRSIHandle",
