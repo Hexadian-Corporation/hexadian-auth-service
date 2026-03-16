@@ -32,7 +32,7 @@ export async function createUser(data: UserCreate): Promise<User> {
 
 export async function updateUser(id: string, data: UserUpdate): Promise<User> {
   const response = await fetch(`${API_BASE}/users/${id}`, {
-    method: "PATCH",
+    method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
@@ -52,10 +52,10 @@ export async function deleteUser(id: string): Promise<void> {
 }
 
 export async function resetPassword(id: string, newPassword: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/users/${id}/reset-password`, {
+  const response = await fetch(`${API_BASE}/users/${id}/password-reset`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ password: newPassword }),
+    body: JSON.stringify({ new_password: newPassword }),
   });
   if (!response.ok) {
     throw new Error(`Failed to reset password: ${response.statusText}`);

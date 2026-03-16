@@ -10,7 +10,7 @@ import type {
   GroupUpdate,
 } from "@/types/rbac";
 
-const API_BASE = "/api/auth";
+const API_BASE = "/api/rbac";
 
 // Permissions
 export async function listPermissions(): Promise<Permission[]> {
@@ -151,5 +151,26 @@ export async function deleteGroup(id: string): Promise<void> {
   });
   if (!response.ok) {
     throw new Error(`Failed to delete group: ${response.statusText}`);
+  }
+}
+
+// User-Group assignment
+export async function assignUserGroup(userId: string, groupId: string): Promise<void> {
+  const response = await fetch(`${API_BASE}/users/${userId}/groups`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ group_id: groupId }),
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to assign group: ${response.statusText}`);
+  }
+}
+
+export async function removeUserGroup(userId: string, groupId: string): Promise<void> {
+  const response = await fetch(`${API_BASE}/users/${userId}/groups/${groupId}`, {
+    method: "DELETE",
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to remove group: ${response.statusText}`);
   }
 }
