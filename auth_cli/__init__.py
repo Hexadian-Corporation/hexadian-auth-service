@@ -9,6 +9,11 @@ from __future__ import annotations
 
 import subprocess
 import sys
+from pathlib import Path
+
+# Always resolve relative to this file so docker compose finds the right
+# docker-compose.yml regardless of the CWD the user invokes uv from.
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 COMMANDS: dict[str, str] = {
     "up": "Build and start all containers (auth-service, auth-mongo, auth-portal, auth-backoffice)",
@@ -28,6 +33,14 @@ def _run(cmd: list[str], *, check: bool = True) -> subprocess.CompletedProcess[b
     return subprocess.run(cmd, check=check)
 
 
+def _compose(args: list[str], *, check: bool = True) -> subprocess.CompletedProcess[bytes]:
+    """Run docker compose with the project directory pinned to PROJECT_ROOT."""
+    return subprocess.run(
+        ["docker", "compose", "--project-directory", str(PROJECT_ROOT), *args],
+        check=check,
+    )
+
+
 def _print_help() -> None:
     print("Usage: uv run auth <command> [args...]\n")
     print("Commands:")
@@ -37,7 +50,7 @@ def _print_help() -> None:
 
 
 def cmd_up() -> None:
-    _run(["docker", "compose", "up", "--build", "-d"])
+    _compose(["up", "--build", "-d"])
     print("\n✅ All services started:")
     print("   Auth API:       http://localhost:8006")
     print("   Auth Portal:    http://localhost:3003")
@@ -45,7 +58,7 @@ def cmd_up() -> None:
 
 
 def cmd_down() -> None:
-    _run(["docker", "compose", "down"])
+    _compose(["down"])
 
 
 def cmd_setup() -> None:
@@ -57,24 +70,23 @@ def cmd_setup() -> None:
 def cmd_start() -> None:
     # Ensure auth-mongo container is running
     result = subprocess.run(
-        ["docker", "compose", "ps", "--status", "running", "--services"],
+        ["docker", "compose", "--project-directory", str(PROJECT_ROOT), "ps", "--status", "running", "--services"],
         capture_output=True,
         text=True,
         check=False,
     )
     if "auth-mongo" not in result.stdout.splitlines():
         print("Starting auth-mongo …")
-        _run(["docker", "compose", "up", "-d", "auth-mongo"])
+        _compose(["up", "-d", "auth-mongo"])
     _run(["uv", "run", "uvicorn", "src.main:app", "--reload", "--host", "0.0.0.0", "--port", "8006"])
 
 
 def cmd_logs(args: list[str]) -> None:
-    cmd = ["docker", "compose", "logs", "-f", *args]
-    _run(cmd, check=False)
+    _compose(["logs", "-f", *args], check=False)
 
 
 def cmd_ps() -> None:
-    _run(["docker", "compose", "ps"])
+    _compose(["ps"])
 
 
 def cmd_seed() -> None:
