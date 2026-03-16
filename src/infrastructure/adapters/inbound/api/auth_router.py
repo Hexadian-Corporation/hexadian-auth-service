@@ -8,6 +8,7 @@ from src.application.ports.inbound.auth_service import AuthService
 from src.domain.exceptions.user_exceptions import (
     InvalidAuthCodeError,
     InvalidCredentialsError,
+    InvalidPasswordError,
     InvalidRedirectUriError,
     RefreshTokenNotFoundError,
     UserAlreadyExistsError,
@@ -18,6 +19,8 @@ from src.infrastructure.adapters.inbound.api.auth_dto import (
     AuthorizeDTO,
     AuthorizeResponseDTO,
     LoginDTO,
+    PasswordChangeDTO,
+    PasswordResetDTO,
     RefreshTokenDTO,
     RegisterDTO,
     StartVerificationDTO,
@@ -189,3 +192,30 @@ def exchange_token(dto: TokenExchangeDTO) -> TokenDTO:
         token_type=token_response.token_type,
         expires_in=token_response.expires_in,
     )
+
+
+@router.post("/password/change", status_code=204)
+def change_password(
+    dto: PasswordChangeDTO,
+    user_ctx: Annotated[UserContext, Depends(_stub_jwt_auth)],
+) -> None:
+    try:
+        _auth_service.change_password(user_ctx.user_id, dto.old_password, dto.new_password)
+    except UserNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except InvalidPasswordError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post(
+    "/users/{user_id}/password-reset",
+    status_code=204,
+    dependencies=[Depends(require_permission("users:admin"))],
+)
+def reset_password(user_id: str, dto: PasswordResetDTO) -> None:
+    try:
+        _auth_service.reset_password(user_id, dto.new_password)
+    except UserNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except InvalidPasswordError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc

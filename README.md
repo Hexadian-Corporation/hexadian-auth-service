@@ -144,6 +144,8 @@ To stop everything: `uv run hhh down` (stops both H³ and auth).
 | `GET` | `/auth/users` | List all users |
 | `PATCH` | `/auth/users/{id}` | Update user profile (self or admin) |
 | `DELETE` | `/auth/users/{id}` | Delete a user |
+| `POST` | `/auth/password/change` | Change own password (authenticated) |
+| `POST` | `/auth/users/{id}/password-reset` | Admin password reset (requires `users:admin`) |
 | `POST` | `/auth/verify/start` | Start RSI verification |
 | `POST` | `/auth/verify/confirm` | Confirm RSI verification |
 | `GET` | `/health` | Health check |
