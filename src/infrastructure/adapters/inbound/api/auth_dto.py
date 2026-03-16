@@ -38,6 +38,11 @@ class StartVerificationDTO(BaseModel):
     rsi_handle: str = Field(pattern=r"^[A-Za-z0-9_-]{3,30}$")
 
 
+class UserUpdateDTO(BaseModel):
+    username: str | None = None
+    rsi_handle: str | None = Field(default=None, pattern=r"^[A-Za-z0-9_-]{3,30}$")
+
+
 class VerificationResultDTO(BaseModel):
     verification_code: str | None = None
     verified: bool

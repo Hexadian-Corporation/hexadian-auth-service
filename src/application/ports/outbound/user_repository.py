@@ -18,3 +18,6 @@ class UserRepository(ABC):
 
     @abstractmethod
     def delete(self, user_id: str) -> bool: ...
+
+    @abstractmethod
+    def update(self, user_id: str, fields: dict) -> User | None: ...

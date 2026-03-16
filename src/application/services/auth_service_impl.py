@@ -175,6 +175,37 @@ class AuthServiceImpl(AuthService):
         if not self._repository.delete(user_id):
             raise UserNotFoundError(user_id)
 
+    _ALLOWED_UPDATE_FIELDS = {"username", "rsi_handle"}
+
+    def update_user(self, user_id: str, updates: dict) -> User:
+        fields: dict = {}
+        for key in updates:
+            if key not in self._ALLOWED_UPDATE_FIELDS:
+                raise ValueError(f"Field not editable: {key}")
+
+        if "rsi_handle" in updates:
+            rsi_handle = updates["rsi_handle"]
+            if not _RSI_HANDLE_PATTERN.match(rsi_handle):
+                raise ValueError(f"Invalid RSI handle format: {rsi_handle}")
+            fields["rsi_handle"] = rsi_handle
+            fields["rsi_verified"] = False
+            fields["rsi_verification_code"] = None
+
+        if "username" in updates:
+            username = updates["username"]
+            existing = self._repository.find_by_username(username)
+            if existing is not None and existing.id != user_id:
+                raise UserAlreadyExistsError(username)
+            fields["username"] = username
+
+        if not fields:
+            return self.get_user(user_id)
+
+        user = self._repository.update(user_id, fields)
+        if user is None:
+            raise UserNotFoundError(user_id)
+        return user
+
     @staticmethod
     def _hash_password(password: str) -> str:
         salt = secrets.token_hex(16)
