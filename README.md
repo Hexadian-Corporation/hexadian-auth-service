@@ -12,6 +12,52 @@ uv run auth up
 
 This single command builds and starts everything: auth API (`:8006`), MongoDB, auth-portal (`:3003`), and auth-backoffice (`:3002`).
 
+## Auto-Seed / Default Admin
+
+On **first startup** (no admin user in the database), the service automatically seeds the RBAC data:
+
+- **22 permissions** (e.g., `contracts:read`, `users:admin`, `rbac:manage`)
+- **3 roles** — Super Admin, Content Manager, Member
+- **2 groups** — Admins, Users
+- **1 admin user** — username `admin`, password `admin`
+
+The seed is **idempotent** — if an admin user already exists, the seed is skipped entirely. You will see one of these log messages on startup:
+
+```
+RBAC seed: completed        # first run — data was seeded
+RBAC seed: skipped (admin exists)  # subsequent runs — nothing changed
+```
+
+### Overriding the Admin Password
+
+The default password is set via the `admin_password` field in `src/infrastructure/config/settings.py`. Override it with the `HEXADIAN_AUTH_ADMIN_PASSWORD` environment variable:
+
+```bash
+HEXADIAN_AUTH_ADMIN_PASSWORD=my-secure-password uv run auth start
+```
+
+In Docker Compose, add the variable to the `auth-service` service:
+
+```yaml
+auth-service:
+  environment:
+    - HEXADIAN_AUTH_ADMIN_PASSWORD=my-secure-password
+```
+
+> **⚠️ Security Warning:** The default password (`admin`) is intended for local development only. **Always override `HEXADIAN_AUTH_ADMIN_PASSWORD` in staging, production, and any non-local environment.**
+
+### Manual Seed (Fallback)
+
+If you need to re-run the seed manually (e.g., after wiping the database), use:
+
+```bash
+uv run auth seed
+# or directly:
+uv run python -m src.infrastructure.seed.seed_rbac
+```
+
+The seed script lives at `src/infrastructure/seed/seed_rbac.py`.
+
 ## Architecture
 
 Hexagonal architecture (Ports & Adapters) with two frontend SPAs in subdirectories:

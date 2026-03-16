@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, call, patch
 import pytest
 
 from auth_cli import (
+    PROJECT_ROOT,
     cmd_down,
     cmd_lint,
     cmd_logs,
@@ -23,7 +24,7 @@ class TestCmdUp:
     def test_runs_docker_compose_up_build(self, mock_run: MagicMock) -> None:
         cmd_up()
         mock_run.assert_called_once_with(
-            ["docker", "compose", "up", "--build", "-d"],
+            ["docker", "compose", "--project-directory", str(PROJECT_ROOT), "up", "--build", "-d"],
             check=True,
         )
 
@@ -33,7 +34,7 @@ class TestCmdDown:
     def test_runs_docker_compose_down(self, mock_run: MagicMock) -> None:
         cmd_down()
         mock_run.assert_called_once_with(
-            ["docker", "compose", "down"],
+            ["docker", "compose", "--project-directory", str(PROJECT_ROOT), "down"],
             check=True,
         )
 
@@ -62,13 +63,16 @@ class TestCmdStart:
         calls = mock_run.call_args_list
         # 1st: check running services
         assert calls[0] == call(
-            ["docker", "compose", "ps", "--status", "running", "--services"],
+            ["docker", "compose", "--project-directory", str(PROJECT_ROOT), "ps", "--status", "running", "--services"],
             capture_output=True,
             text=True,
             check=False,
         )
         # 2nd: start auth-mongo
-        assert calls[1] == call(["docker", "compose", "up", "-d", "auth-mongo"], check=True)
+        assert calls[1] == call(
+            ["docker", "compose", "--project-directory", str(PROJECT_ROOT), "up", "-d", "auth-mongo"],
+            check=True,
+        )
         # 3rd: start uvicorn
         assert calls[2] == call(
             ["uv", "run", "uvicorn", "src.main:app", "--reload", "--host", "0.0.0.0", "--port", "8006"],
@@ -92,7 +96,7 @@ class TestCmdLogs:
     def test_follows_all_logs_without_args(self, mock_run: MagicMock) -> None:
         cmd_logs([])
         mock_run.assert_called_once_with(
-            ["docker", "compose", "logs", "-f"],
+            ["docker", "compose", "--project-directory", str(PROJECT_ROOT), "logs", "-f"],
             check=False,
         )
 
@@ -100,7 +104,7 @@ class TestCmdLogs:
     def test_follows_specific_service_logs(self, mock_run: MagicMock) -> None:
         cmd_logs(["auth-mongo"])
         mock_run.assert_called_once_with(
-            ["docker", "compose", "logs", "-f", "auth-mongo"],
+            ["docker", "compose", "--project-directory", str(PROJECT_ROOT), "logs", "-f", "auth-mongo"],
             check=False,
         )
 
@@ -110,7 +114,7 @@ class TestCmdPs:
     def test_runs_docker_compose_ps(self, mock_run: MagicMock) -> None:
         cmd_ps()
         mock_run.assert_called_once_with(
-            ["docker", "compose", "ps"],
+            ["docker", "compose", "--project-directory", str(PROJECT_ROOT), "ps"],
             check=True,
         )
 
