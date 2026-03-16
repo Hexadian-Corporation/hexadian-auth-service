@@ -1,6 +1,7 @@
 import uvicorn
 from fastapi import FastAPI
 from opyoid import Injector
+from starlette.middleware.cors import CORSMiddleware
 
 from src.application.ports.inbound.auth_service import AuthService
 from src.infrastructure.adapters.inbound.api.auth_router import init_router, router
@@ -16,6 +17,13 @@ def create_app() -> FastAPI:
     init_router(auth_service)
 
     app = FastAPI(title=settings.app_name)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.allowed_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     app.include_router(router)
 
     @app.get("/health")
