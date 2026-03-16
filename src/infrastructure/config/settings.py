@@ -10,5 +10,11 @@ class Settings(BaseSettings):
     jwt_secret: str = "change-me-in-production"
     jwt_algorithm: str = "HS256"
     jwt_expiration_minutes: int = 60
+    allowed_origins: list[str] = [
+        "http://localhost:3000",  # H³ player frontend
+        "http://localhost:3001",  # H³ backoffice frontend
+        "http://localhost:3002",  # auth-backoffice
+        "http://localhost:3003",  # auth-portal
+    ]
 
     model_config = {"env_prefix": "HEXADIAN_AUTH_"}

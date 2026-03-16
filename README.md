@@ -118,6 +118,7 @@ To stop everything: `uv run hhh down` (stops both H³ and auth).
 | `HEXADIAN_AUTH_JWT_SECRET` | `change-me-in-production` | JWT signing secret |
 | `HEXADIAN_AUTH_JWT_ALGORITHM` | `HS256` | JWT algorithm |
 | `HEXADIAN_AUTH_JWT_EXPIRATION_MINUTES` | `60` | Token expiration |
+| `HEXADIAN_AUTH_ALLOWED_ORIGINS` | `["http://localhost:3000", ...]` | CORS allowed origins (JSON list) |
 
 ## API
 
