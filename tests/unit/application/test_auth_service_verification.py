@@ -2,11 +2,13 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from src.application.ports.outbound.refresh_token_repository import RefreshTokenRepository
 from src.application.ports.outbound.rsi_profile_fetcher import RsiProfileFetcher
 from src.application.ports.outbound.user_repository import UserRepository
 from src.application.services.auth_service_impl import _VERIFICATION_PREFIX, _WORD_LIST, AuthServiceImpl
 from src.domain.exceptions.user_exceptions import UserAlreadyExistsError, UserNotFoundError
 from src.domain.models.user import User
+from src.infrastructure.config.settings import Settings
 
 
 @pytest.fixture()
@@ -20,8 +22,28 @@ def mock_rsi_fetcher() -> MagicMock:
 
 
 @pytest.fixture()
-def service(mock_repository: MagicMock, mock_rsi_fetcher: MagicMock) -> AuthServiceImpl:
-    return AuthServiceImpl(repository=mock_repository, rsi_profile_fetcher=mock_rsi_fetcher)
+def mock_refresh_token_repository() -> MagicMock:
+    return MagicMock(spec=RefreshTokenRepository)
+
+
+@pytest.fixture()
+def settings() -> Settings:
+    return Settings(jwt_secret="test-secret")
+
+
+@pytest.fixture()
+def service(
+    mock_repository: MagicMock,
+    mock_rsi_fetcher: MagicMock,
+    mock_refresh_token_repository: MagicMock,
+    settings: Settings,
+) -> AuthServiceImpl:
+    return AuthServiceImpl(
+        repository=mock_repository,
+        rsi_profile_fetcher=mock_rsi_fetcher,
+        refresh_token_repository=mock_refresh_token_repository,
+        settings=settings,
+    )
 
 
 class TestStartVerification:

@@ -3,12 +3,14 @@ from fastapi import APIRouter, HTTPException
 from src.application.ports.inbound.auth_service import AuthService
 from src.domain.exceptions.user_exceptions import (
     InvalidCredentialsError,
+    RefreshTokenNotFoundError,
     UserAlreadyExistsError,
     UserNotFoundError,
 )
 from src.infrastructure.adapters.inbound.api.auth_api_mapper import AuthApiMapper
 from src.infrastructure.adapters.inbound.api.auth_dto import (
     LoginDTO,
+    RefreshTokenDTO,
     RegisterDTO,
     StartVerificationDTO,
     TokenDTO,
@@ -38,10 +40,39 @@ def register(dto: RegisterDTO) -> UserDTO:
 @router.post("/login", response_model=TokenDTO)
 def login(dto: LoginDTO) -> TokenDTO:
     try:
-        token = _auth_service.authenticate(dto.username, dto.password)
+        token_response = _auth_service.authenticate(dto.username, dto.password)
     except InvalidCredentialsError as exc:
         raise HTTPException(status_code=401, detail=str(exc)) from exc
-    return TokenDTO(access_token=token)
+    return TokenDTO(
+        access_token=token_response.access_token,
+        refresh_token=token_response.refresh_token,
+        token_type=token_response.token_type,
+        expires_in=token_response.expires_in,
+    )
+
+
+@router.post("/token/refresh", response_model=TokenDTO)
+def refresh_token(dto: RefreshTokenDTO) -> TokenDTO:
+    try:
+        token_response = _auth_service.refresh_token(dto.refresh_token)
+    except RefreshTokenNotFoundError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+    except UserNotFoundError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+    return TokenDTO(
+        access_token=token_response.access_token,
+        refresh_token=token_response.refresh_token,
+        token_type=token_response.token_type,
+        expires_in=token_response.expires_in,
+    )
+
+
+@router.post("/token/revoke", status_code=204)
+def revoke_token(dto: RefreshTokenDTO) -> None:
+    try:
+        _auth_service.revoke_token(dto.refresh_token)
+    except RefreshTokenNotFoundError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
 
 
 @router.get("/users/{user_id}", response_model=UserDTO)

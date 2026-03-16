@@ -117,7 +117,8 @@ To stop everything: `uv run hhh down` (stops both H³ and auth).
 | `HEXADIAN_AUTH_PORT` | `8006` | Service port |
 | `HEXADIAN_AUTH_JWT_SECRET` | `change-me-in-production` | JWT signing secret |
 | `HEXADIAN_AUTH_JWT_ALGORITHM` | `HS256` | JWT algorithm |
-| `HEXADIAN_AUTH_JWT_EXPIRATION_MINUTES` | `60` | Token expiration |
+| `HEXADIAN_AUTH_JWT_EXPIRATION_MINUTES` | `15` | Access token expiration (minutes) |
+| `HEXADIAN_AUTH_JWT_REFRESH_EXPIRATION_DAYS` | `7` | Refresh token expiration (days) |
 | `HEXADIAN_AUTH_ALLOWED_ORIGINS` | `["http://localhost:3000", ...]` | CORS allowed origins (JSON list) |
 
 ## API
@@ -125,7 +126,9 @@ To stop everything: `uv run hhh down` (stops both H³ and auth).
 | Method | Endpoint | Description |
 |---|---|---|
 | `POST` | `/auth/register` | Register a new user |
-| `POST` | `/auth/login` | Authenticate and get token |
+| `POST` | `/auth/login` | Authenticate and get access + refresh tokens |
+| `POST` | `/auth/token/refresh` | Rotate tokens (new access + refresh, old refresh revoked) |
+| `POST` | `/auth/token/revoke` | Revoke a refresh token |
 | `GET` | `/auth/users/{id}` | Get user by ID |
 | `GET` | `/auth/users` | List all users |
 | `DELETE` | `/auth/users/{id}` | Delete a user |

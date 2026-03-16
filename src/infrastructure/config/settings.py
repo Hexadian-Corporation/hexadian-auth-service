@@ -9,7 +9,8 @@ class Settings(BaseSettings):
     port: int = 8006
     jwt_secret: str = "change-me-in-production"
     jwt_algorithm: str = "HS256"
-    jwt_expiration_minutes: int = 60
+    jwt_expiration_minutes: int = 15
+    jwt_refresh_expiration_days: int = 7
     allowed_origins: list[str] = [
         "http://localhost:3000",  # H³ player frontend
         "http://localhost:3001",  # H³ backoffice frontend
