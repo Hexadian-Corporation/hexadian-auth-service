@@ -24,6 +24,7 @@ from src.infrastructure.adapters.inbound.api.auth_dto import (
     TokenDTO,
     TokenExchangeDTO,
     UserDTO,
+    UserUpdateDTO,
     VerificationResultDTO,
 )
 
@@ -106,6 +107,26 @@ def delete_user(user_id: str) -> None:
         _auth_service.delete_user(user_id)
     except UserNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.put("/users/{user_id}", response_model=UserDTO)
+def update_user(
+    user_id: str,
+    dto: UserUpdateDTO,
+    user_ctx: Annotated[UserContext, Depends(_stub_jwt_auth)],
+) -> UserDTO:
+    if user_ctx.user_id != user_id and "users:admin" not in user_ctx.permissions:
+        raise HTTPException(status_code=403, detail="Missing required permission: users:admin")
+    updates = dto.model_dump(exclude_none=True)
+    try:
+        user = _auth_service.update_user(user_id, updates)
+    except UserNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except UserAlreadyExistsError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return AuthApiMapper.to_dto(user)
 
 
 @router.post("/verify/start", response_model=VerificationResultDTO, dependencies=[Depends(_stub_jwt_auth)])

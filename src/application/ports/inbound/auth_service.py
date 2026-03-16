@@ -43,6 +43,11 @@ class AuthService(ABC):
         ...
 
     @abstractmethod
+    def update_user(self, user_id: str, updates: dict) -> User:
+        """Update allowed profile fields for a user. Returns the updated user."""
+        ...
+
+    @abstractmethod
     def exchange_code(self, code: str, redirect_uri: str) -> TokenResponse:
         """Exchange a valid authorization code for access + refresh tokens."""
         ...
