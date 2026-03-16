@@ -85,14 +85,14 @@ def revoke_token(dto: RefreshTokenDTO) -> None:
 
 
 @router.get("/users/{user_id}", response_model=UserDTO)
-def get_user(user_id: str, user: Annotated[UserContext, Depends(_stub_jwt_auth)]) -> UserDTO:
-    if user.user_id != user_id and "users:read" not in user.permissions:
+def get_user(user_id: str, user_ctx: Annotated[UserContext, Depends(_stub_jwt_auth)]) -> UserDTO:
+    if user_ctx.user_id != user_id and "users:read" not in user_ctx.permissions:
         raise HTTPException(status_code=403, detail="Missing required permission: users:read")
     try:
-        found = _auth_service.get_user(user_id)
+        target_user = _auth_service.get_user(user_id)
     except UserNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    return AuthApiMapper.to_dto(found)
+    return AuthApiMapper.to_dto(target_user)
 
 
 @router.get("/users", response_model=list[UserDTO], dependencies=[Depends(require_permission("users:read"))])
