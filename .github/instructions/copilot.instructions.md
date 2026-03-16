@@ -4,13 +4,13 @@
 
 ## Project Context
 
-**Hexadian Auth Service** is a standalone authentication microservice by **Hexadian Corporation** (GitHub org: `Hexadian-Corporation`). Used across Hexadian projects including H³ (Hexadian Hauling Helper).
+**Hexadian Auth Service** is a standalone centralized identity platform by **Hexadian Corporation** (GitHub org: `Hexadian-Corporation`). Used across Hexadian projects including H³ (Hexadian Hauling Helper).
 
-This service handles **user authentication** — registration, login, JWT tokens, and RSI account verification.
+This service handles **user authentication**, **JWT token management**, **RBAC (Groups → Roles → Permissions)**, **RSI account verification**, and **authorization code flow** for external apps.
 
 - **Repo:** `Hexadian-Corporation/hexadian-auth-service`
 - **Port:** 8006
-- **Stack:** Python · FastAPI · MongoDB · pymongo · opyoid (DI) · pydantic-settings
+- **Stack:** Python · FastAPI · MongoDB · pymongo · opyoid (DI) · pydantic-settings · PyJWT · hexadian-auth-common
 
 ## Architecture — Hexagonal (Ports & Adapters)
 
@@ -23,15 +23,44 @@ src/
 ├── application/
 │   ├── ports/
 │   │   ├── inbound/                 # Service interfaces (ABC)
-│   │   └── outbound/               # Repository interfaces (ABC)
+│   │   └── outbound/               # Repository / external service interfaces (ABC)
 │   └── services/                    # Implementations of inbound ports
 └── infrastructure/
     ├── config/
     │   ├── settings.py              # pydantic-settings (env prefix: HEXADIAN_AUTH_)
     │   └── dependencies.py          # opyoid DI Module
-    └── adapters/
-        ├── inbound/api/             # FastAPI router, DTOs (Pydantic), API mappers
-        └── outbound/persistence/    # MongoDB repository, persistence mappers
+    ├── adapters/
+    │   ├── inbound/api/             # FastAPI router, DTOs (Pydantic), API mappers
+    │   └── outbound/
+    │       ├── persistence/         # MongoDB repositories, persistence mappers
+    │       └── http/                # External HTTP adapters (RSI profile fetcher)
+    └── seed/
+        └── seed_rbac.py             # RBAC seed script (permissions, roles, groups, admin)
+```
+
+**Auth frontends (subdirectories in this repo):**
+
+```
+auth-portal/                         # User-facing frontend (port 3003)
+├── src/
+│   ├── pages/                       # LoginPage, RegisterPage, VerifyPage, ChangePasswordPage, CallbackPage
+│   ├── api/                         # API client modules
+│   ├── lib/                         # Token storage, authFetch helper
+│   ├── layouts/
+│   └── types/                       # TypeScript types (AuthorizeRequest, TokenResponse, User)
+├── package.json                     # React 19, Vite, Tailwind, Vitest
+└── Dockerfile
+
+auth-backoffice/                     # Admin frontend (port 3002)
+├── src/
+│   ├── pages/                       # LoginPage, UsersPage, UserDetailPage, RolesPage, RoleDetailPage,
+│   │                                # GroupsPage, GroupDetailPage, PermissionsPage
+│   ├── api/
+│   ├── lib/
+│   ├── layouts/
+│   └── types/
+├── package.json                     # React 19, Vite, Tailwind, Vitest
+└── Dockerfile
 ```
 
 **Key conventions:**
@@ -41,42 +70,100 @@ src/
 - DI uses **opyoid** (`Module`, `Injector`, `SingletonScope`)
 - Repositories use **pymongo** directly (no ODM)
 - Router pattern: **`init_router(service)` + module-level `router`** (standard pattern)
+- JWT auth uses **hexadian-auth-common[fastapi]** (`JWTAuthDependency`, `require_permission`, `_stub_jwt_auth`)
 
-## Domain Model
+## Domain Models
 
-- **User** — `id`, `username`, `email`, `hashed_password`, `roles` (default: `["user"]`), `is_active`
+- **User** — `id`, `username`, `hashed_password`, `group_ids` (list[str]), `is_active`, `rsi_handle`, `rsi_verified`, `rsi_verification_code`
+- **Permission** — `id`, `code` (e.g., `contracts:read`), `description`
+- **Role** — `id`, `name`, `description`, `permission_ids` (list[str])
+- **Group** — `id`, `name`, `description`, `role_ids` (list[str])
+- **RefreshToken** — `id`, `user_id`, `token` (opaque UUID), `expires_at`, `revoked`
+- **AuthCode** — `id`, `code`, `user_id`, `redirect_uri`, `state`, `expires_at`, `used`
+- **TokenResponse** — `access_token`, `refresh_token`, `token_type` (default: `"bearer"`), `expires_in` (seconds)
 
-**Future (AUTH-1):** Will add `rsi_handle: str | None = None` and `rsi_verified: bool = False` for RSI account verification.
+> **Note:** `email` field was removed (M12). `rsi_handle` is required on registration. `group_ids` replaces the old `roles` list.
 
-## RSI Verification Flow (not yet implemented)
+## RBAC — 3-Level Hierarchy
 
-1. `POST /auth/verify/start` — generates a unique code, user puts it in their RSI profile bio
-2. `POST /auth/verify/confirm` — service fetches `robertsspaceindustries.com/citizens/{handle}`, checks for the code
-3. `User.rsi_verified` is set to `true` on success
+```
+Groups → Roles → Permissions
+```
+
+- **Users** belong to **Groups** (via `user.group_ids`)
+- **Groups** contain **Roles** (via `group.role_ids`)
+- **Roles** contain **Permissions** (via `role.permission_ids`)
+- Permissions are **resolved at JWT refresh time** — the full permission set is embedded in the access token
+
+**Seed data** (`uv run python -m src.infrastructure.seed.seed_rbac`):
+- 22 permissions: `contracts:read/write/delete`, `locations:read/write/delete`, `commodities:read/write/delete`, `ships:read/write/delete`, `graphs:read/write/delete`, `routes:read/write/delete`, `users:read/write/admin`, `rbac:manage`
+- 3 roles: Super Admin (all), Content Manager (read/write), Member (read-only + `contracts:write`)
+- 2 groups: Admins (Super Admin role), Users (Member role — default for new registrations)
+- Admin user: `admin` / `HEXADIAN_AUTH_ADMIN_PASSWORD` env var (default: `"admin"`)
+
+## JWT / Token Architecture
+
+**Access token** — JWT signed with HS256, 15-minute TTL.
+Claims: `sub` (user_id), `username`, `rsi_handle`, `rsi_verified`, `iat`, `exp`. Permissions resolved from RBAC hierarchy at token creation/refresh.
+
+**Refresh token** — Opaque UUID, 7-day TTL, stored in MongoDB `refresh_tokens` collection with TTL index on `expires_at` and unique index on `token`. Revocable. On refresh, permissions are re-resolved from the database.
+
+**Auth middleware:** All endpoints (except `/health`) require a valid JWT. Implemented via `hexadian-auth-common.fastapi.JWTAuthDependency`, injected through `app.dependency_overrides[_stub_jwt_auth]`. Permission checks use `require_permission()` dependency or manual `UserContext.permissions` inspection.
+
+## Authorization Code Flow
+
+For redirect-based authentication from external apps (e.g., H³ frontends):
+
+1. App redirects to `auth-portal/login?redirect_uri=<callback>&state=<random>`
+2. User authenticates on auth-portal
+3. `POST /auth/authorize` generates a single-use auth code (60s TTL), returns `{code, state, redirect_uri}`
+4. Auth-portal redirects to `redirect_uri?code=<code>&state=<state>`
+5. App calls `POST /auth/token/exchange {code, redirect_uri}` → `{access_token, refresh_token}`
+
+`redirect_uri` is validated against `settings.allowed_redirect_origins`.
+
+## RSI Verification Flow
+
+1. `POST /auth/verify/start?user_id={id}` — body: `{"rsi_handle": "..."}`. Generates verification string, stores in `rsi_verification_code`.
+2. User pastes the string into their RSI profile bio.
+3. `POST /auth/verify/confirm?user_id={id}` — scrapes RSI profile at `robertsspaceindustries.com/citizens/{handle}`, checks bio contains the string. Sets `rsi_verified = true`.
 
 Handle validation: `^[A-Za-z0-9_-]{3,30}$` (strict, to prevent SSRF).
 
 ## Environment Variables
 
+All settings use `HEXADIAN_AUTH_` prefix.
+
 | Variable | Default | Description |
 |---|---|---|
 | `HEXADIAN_AUTH_MONGO_URI` | `mongodb://localhost:27017` | MongoDB connection string |
 | `HEXADIAN_AUTH_MONGO_DB` | `hexadian_auth` | Database name |
+| `HEXADIAN_AUTH_HOST` | `0.0.0.0` | Server bind host |
 | `HEXADIAN_AUTH_PORT` | `8006` | Service port |
-| `HEXADIAN_AUTH_JWT_SECRET` | *(must be set)* | JWT signing secret |
+| `HEXADIAN_AUTH_JWT_SECRET` | `change-me-in-production` | JWT signing secret |
 | `HEXADIAN_AUTH_JWT_ALGORITHM` | `HS256` | JWT algorithm |
-| `HEXADIAN_AUTH_JWT_EXPIRATION_MINUTES` | `60` | Token expiration |
+| `HEXADIAN_AUTH_JWT_EXPIRATION_MINUTES` | `15` | Access token expiration (minutes) |
+| `HEXADIAN_AUTH_JWT_REFRESH_EXPIRATION_DAYS` | `7` | Refresh token expiration (days) |
+| `HEXADIAN_AUTH_ALLOWED_ORIGINS` | `["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:3003"]` | CORS allowed origins |
+| `HEXADIAN_AUTH_ALLOWED_REDIRECT_ORIGINS` | *(same as allowed_origins)* | Valid redirect URIs for auth code flow |
+| `HEXADIAN_AUTH_ADMIN_PASSWORD` | `admin` | Initial admin user password (seed script) |
 
 ## API
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/auth/register` | Register a new user |
-| `POST` | `/auth/login` | Authenticate and get token |
-| `GET` | `/auth/users/{id}` | Get user by ID |
-| `GET` | `/auth/users` | List all users |
-| `DELETE` | `/auth/users/{id}` | Delete a user |
-| `GET` | `/health` | Health check |
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| `POST` | `/auth/register` | None | Register a new user |
+| `POST` | `/auth/login` | None | Authenticate and get access + refresh tokens |
+| `POST` | `/auth/token/refresh` | None | Refresh access token using refresh token |
+| `POST` | `/auth/token/revoke` | None | Revoke a refresh token |
+| `POST` | `/auth/authorize` | None | Generate authorization code (redirect auth flow) |
+| `POST` | `/auth/token/exchange` | None | Exchange authorization code for tokens |
+| `GET` | `/auth/users/{user_id}` | JWT (self or `users:read`) | Get user by ID |
+| `GET` | `/auth/users` | `users:read` | List all users |
+| `DELETE` | `/auth/users/{user_id}` | `users:admin` | Delete a user |
+| `POST` | `/auth/verify/start` | JWT | Start RSI verification (generates code) |
+| `POST` | `/auth/verify/confirm` | JWT | Confirm RSI verification (checks profile bio) |
+| `GET` | `/health` | None | Health check |
 
 ## Issue & PR Title Format
 
@@ -98,14 +185,40 @@ The issue title and PR title must be **identical**. PR body must include `Fixes 
 
 ## Tooling
 
+### Backend (Python)
+
 | Action | Command |
 |--------|---------|
 | Setup | `uv sync` |
+| Setup (with dev deps) | `uv sync --all-extras` |
 | Run (dev) | `uv run uvicorn src.main:app --reload --port 8006` |
-| Run in Docker | `uv run hhh up` (from monorepo root) |
+| Run in Docker | `docker compose up` |
 | Test | `uv run pytest` |
 | Lint | `uv run ruff check .` |
 | Format | `uv run ruff format .` |
+| Seed RBAC data | `uv run python -m src.infrastructure.seed.seed_rbac` |
+
+### Auth Portal Frontend (port 3003)
+
+| Action | Command |
+|--------|---------|
+| Setup | `cd auth-portal && npm ci` |
+| Dev | `cd auth-portal && npm run dev` |
+| Build | `cd auth-portal && npm run build` |
+| Test | `cd auth-portal && npm test` |
+| Lint | `cd auth-portal && npm run lint` |
+| Type check | `cd auth-portal && npm run type-check` |
+
+### Auth Backoffice Frontend (port 3002)
+
+| Action | Command |
+|--------|---------|
+| Setup | `cd auth-backoffice && npm ci` |
+| Dev | `cd auth-backoffice && npm run dev` |
+| Build | `cd auth-backoffice && npm run build` |
+| Test | `cd auth-backoffice && npm test` |
+| Lint | `cd auth-backoffice && npm run lint` |
+| Type check | `cd auth-backoffice && npm run type-check` |
 
 ## Maintenance Rules
 
