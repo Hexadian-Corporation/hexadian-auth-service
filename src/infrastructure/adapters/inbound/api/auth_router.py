@@ -1,4 +1,8 @@
-from fastapi import APIRouter, HTTPException
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException
+from hexadian_auth_common.context import UserContext
+from hexadian_auth_common.fastapi import _stub_jwt_auth, require_permission
 
 from src.application.ports.inbound.auth_service import AuthService
 from src.domain.exceptions.user_exceptions import (
@@ -81,20 +85,22 @@ def revoke_token(dto: RefreshTokenDTO) -> None:
 
 
 @router.get("/users/{user_id}", response_model=UserDTO)
-def get_user(user_id: str) -> UserDTO:
+def get_user(user_id: str, user_ctx: Annotated[UserContext, Depends(_stub_jwt_auth)]) -> UserDTO:
+    if user_ctx.user_id != user_id and "users:read" not in user_ctx.permissions:
+        raise HTTPException(status_code=403, detail="Missing required permission: users:read")
     try:
-        user = _auth_service.get_user(user_id)
+        target_user = _auth_service.get_user(user_id)
     except UserNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    return AuthApiMapper.to_dto(user)
+    return AuthApiMapper.to_dto(target_user)
 
 
-@router.get("/users", response_model=list[UserDTO])
+@router.get("/users", response_model=list[UserDTO], dependencies=[Depends(require_permission("users:read"))])
 def list_users() -> list[UserDTO]:
     return [AuthApiMapper.to_dto(u) for u in _auth_service.list_users()]
 
 
-@router.delete("/users/{user_id}", status_code=204)
+@router.delete("/users/{user_id}", status_code=204, dependencies=[Depends(require_permission("users:admin"))])
 def delete_user(user_id: str) -> None:
     try:
         _auth_service.delete_user(user_id)
@@ -102,7 +108,7 @@ def delete_user(user_id: str) -> None:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
-@router.post("/verify/start", response_model=VerificationResultDTO)
+@router.post("/verify/start", response_model=VerificationResultDTO, dependencies=[Depends(_stub_jwt_auth)])
 def start_verification(dto: StartVerificationDTO, user_id: str) -> VerificationResultDTO:
     try:
         code = _auth_service.start_verification(user_id, dto.rsi_handle)
@@ -120,7 +126,7 @@ def start_verification(dto: StartVerificationDTO, user_id: str) -> VerificationR
     )
 
 
-@router.post("/verify/confirm", response_model=VerificationResultDTO)
+@router.post("/verify/confirm", response_model=VerificationResultDTO, dependencies=[Depends(_stub_jwt_auth)])
 def confirm_verification(user_id: str) -> VerificationResultDTO:
     try:
         verified = _auth_service.confirm_verification(user_id)

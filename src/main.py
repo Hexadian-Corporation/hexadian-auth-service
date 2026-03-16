@@ -1,5 +1,10 @@
 import uvicorn
 from fastapi import FastAPI
+from hexadian_auth_common.fastapi import (
+    JWTAuthDependency,
+    _stub_jwt_auth,
+    register_exception_handlers,
+)
 from opyoid import Injector
 from starlette.middleware.cors import CORSMiddleware
 
@@ -16,7 +21,11 @@ def create_app() -> FastAPI:
     auth_service = injector.inject(AuthService)
     init_router(auth_service)
 
+    jwt_auth = JWTAuthDependency(secret=settings.jwt_secret, algorithm=settings.jwt_algorithm)
+
     app = FastAPI(title=settings.app_name)
+    app.dependency_overrides[_stub_jwt_auth] = jwt_auth
+    register_exception_handlers(app)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.allowed_origins,

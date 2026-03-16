@@ -255,11 +255,25 @@ wheels = [
 ]
 
 [[package]]
+name = "hexadian-auth-common"
+version = "0.1.0"
+source = { git = "https://github.com/Hexadian-Corporation/hexadian-auth-common.git#08de08f3f82cf3090717c37412d8c8e919017fc3" }
+dependencies = [
+    { name = "pyjwt" },
+]
+
+[package.optional-dependencies]
+fastapi = [
+    { name = "fastapi" },
+]
+
+[[package]]
 name = "hexadian-auth-service"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
+    { name = "hexadian-auth-common", extra = ["fastapi"] },
     { name = "httpx" },
     { name = "opyoid" },
     { name = "pydantic" },
@@ -282,6 +296,7 @@ dev = [
 requires-dist = [
     { name = "diff-cover", marker = "extra == 'dev'", specifier = ">=9.0" },
     { name = "fastapi", specifier = ">=0.115" },
+    { name = "hexadian-auth-common", extras = ["fastapi"], git = "https://github.com/Hexadian-Corporation/hexadian-auth-common.git" },
     { name = "httpx", specifier = ">=0.28" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.28" },
     { name = "opyoid", specifier = ">=0.6,<3.0" },
