@@ -337,7 +337,7 @@ class TestResolvePermissions:
         mock_permission_repository.find_by_ids.return_value = [
             Permission(id="p-1", code="users:read"),
             Permission(id="p-2", code="users:write"),
-            Permission(id="p-2", code="users:write"),
+            Permission(id="p-2b", code="users:write"),
             Permission(id="p-3", code="users:admin"),
         ]
 
