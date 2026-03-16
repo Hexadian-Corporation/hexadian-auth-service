@@ -19,3 +19,14 @@ class RefreshTokenNotFoundError(Exception):
     def __init__(self, token: str) -> None:
         super().__init__(f"Refresh token not found: {token}")
         self.token = token
+
+
+class InvalidAuthCodeError(Exception):
+    def __init__(self, reason: str = "Invalid or expired authorization code") -> None:
+        super().__init__(reason)
+
+
+class InvalidRedirectUriError(Exception):
+    def __init__(self, redirect_uri: str) -> None:
+        super().__init__(f"Invalid redirect URI: {redirect_uri}")
+        self.redirect_uri = redirect_uri

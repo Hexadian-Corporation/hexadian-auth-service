@@ -42,3 +42,21 @@ class VerificationResultDTO(BaseModel):
     verification_code: str | None = None
     verified: bool
     message: str
+
+
+class AuthorizeDTO(BaseModel):
+    username: str
+    password: str
+    redirect_uri: str
+    state: str = ""
+
+
+class AuthorizeResponseDTO(BaseModel):
+    code: str
+    state: str
+    redirect_uri: str
+
+
+class TokenExchangeDTO(BaseModel):
+    code: str
+    redirect_uri: str

@@ -17,5 +17,11 @@ class Settings(BaseSettings):
         "http://localhost:3002",  # auth-backoffice
         "http://localhost:3003",  # auth-portal
     ]
+    allowed_redirect_origins: list[str] = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:3002",
+        "http://localhost:3003",
+    ]
 
     model_config = {"env_prefix": "HEXADIAN_AUTH_"}
