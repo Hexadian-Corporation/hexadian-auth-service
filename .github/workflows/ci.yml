@@ -35,10 +35,46 @@ jobs:
       - name: Check coverage on changed lines
         run: uv run diff-cover coverage.xml --compare-branch=origin/main --fail-under=90
 
+  portal-lint:
+    name: Auth Portal Lint & Type Check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: auth-portal
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: auth-portal/package-lock.json
+      - run: npm ci --legacy-peer-deps
+      - name: Lint
+        run: npm run lint
+      - name: Type check
+        run: npm run type-check
+
+  portal-test:
+    name: Auth Portal Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: auth-portal
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: auth-portal/package-lock.json
+      - run: npm ci --legacy-peer-deps
+      - name: Run tests
+        run: npm test
+
   copilot-fix:
     name: Request Copilot Fix
     runs-on: ubuntu-latest
-    needs: [lint, test]
+    needs: [lint, test, portal-lint, portal-test]
     if: failure()
     steps:
       - name: Comment on PR
@@ -47,9 +83,13 @@ jobs:
           script: |
             const lintResult = '${{ needs.lint.result }}';
             const testResult = '${{ needs.test.result }}';
+            const portalLintResult = '${{ needs.portal-lint.result }}';
+            const portalTestResult = '${{ needs.portal-test.result }}';
             const failures = [];
             if (lintResult === 'failure') failures.push('**Lint & Format** — fix linting or formatting errors');
             if (testResult === 'failure') failures.push('**Tests & Coverage** — fix failing tests or improve coverage to ≥90%');
+            if (portalLintResult === 'failure') failures.push('**Auth Portal Lint & Type Check** — fix portal linting or type errors');
+            if (portalTestResult === 'failure') failures.push('**Auth Portal Tests** — fix failing portal tests');
             const prUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/pull/${context.issue.number}`;
             const suggestion = '@copilot Please fix the CI failures listed above.';
             const body = [

@@ -15,6 +15,40 @@ Handles user registration, login, role-based access control, and RSI profile ver
 - opyoid (dependency injection)
 - Hexagonal architecture (Ports & Adapters)
 
+## Auth Portal (Frontend)
+
+The `auth-portal/` directory contains the user-facing authentication portal built with:
+
+- React 19 + TypeScript 5.9 + Vite 8
+- React Router v7
+- Tailwind CSS v4
+- shadcn/ui + lucide-react
+
+### Auth Portal Setup
+
+```bash
+cd auth-portal
+npm install
+npm run dev          # starts on port 3003
+```
+
+### Auth Portal Scripts
+
+| Command | Description |
+|---|---|
+| `npm run dev` | Start dev server on port 3003 |
+| `npm run build` | Type-check and build for production |
+| `npm run lint` | ESLint check |
+| `npm run type-check` | TypeScript type check |
+| `npm test` | Run tests with Vitest |
+| `npm run preview` | Preview production build |
+
+### Auth Portal Environment Variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `VITE_AUTH_API_URL` | `http://localhost:8006` | Auth service API base URL |
+
 ## Prerequisites
 
 - [uv](https://docs.astral.sh/uv/)
@@ -56,8 +90,9 @@ uv run ruff format .
 docker compose up
 ```
 
-This starts the auth service with its own MongoDB instance — no external dependencies.
-The service is exposed on the `hexadian-net` Docker network so other compose projects can reach it.
+This starts the auth service, auth portal, and MongoDB — no external dependencies.
+The auth portal is available on port 3003, the API on port 8006.
+Both services are exposed on the `hexadian-net` Docker network so other compose projects can reach them.
 
 ## Integration with H³
 
