@@ -185,6 +185,22 @@ The issue title and PR title must be **identical**. PR body must include `Fixes 
 
 ## Tooling
 
+### CLI (recommended)
+
+All project commands are available via `uv run auth <command>`:
+
+| Action | Command |
+|--------|---------|
+| Start everything (Docker) | `uv run auth up` |
+| Stop everything | `uv run auth down` |
+| Install all deps | `uv run auth setup` |
+| Local dev with hot-reload | `uv run auth start` |
+| Follow logs | `uv run auth logs [service]` |
+| Container status | `uv run auth ps` |
+| Seed RBAC data | `uv run auth seed` |
+| Test | `uv run auth test` |
+| Lint | `uv run auth lint` |
+
 ### Backend (Python)
 
 | Action | Command |
