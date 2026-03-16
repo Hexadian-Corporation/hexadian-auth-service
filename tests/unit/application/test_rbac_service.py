@@ -497,3 +497,119 @@ class TestRemoveUserFromGroup:
 
         with pytest.raises(UserNotFoundError):
             service.remove_user_from_group("missing", "g-1")
+
+
+# ---------------------------------------------------------------------------
+# RBAC claims resolution
+# ---------------------------------------------------------------------------
+
+
+class TestResolveRbacClaims:
+    def test_resolves_full_claims(
+        self,
+        service: RbacServiceImpl,
+        mock_user_repository: MagicMock,
+        mock_group_repository: MagicMock,
+        mock_role_repository: MagicMock,
+        mock_permission_repository: MagicMock,
+    ) -> None:
+        user = User(id="u-1", username="testuser", group_ids=["g-1"])
+        mock_user_repository.find_by_id.return_value = user
+        mock_group_repository.find_by_ids.return_value = [Group(id="g-1", name="Admins", role_ids=["r-1"])]
+        mock_role_repository.find_by_ids.return_value = [Role(id="r-1", name="Super Admin", permission_ids=["p-1"])]
+        mock_permission_repository.find_by_ids.return_value = [Permission(id="p-1", code="users:admin")]
+
+        result = service.resolve_rbac_claims("u-1")
+
+        assert result.groups == ["Admins"]
+        assert result.roles == ["Super Admin"]
+        assert result.permissions == ["users:admin"]
+
+    def test_returns_empty_claims_when_no_groups(
+        self,
+        service: RbacServiceImpl,
+        mock_user_repository: MagicMock,
+    ) -> None:
+        user = User(id="u-1", username="testuser", group_ids=[])
+        mock_user_repository.find_by_id.return_value = user
+
+        result = service.resolve_rbac_claims("u-1")
+
+        assert result.groups == []
+        assert result.roles == []
+        assert result.permissions == []
+
+    def test_returns_groups_only_when_no_roles(
+        self,
+        service: RbacServiceImpl,
+        mock_user_repository: MagicMock,
+        mock_group_repository: MagicMock,
+    ) -> None:
+        user = User(id="u-1", username="testuser", group_ids=["g-1"])
+        mock_user_repository.find_by_id.return_value = user
+        mock_group_repository.find_by_ids.return_value = [Group(id="g-1", name="Empty Group", role_ids=[])]
+
+        result = service.resolve_rbac_claims("u-1")
+
+        assert result.groups == ["Empty Group"]
+        assert result.roles == []
+        assert result.permissions == []
+
+    def test_returns_groups_and_roles_when_no_permissions(
+        self,
+        service: RbacServiceImpl,
+        mock_user_repository: MagicMock,
+        mock_group_repository: MagicMock,
+        mock_role_repository: MagicMock,
+    ) -> None:
+        user = User(id="u-1", username="testuser", group_ids=["g-1"])
+        mock_user_repository.find_by_id.return_value = user
+        mock_group_repository.find_by_ids.return_value = [Group(id="g-1", name="Admins", role_ids=["r-1"])]
+        mock_role_repository.find_by_ids.return_value = [Role(id="r-1", name="Empty Role", permission_ids=[])]
+
+        result = service.resolve_rbac_claims("u-1")
+
+        assert result.groups == ["Admins"]
+        assert result.roles == ["Empty Role"]
+        assert result.permissions == []
+
+    def test_deduplicates_roles_and_permissions(
+        self,
+        service: RbacServiceImpl,
+        mock_user_repository: MagicMock,
+        mock_group_repository: MagicMock,
+        mock_role_repository: MagicMock,
+        mock_permission_repository: MagicMock,
+    ) -> None:
+        user = User(id="u-1", username="testuser", group_ids=["g-1", "g-2"])
+        mock_user_repository.find_by_id.return_value = user
+        mock_group_repository.find_by_ids.return_value = [
+            Group(id="g-1", name="Admins", role_ids=["r-1"]),
+            Group(id="g-2", name="Users", role_ids=["r-1", "r-2"]),
+        ]
+        mock_role_repository.find_by_ids.return_value = [
+            Role(id="r-1", name="Super Admin", permission_ids=["p-1", "p-2"]),
+            Role(id="r-1b", name="Super Admin", permission_ids=["p-1"]),
+            Role(id="r-2", name="Member", permission_ids=["p-1"]),
+        ]
+        mock_permission_repository.find_by_ids.return_value = [
+            Permission(id="p-1", code="contracts:read"),
+            Permission(id="p-2", code="contracts:write"),
+            Permission(id="p-1b", code="contracts:read"),
+        ]
+
+        result = service.resolve_rbac_claims("u-1")
+
+        assert result.groups == ["Admins", "Users"]
+        assert result.roles == ["Super Admin", "Member"]
+        assert result.permissions == ["contracts:read", "contracts:write"]
+
+    def test_raises_when_user_not_found(
+        self,
+        service: RbacServiceImpl,
+        mock_user_repository: MagicMock,
+    ) -> None:
+        mock_user_repository.find_by_id.return_value = None
+
+        with pytest.raises(UserNotFoundError):
+            service.resolve_rbac_claims("missing")

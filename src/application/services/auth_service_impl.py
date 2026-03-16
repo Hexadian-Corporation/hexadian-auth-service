@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 import jwt
 
 from src.application.ports.inbound.auth_service import AuthService
+from src.application.ports.inbound.rbac_service import RbacService
 from src.application.ports.outbound.auth_code_repository import AuthCodeRepository
 from src.application.ports.outbound.group_repository import GroupRepository
 from src.application.ports.outbound.refresh_token_repository import RefreshTokenRepository
@@ -87,6 +88,7 @@ class AuthServiceImpl(AuthService):
         refresh_token_repository: RefreshTokenRepository,
         auth_code_repository: AuthCodeRepository,
         group_repository: GroupRepository,
+        rbac_service: RbacService,
         settings: Settings,
     ) -> None:
         self._repository = repository
@@ -94,6 +96,7 @@ class AuthServiceImpl(AuthService):
         self._refresh_token_repository = refresh_token_repository
         self._auth_code_repository = auth_code_repository
         self._group_repository = group_repository
+        self._rbac_service = rbac_service
         self._settings = settings
 
     def register(self, username: str, password: str, rsi_handle: str) -> User:
@@ -136,9 +139,13 @@ class AuthServiceImpl(AuthService):
 
     def _generate_access_token(self, user: User) -> str:
         now = datetime.now(tz=UTC)
+        claims = self._rbac_service.resolve_rbac_claims(user.id)
         payload = {
             "sub": user.id,
             "username": user.username,
+            "groups": claims.groups,
+            "roles": claims.roles,
+            "permissions": claims.permissions,
             "rsi_handle": user.rsi_handle,
             "rsi_verified": user.rsi_verified,
             "iat": now,

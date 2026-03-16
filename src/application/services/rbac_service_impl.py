@@ -9,6 +9,7 @@ from src.domain.exceptions.role_exceptions import RoleNotFoundError
 from src.domain.exceptions.user_exceptions import UserNotFoundError
 from src.domain.models.group import Group
 from src.domain.models.permission import Permission
+from src.domain.models.rbac_claims import RbacClaims
 from src.domain.models.role import Role
 
 
@@ -143,6 +144,49 @@ class RbacServiceImpl(RbacService):
                 seen.add(p.code)
                 codes.append(p.code)
         return codes
+
+    def resolve_rbac_claims(self, user_id: str) -> RbacClaims:
+        user = self._user_repository.find_by_id(user_id)
+        if user is None:
+            raise UserNotFoundError(user_id)
+
+        if not user.group_ids:
+            return RbacClaims()
+
+        groups = self._group_repository.find_by_ids(user.group_ids)
+        group_names = [g.name for g in groups]
+
+        all_role_ids: list[str] = []
+        for group in groups:
+            all_role_ids.extend(group.role_ids)
+        if not all_role_ids:
+            return RbacClaims(groups=group_names)
+
+        roles = self._role_repository.find_by_ids(all_role_ids)
+
+        seen_roles: set[str] = set()
+        role_names: list[str] = []
+        for r in roles:
+            if r.name not in seen_roles:
+                seen_roles.add(r.name)
+                role_names.append(r.name)
+
+        all_permission_ids: list[str] = []
+        for role in roles:
+            all_permission_ids.extend(role.permission_ids)
+        if not all_permission_ids:
+            return RbacClaims(groups=group_names, roles=role_names)
+
+        permissions = self._permission_repository.find_by_ids(all_permission_ids)
+
+        seen_perms: set[str] = set()
+        perm_codes: list[str] = []
+        for p in permissions:
+            if p.code not in seen_perms:
+                seen_perms.add(p.code)
+                perm_codes.append(p.code)
+
+        return RbacClaims(groups=group_names, roles=role_names, permissions=perm_codes)
 
     # -- User-Group assignment --
 

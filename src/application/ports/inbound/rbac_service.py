@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 
 from src.domain.models.group import Group
 from src.domain.models.permission import Permission
+from src.domain.models.rbac_claims import RbacClaims
 from src.domain.models.role import Role
 
 
@@ -58,6 +59,11 @@ class RbacService(ABC):
     @abstractmethod
     def resolve_permissions(self, user_id: str) -> list[str]:
         """Resolve all permission codes for a user: User → Groups → Roles → Permissions."""
+        ...
+
+    @abstractmethod
+    def resolve_rbac_claims(self, user_id: str) -> RbacClaims:
+        """Resolve full RBAC claims (group names, role names, permission codes) for a user."""
         ...
 
     # -- User-Group assignment --
