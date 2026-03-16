@@ -3,6 +3,7 @@ from pymongo import MongoClient
 from pymongo.collection import Collection
 
 from src.application.ports.inbound.auth_service import AuthService
+from src.application.ports.inbound.rbac_service import RbacService
 from src.application.ports.outbound.auth_code_repository import AuthCodeRepository
 from src.application.ports.outbound.group_repository import GroupRepository
 from src.application.ports.outbound.permission_repository import PermissionRepository
@@ -11,6 +12,7 @@ from src.application.ports.outbound.role_repository import RoleRepository
 from src.application.ports.outbound.rsi_profile_fetcher import RsiProfileFetcher
 from src.application.ports.outbound.user_repository import UserRepository
 from src.application.services.auth_service_impl import AuthServiceImpl
+from src.application.services.rbac_service_impl import RbacServiceImpl
 from src.infrastructure.adapters.outbound.http.rsi_profile_fetcher_impl import RsiProfileFetcherImpl
 from src.infrastructure.adapters.outbound.persistence.mongo_auth_code_repository import MongoAuthCodeRepository
 from src.infrastructure.adapters.outbound.persistence.mongo_group_repository import MongoGroupRepository
@@ -91,3 +93,4 @@ class AppModule(Module):
             scope=SingletonScope,
         )
         self.bind(AuthService, to_class=AuthServiceImpl, scope=SingletonScope)
+        self.bind(RbacService, to_class=RbacServiceImpl, scope=SingletonScope)
