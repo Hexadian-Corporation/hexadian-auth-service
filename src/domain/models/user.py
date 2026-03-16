@@ -6,7 +6,7 @@ class User:
     id: str | None = None
     username: str = ""
     hashed_password: str = ""
-    roles: list[str] = field(default_factory=lambda: ["user"])
+    group_ids: list[str] = field(default_factory=list)
     is_active: bool = True
     rsi_handle: str = ""
     rsi_verified: bool = False

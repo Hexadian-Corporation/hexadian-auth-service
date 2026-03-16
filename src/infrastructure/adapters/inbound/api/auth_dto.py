@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 class UserDTO(BaseModel):
     id: str | None = Field(default=None, alias="_id")
     username: str
-    roles: list[str] = Field(default_factory=lambda: ["user"])
+    group_ids: list[str] = Field(default_factory=list)
     is_active: bool = True
     rsi_handle: str = ""
     rsi_verified: bool = False
