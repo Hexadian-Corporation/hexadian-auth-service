@@ -114,6 +114,15 @@ class TestUpdateUserConflict:
         assert response.status_code == 409
 
 
+class TestUpdateUserValueError:
+    def test_disallowed_field_returns_400(self, client: TestClient, mock_auth_service: MagicMock) -> None:
+        mock_auth_service.update_user.side_effect = ValueError("Field not editable: hashed_password")
+
+        response = client.put("/auth/users/user-1", json={"username": "newname"})
+
+        assert response.status_code == 400
+
+
 class TestUpdateUserNotFound:
     def test_user_not_found_returns_404(self, client: TestClient, mock_auth_service: MagicMock) -> None:
         mock_auth_service.update_user.side_effect = UserNotFoundError("missing")

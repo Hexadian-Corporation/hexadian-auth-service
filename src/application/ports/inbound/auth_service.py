@@ -45,7 +45,7 @@ class AuthService(ABC):
     @abstractmethod
     def update_user(self, user_id: str, updates: dict) -> User:
         """Update allowed profile fields for a user. Returns the updated user."""
-        ...
+        ...  # pragma: no cover
 
     @abstractmethod
     def exchange_code(self, code: str, redirect_uri: str) -> TokenResponse:
