@@ -148,6 +148,12 @@ uv run ruff format .
 Populate default permissions, roles, groups, and admin user:
 
 ```bash
+uv run auth seed
+```
+
+Or manually:
+
+```bash
 uv run python -m src.infrastructure.seed.seed_rbac
 ```
 
@@ -165,9 +171,9 @@ Or manually:
 docker compose up
 ```
 
-This starts the auth service, auth portal, and MongoDB — no external dependencies.
-The auth portal is available on port 3003, the API on port 8006.
-Both services are exposed on the `hexadian-net` Docker network so other compose projects can reach them.
+This starts all containers (auth-service, auth-mongo, auth-portal, auth-backoffice) — no external dependencies.
+The auth portal is available on port 3003, the auth backoffice on port 3002, and the API on port 8006.
+Both frontend services and the API are exposed on the `hexadian-net` Docker network so other compose projects can reach them.
 
 ## Integration with H³
 
