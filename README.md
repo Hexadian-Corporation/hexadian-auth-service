@@ -93,4 +93,126 @@ To stop everything: `uv run hhh down` (stops both H³ and auth).
 | `GET` | `/auth/users/{id}` | Get user by ID |
 | `GET` | `/auth/users` | List all users |
 | `DELETE` | `/auth/users/{id}` | Delete a user |
+| `POST` | `/auth/verify/start` | Start RSI verification |
+| `POST` | `/auth/verify/confirm` | Confirm RSI verification |
 | `GET` | `/health` | Health check |
+
+## RSI Verification
+
+Link a user account to a [Roberts Space Industries](https://robertsspaceindustries.com) profile.
+The flow generates a unique code, the user places it in their RSI bio, and the service confirms the match.
+
+### Prerequisites
+
+- Auth service running on `http://localhost:8006` (see [Run](#run))
+- A real RSI account at <https://robertsspaceindustries.com>
+
+### Step 1 — Register a user
+
+```bash
+curl -s -X POST http://localhost:8006/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username": "testpilot", "email": "testpilot@example.com", "password": "s3cureP@ss"}' | python -m json.tool
+```
+
+Example response:
+
+```json
+{
+    "_id": "6649a2f1c...",
+    "username": "testpilot",
+    "email": "testpilot@example.com",
+    "roles": ["user"],
+    "is_active": true,
+    "rsi_handle": null,
+    "rsi_verified": false
+}
+```
+
+Save the `_id` value — you will need it in the following steps.
+
+### Step 2 — Start verification
+
+```bash
+curl -s -X POST "http://localhost:8006/auth/verify/start?user_id=<USER_ID>" \
+  -H "Content-Type: application/json" \
+  -d '{"rsi_handle": "YourRSIHandle"}' | python -m json.tool
+```
+
+Example response:
+
+```json
+{
+    "verification_code": "Hexadian account validation code: alpha-brave-delta-ember-frost-ocean",
+    "verified": false,
+    "message": "Add the verification code to your RSI profile bio at https://robertsspaceindustries.com/account/profile and then call /auth/verify/confirm"
+}
+```
+
+Copy the **full** `verification_code` string (including the `Hexadian account validation code:` prefix).
+
+### Step 3 — Update your RSI profile
+
+1. Go to <https://robertsspaceindustries.com/account/profile>
+2. Paste the full verification string into the **Short Bio** field, for example:
+   ```
+   Hexadian account validation code: alpha-brave-delta-ember-frost-ocean
+   ```
+3. Click **Save**.
+4. Confirm the text is publicly visible by visiting `https://robertsspaceindustries.com/citizens/YourRSIHandle` and checking the **Bio** section.
+
+### Step 4 — Confirm verification
+
+```bash
+curl -s -X POST "http://localhost:8006/auth/verify/confirm?user_id=<USER_ID>" | python -m json.tool
+```
+
+**Success** — code found in bio:
+
+```json
+{
+    "verification_code": null,
+    "verified": true,
+    "message": "RSI account verified successfully"
+}
+```
+
+**Failure** — code not found in bio:
+
+```json
+{
+    "verification_code": null,
+    "verified": false,
+    "message": "Verification code not found in RSI profile bio"
+}
+```
+
+### Step 5 — Verify the result
+
+```bash
+curl -s http://localhost:8006/auth/users/<USER_ID> | python -m json.tool
+```
+
+The user should now show `rsi_verified: true`:
+
+```json
+{
+    "_id": "6649a2f1c...",
+    "username": "testpilot",
+    "email": "testpilot@example.com",
+    "roles": ["user"],
+    "is_active": true,
+    "rsi_handle": "YourRSIHandle",
+    "rsi_verified": true
+}
+```
+
+### Troubleshooting
+
+| Problem | Cause | Fix |
+|---|---|---|
+| `"Verification code not found in RSI profile bio"` | Bio is not publicly visible or the code was not saved | Visit `https://robertsspaceindustries.com/citizens/YourRSIHandle` and confirm the code appears in the Bio section |
+| `"Verification code not found in RSI profile bio"` | Only part of the code was pasted | Make sure the **entire** string is in the bio, including the `Hexadian account validation code:` prefix |
+| `422 Unprocessable Entity` on `/verify/start` | RSI handle does not match the required format | Handle must be 3–30 characters using only letters, digits, hyphens, and underscores (`^[A-Za-z0-9_-]{3,30}$`) |
+| `404 Not Found` | Invalid `user_id` | Double-check the `_id` returned from `/auth/register` |
+| Bio is too long after adding the code | RSI bio field has a character limit | Remove other bio text or shorten it so the verification string fits |
