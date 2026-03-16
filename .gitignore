@@ -14,6 +14,10 @@ build/
 .coverage
 coverage.xml
 
+# Frontend (auth-backoffice)
+auth-backoffice/node_modules/
+auth-backoffice/dist/
+
 # VS Code Copilot local instruction files (only track copilot.instructions.md)
 .github/instructions/*
 !.github/instructions/copilot.instructions.md
