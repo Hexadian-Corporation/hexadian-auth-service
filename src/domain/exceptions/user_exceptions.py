@@ -30,3 +30,8 @@ class InvalidRedirectUriError(Exception):
     def __init__(self, redirect_uri: str) -> None:
         super().__init__(f"Invalid redirect URI: {redirect_uri}")
         self.redirect_uri = redirect_uri
+
+
+class InvalidPasswordError(Exception):
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
