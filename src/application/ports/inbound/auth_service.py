@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+from src.domain.models.token_response import TokenResponse
 from src.domain.models.user import User
 
 
@@ -8,7 +9,13 @@ class AuthService(ABC):
     def register(self, username: str, password: str, rsi_handle: str) -> User: ...
 
     @abstractmethod
-    def authenticate(self, username: str, password: str) -> str: ...
+    def authenticate(self, username: str, password: str) -> TokenResponse: ...
+
+    @abstractmethod
+    def refresh_token(self, token: str) -> TokenResponse: ...
+
+    @abstractmethod
+    def revoke_token(self, token: str) -> None: ...
 
     @abstractmethod
     def get_user(self, user_id: str) -> User: ...

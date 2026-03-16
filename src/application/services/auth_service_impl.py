@@ -1,16 +1,25 @@
 import hashlib
 import re
 import secrets
+import uuid
+from datetime import UTC, datetime, timedelta
+
+import jwt
 
 from src.application.ports.inbound.auth_service import AuthService
+from src.application.ports.outbound.refresh_token_repository import RefreshTokenRepository
 from src.application.ports.outbound.rsi_profile_fetcher import RsiProfileFetcher
 from src.application.ports.outbound.user_repository import UserRepository
 from src.domain.exceptions.user_exceptions import (
     InvalidCredentialsError,
+    RefreshTokenNotFoundError,
     UserAlreadyExistsError,
     UserNotFoundError,
 )
+from src.domain.models.refresh_token import RefreshToken
+from src.domain.models.token_response import TokenResponse
 from src.domain.models.user import User
+from src.infrastructure.config.settings import Settings
 
 _RSI_HANDLE_PATTERN = re.compile(r"^[A-Za-z0-9_-]{3,30}$")
 
@@ -64,9 +73,17 @@ def _generate_verification_code() -> str:
 
 
 class AuthServiceImpl(AuthService):
-    def __init__(self, repository: UserRepository, rsi_profile_fetcher: RsiProfileFetcher) -> None:
+    def __init__(
+        self,
+        repository: UserRepository,
+        rsi_profile_fetcher: RsiProfileFetcher,
+        refresh_token_repository: RefreshTokenRepository,
+        settings: Settings,
+    ) -> None:
         self._repository = repository
         self._rsi_profile_fetcher = rsi_profile_fetcher
+        self._refresh_token_repository = refresh_token_repository
+        self._settings = settings
 
     def register(self, username: str, password: str, rsi_handle: str) -> User:
         if not _RSI_HANDLE_PATTERN.match(rsi_handle):
@@ -77,12 +94,60 @@ class AuthServiceImpl(AuthService):
         user = User(username=username, hashed_password=hashed, rsi_handle=rsi_handle)
         return self._repository.save(user)
 
-    def authenticate(self, username: str, password: str) -> str:
+    def authenticate(self, username: str, password: str) -> TokenResponse:
         user = self._repository.find_by_username(username)
         if user is None or not self._verify_password(password, user.hashed_password):
             raise InvalidCredentialsError()
-        # TODO: Generate JWT token
-        return f"token-{user.id}"
+        return self._create_token_pair(user)
+
+    def refresh_token(self, token: str) -> TokenResponse:
+        existing = self._refresh_token_repository.find_by_token(token)
+        if existing is None or existing.revoked:
+            raise RefreshTokenNotFoundError(token)
+        if existing.expires_at < datetime.now(tz=UTC):
+            raise RefreshTokenNotFoundError(token)
+
+        user = self._repository.find_by_id(existing.user_id)
+        if user is None:
+            raise UserNotFoundError(existing.user_id)
+
+        self._refresh_token_repository.revoke(token)
+        return self._create_token_pair(user)
+
+    def revoke_token(self, token: str) -> None:
+        existing = self._refresh_token_repository.find_by_token(token)
+        if existing is None:
+            raise RefreshTokenNotFoundError(token)
+        self._refresh_token_repository.revoke(token)
+
+    def _generate_access_token(self, user: User) -> str:
+        now = datetime.now(tz=UTC)
+        payload = {
+            "sub": user.id,
+            "username": user.username,
+            "rsi_handle": user.rsi_handle,
+            "rsi_verified": user.rsi_verified,
+            "iat": now,
+            "exp": now + timedelta(minutes=self._settings.jwt_expiration_minutes),
+        }
+        return jwt.encode(payload, self._settings.jwt_secret, algorithm=self._settings.jwt_algorithm)
+
+    def _generate_refresh_token(self, user: User) -> RefreshToken:
+        return RefreshToken(
+            user_id=user.id,
+            token=str(uuid.uuid4()),
+            expires_at=datetime.now(tz=UTC) + timedelta(days=self._settings.jwt_refresh_expiration_days),
+        )
+
+    def _create_token_pair(self, user: User) -> TokenResponse:
+        access_token = self._generate_access_token(user)
+        refresh = self._generate_refresh_token(user)
+        self._refresh_token_repository.save(refresh)
+        return TokenResponse(
+            access_token=access_token,
+            refresh_token=refresh.token,
+            expires_in=self._settings.jwt_expiration_minutes * 60,
+        )
 
     def get_user(self, user_id: str) -> User:
         user = self._repository.find_by_id(user_id)
