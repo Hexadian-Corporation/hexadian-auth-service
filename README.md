@@ -84,6 +84,16 @@ uv run ruff check .
 uv run ruff format .
 ```
 
+## Seed RBAC Data
+
+Populate default permissions, roles, groups, and admin user:
+
+```bash
+uv run python -m src.infrastructure.seed.seed_rbac
+```
+
+The seed is idempotent — safe to run multiple times. Set `HEXADIAN_AUTH_ADMIN_PASSWORD` to configure the admin password (default: `admin`).
+
 ## Run Standalone (Docker)
 
 ```bash
@@ -120,6 +130,7 @@ To stop everything: `uv run hhh down` (stops both H³ and auth).
 | `HEXADIAN_AUTH_JWT_EXPIRATION_MINUTES` | `15` | Access token expiration (minutes) |
 | `HEXADIAN_AUTH_JWT_REFRESH_EXPIRATION_DAYS` | `7` | Refresh token expiration (days) |
 | `HEXADIAN_AUTH_ALLOWED_ORIGINS` | `["http://localhost:3000", ...]` | CORS allowed origins (JSON list) |
+| `HEXADIAN_AUTH_ADMIN_PASSWORD` | `admin` | Default admin user password (used by seed script) |
 
 ## API
 

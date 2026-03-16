@@ -9,6 +9,7 @@ import jwt
 
 from src.application.ports.inbound.auth_service import AuthService
 from src.application.ports.outbound.auth_code_repository import AuthCodeRepository
+from src.application.ports.outbound.group_repository import GroupRepository
 from src.application.ports.outbound.refresh_token_repository import RefreshTokenRepository
 from src.application.ports.outbound.rsi_profile_fetcher import RsiProfileFetcher
 from src.application.ports.outbound.user_repository import UserRepository
@@ -84,12 +85,14 @@ class AuthServiceImpl(AuthService):
         rsi_profile_fetcher: RsiProfileFetcher,
         refresh_token_repository: RefreshTokenRepository,
         auth_code_repository: AuthCodeRepository,
+        group_repository: GroupRepository,
         settings: Settings,
     ) -> None:
         self._repository = repository
         self._rsi_profile_fetcher = rsi_profile_fetcher
         self._refresh_token_repository = refresh_token_repository
         self._auth_code_repository = auth_code_repository
+        self._group_repository = group_repository
         self._settings = settings
 
     def register(self, username: str, password: str, rsi_handle: str) -> User:
@@ -99,6 +102,9 @@ class AuthServiceImpl(AuthService):
             raise UserAlreadyExistsError(username)
         hashed = self._hash_password(password)
         user = User(username=username, hashed_password=hashed, rsi_handle=rsi_handle)
+        users_group = self._group_repository.find_by_name("Users")
+        if users_group is not None:
+            user.group_ids = [users_group.id]
         return self._repository.save(user)
 
     def authenticate(self, username: str, password: str) -> TokenResponse:
