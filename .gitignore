@@ -14,7 +14,8 @@ build/
 .coverage
 coverage.xml
 
-# Frontend (auth-backoffice)
+# Node / frontends
+node_modules/
 auth-backoffice/node_modules/
 auth-backoffice/dist/
 

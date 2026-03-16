@@ -15,6 +15,40 @@ Handles user registration, login, role-based access control, and RSI profile ver
 - opyoid (dependency injection)
 - Hexagonal architecture (Ports & Adapters)
 
+## Auth Portal (Frontend)
+
+The `auth-portal/` directory contains the user-facing authentication portal built with:
+
+- React 19 + TypeScript 5.9 + Vite 8
+- React Router v7
+- Tailwind CSS v4
+- shadcn/ui + lucide-react
+
+### Auth Portal Setup
+
+```bash
+cd auth-portal
+npm install
+npm run dev          # starts on port 3003
+```
+
+### Auth Portal Scripts
+
+| Command | Description |
+|---|---|
+| `npm run dev` | Start dev server on port 3003 |
+| `npm run build` | Type-check and build for production |
+| `npm run lint` | ESLint check |
+| `npm run type-check` | TypeScript type check |
+| `npm test` | Run tests with Vitest |
+| `npm run preview` | Preview production build |
+
+### Auth Portal Environment Variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `VITE_AUTH_API_URL` | `http://localhost:8006` | Auth service API base URL |
+
 ## Prerequisites
 
 - [uv](https://docs.astral.sh/uv/)
@@ -56,8 +90,9 @@ uv run ruff format .
 docker compose up
 ```
 
-This starts the auth service with its own MongoDB instance — no external dependencies.
-The service is exposed on the `hexadian-net` Docker network so other compose projects can reach it.
+This starts the auth service, auth portal, and MongoDB — no external dependencies.
+The auth portal is available on port 3003, the API on port 8006.
+Both services are exposed on the `hexadian-net` Docker network so other compose projects can reach them.
 
 ## Integration with H³
 
@@ -83,6 +118,7 @@ To stop everything: `uv run hhh down` (stops both H³ and auth).
 | `HEXADIAN_AUTH_JWT_SECRET` | `change-me-in-production` | JWT signing secret |
 | `HEXADIAN_AUTH_JWT_ALGORITHM` | `HS256` | JWT algorithm |
 | `HEXADIAN_AUTH_JWT_EXPIRATION_MINUTES` | `60` | Token expiration |
+| `HEXADIAN_AUTH_ALLOWED_ORIGINS` | `["http://localhost:3000", ...]` | CORS allowed origins (JSON list) |
 
 ## API
 
@@ -112,7 +148,7 @@ The flow generates a unique code, the user places it in their RSI bio, and the s
 ```bash
 curl -s -X POST http://localhost:8006/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"username": "testpilot", "email": "testpilot@example.com", "password": "s3cureP@ss"}' | python -m json.tool
+  -d '{"username": "testpilot", "password": "s3cureP@ss", "rsi_handle": "TestPilot"}' | python -m json.tool
 ```
 
 Example response:
@@ -121,10 +157,9 @@ Example response:
 {
     "_id": "6649a2f1c...",
     "username": "testpilot",
-    "email": "testpilot@example.com",
     "roles": ["user"],
     "is_active": true,
-    "rsi_handle": null,
+    "rsi_handle": "TestPilot",
     "rsi_verified": false
 }
 ```
@@ -199,7 +234,6 @@ The user should now show `rsi_verified: true`:
 {
     "_id": "6649a2f1c...",
     "username": "testpilot",
-    "email": "testpilot@example.com",
     "roles": ["user"],
     "is_active": true,
     "rsi_handle": "YourRSIHandle",

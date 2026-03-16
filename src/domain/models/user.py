@@ -5,10 +5,9 @@ from dataclasses import dataclass, field
 class User:
     id: str | None = None
     username: str = ""
-    email: str = ""
     hashed_password: str = ""
     roles: list[str] = field(default_factory=lambda: ["user"])
     is_active: bool = True
-    rsi_handle: str | None = None
+    rsi_handle: str = ""
     rsi_verified: bool = False
     rsi_verification_code: str | None = None

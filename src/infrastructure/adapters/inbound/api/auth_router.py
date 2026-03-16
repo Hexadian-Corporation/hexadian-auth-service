@@ -29,7 +29,7 @@ def init_router(auth_service: AuthService) -> None:
 @router.post("/register", response_model=UserDTO, status_code=201)
 def register(dto: RegisterDTO) -> UserDTO:
     try:
-        user = _auth_service.register(dto.username, dto.email, dto.password)
+        user = _auth_service.register(dto.username, dto.password, dto.rsi_handle)
     except UserAlreadyExistsError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     return AuthApiMapper.to_dto(user)

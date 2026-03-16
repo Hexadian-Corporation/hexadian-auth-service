@@ -5,7 +5,7 @@ import pytest
 from src.application.ports.outbound.rsi_profile_fetcher import RsiProfileFetcher
 from src.application.ports.outbound.user_repository import UserRepository
 from src.application.services.auth_service_impl import _VERIFICATION_PREFIX, _WORD_LIST, AuthServiceImpl
-from src.domain.exceptions.user_exceptions import UserNotFoundError
+from src.domain.exceptions.user_exceptions import UserAlreadyExistsError, UserNotFoundError
 from src.domain.models.user import User
 
 
@@ -26,7 +26,7 @@ def service(mock_repository: MagicMock, mock_rsi_fetcher: MagicMock) -> AuthServ
 
 class TestStartVerification:
     def test_start_verification_success(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
-        user = User(id="user-1", username="test", email="test@example.com")
+        user = User(id="user-1", username="test")
         mock_repository.find_by_id.return_value = user
 
         code = service.start_verification("user-1", "ValidHandle")
@@ -62,7 +62,7 @@ class TestStartVerification:
     def test_start_verification_resets_verified_flag(
         self, service: AuthServiceImpl, mock_repository: MagicMock
     ) -> None:
-        user = User(id="user-1", username="test", email="test@example.com", rsi_verified=True)
+        user = User(id="user-1", username="test", rsi_verified=True)
         mock_repository.find_by_id.return_value = user
 
         service.start_verification("user-1", "NewHandle")
@@ -72,7 +72,7 @@ class TestStartVerification:
     def test_start_verification_valid_handle_formats(
         self, service: AuthServiceImpl, mock_repository: MagicMock
     ) -> None:
-        user = User(id="user-1", username="test", email="test@example.com")
+        user = User(id="user-1", username="test")
         mock_repository.find_by_id.return_value = user
 
         for handle in ["abc", "My-Handle_123", "A" * 30]:
@@ -88,7 +88,6 @@ class TestConfirmVerification:
         user = User(
             id="user-1",
             username="test",
-            email="test@example.com",
             rsi_handle="TestPilot",
             rsi_verification_code=code,
         )
@@ -108,7 +107,6 @@ class TestConfirmVerification:
         user = User(
             id="user-1",
             username="test",
-            email="test@example.com",
             rsi_handle="TestPilot",
             rsi_verification_code=code,
         )
@@ -128,7 +126,6 @@ class TestConfirmVerification:
         user = User(
             id="user-1",
             username="test",
-            email="test@example.com",
             rsi_handle="TestPilot",
             rsi_verification_code=code,
         )
@@ -147,7 +144,7 @@ class TestConfirmVerification:
             service.confirm_verification("nonexistent")
 
     def test_confirm_verification_not_started(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
-        user = User(id="user-1", username="test", email="test@example.com")
+        user = User(id="user-1", username="test")
         mock_repository.find_by_id.return_value = user
 
         with pytest.raises(ValueError, match="Verification not started"):
@@ -160,7 +157,6 @@ class TestConfirmVerification:
         user = User(
             id="user-1",
             username="test",
-            email="test@example.com",
             rsi_handle="TestPilot",
             rsi_verification_code=code,
             rsi_verified=False,
@@ -173,3 +169,34 @@ class TestConfirmVerification:
         saved_user = mock_repository.save.call_args[0][0]
         assert saved_user.rsi_verified is True
         assert saved_user.id == "user-1"
+
+
+class TestRegister:
+    def test_register_success(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
+        mock_repository.find_by_username.return_value = None
+        mock_repository.save.side_effect = lambda u: setattr(u, "id", "new-id") or u
+
+        user = service.register("newuser", "securepassword", "ValidPilot")
+
+        assert user.username == "newuser"
+        assert user.rsi_handle == "ValidPilot"
+        assert not hasattr(user, "email")
+        mock_repository.save.assert_called_once()
+
+    def test_register_duplicate_username_raises(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
+        mock_repository.find_by_username.return_value = User(id="existing", username="taken")
+
+        with pytest.raises(UserAlreadyExistsError):
+            service.register("taken", "pw", "Pilot123")
+
+    def test_register_invalid_rsi_handle_raises(self, service: AuthServiceImpl) -> None:
+        with pytest.raises(ValueError, match="Invalid RSI handle format"):
+            service.register("user", "pw", "ab")
+
+    def test_register_invalid_rsi_handle_special_chars_raises(self, service: AuthServiceImpl) -> None:
+        with pytest.raises(ValueError, match="Invalid RSI handle format"):
+            service.register("user", "pw", "bad handle!")
+
+    def test_register_invalid_rsi_handle_too_long_raises(self, service: AuthServiceImpl) -> None:
+        with pytest.raises(ValueError, match="Invalid RSI handle format"):
+            service.register("user", "pw", "a" * 31)

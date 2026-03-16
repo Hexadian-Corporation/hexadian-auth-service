@@ -42,6 +42,15 @@ services:
     networks:
       - auth-inner-net
 
+  auth-portal:
+    build: ./auth-portal
+    ports:
+      - "3003:80"
+    depends_on:
+      - auth-service
+    networks:
+      - hexadian-net
+
 volumes:
   auth-data:
 

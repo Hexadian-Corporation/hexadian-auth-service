@@ -68,11 +68,13 @@ class AuthServiceImpl(AuthService):
         self._repository = repository
         self._rsi_profile_fetcher = rsi_profile_fetcher
 
-    def register(self, username: str, email: str, password: str) -> User:
+    def register(self, username: str, password: str, rsi_handle: str) -> User:
+        if not _RSI_HANDLE_PATTERN.match(rsi_handle):
+            raise ValueError(f"Invalid RSI handle format: {rsi_handle}")
         if self._repository.find_by_username(username) is not None:
             raise UserAlreadyExistsError(username)
         hashed = self._hash_password(password)
-        user = User(username=username, email=email, hashed_password=hashed)
+        user = User(username=username, hashed_password=hashed, rsi_handle=rsi_handle)
         return self._repository.save(user)
 
     def authenticate(self, username: str, password: str) -> str:
