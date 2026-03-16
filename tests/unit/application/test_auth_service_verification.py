@@ -2,6 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from src.application.ports.inbound.rbac_service import RbacService
 from src.application.ports.outbound.auth_code_repository import AuthCodeRepository
 from src.application.ports.outbound.group_repository import GroupRepository
 from src.application.ports.outbound.refresh_token_repository import RefreshTokenRepository
@@ -10,6 +11,7 @@ from src.application.ports.outbound.user_repository import UserRepository
 from src.application.services.auth_service_impl import _VERIFICATION_PREFIX, _WORD_LIST, AuthServiceImpl
 from src.domain.exceptions.user_exceptions import UserAlreadyExistsError, UserNotFoundError
 from src.domain.models.group import Group
+from src.domain.models.rbac_claims import RbacClaims
 from src.domain.models.user import User
 from src.infrastructure.config.settings import Settings
 
@@ -40,6 +42,13 @@ def mock_group_repository() -> MagicMock:
 
 
 @pytest.fixture()
+def mock_rbac_service() -> MagicMock:
+    mock = MagicMock(spec=RbacService)
+    mock.resolve_rbac_claims.return_value = RbacClaims()
+    return mock
+
+
+@pytest.fixture()
 def settings() -> Settings:
     return Settings(jwt_secret="test-secret")
 
@@ -51,6 +60,7 @@ def service(
     mock_refresh_token_repository: MagicMock,
     mock_auth_code_repository: MagicMock,
     mock_group_repository: MagicMock,
+    mock_rbac_service: MagicMock,
     settings: Settings,
 ) -> AuthServiceImpl:
     return AuthServiceImpl(
@@ -59,6 +69,7 @@ def service(
         refresh_token_repository=mock_refresh_token_repository,
         auth_code_repository=mock_auth_code_repository,
         group_repository=mock_group_repository,
+        rbac_service=mock_rbac_service,
         settings=settings,
     )
 

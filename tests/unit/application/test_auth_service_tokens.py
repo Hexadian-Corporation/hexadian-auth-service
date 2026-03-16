@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 import jwt
 import pytest
 
+from src.application.ports.inbound.rbac_service import RbacService
 from src.application.ports.outbound.auth_code_repository import AuthCodeRepository
 from src.application.ports.outbound.group_repository import GroupRepository
 from src.application.ports.outbound.refresh_token_repository import RefreshTokenRepository
@@ -15,6 +16,7 @@ from src.domain.exceptions.user_exceptions import (
     RefreshTokenNotFoundError,
     UserNotFoundError,
 )
+from src.domain.models.rbac_claims import RbacClaims
 from src.domain.models.refresh_token import RefreshToken
 from src.domain.models.user import User
 from src.infrastructure.config.settings import Settings
@@ -46,6 +48,13 @@ def mock_group_repository() -> MagicMock:
 
 
 @pytest.fixture()
+def mock_rbac_service() -> MagicMock:
+    mock = MagicMock(spec=RbacService)
+    mock.resolve_rbac_claims.return_value = RbacClaims()
+    return mock
+
+
+@pytest.fixture()
 def settings() -> Settings:
     return Settings(jwt_secret="test-secret", jwt_expiration_minutes=15, jwt_refresh_expiration_days=7)
 
@@ -57,6 +66,7 @@ def service(
     mock_refresh_token_repository: MagicMock,
     mock_auth_code_repository: MagicMock,
     mock_group_repository: MagicMock,
+    mock_rbac_service: MagicMock,
     settings: Settings,
 ) -> AuthServiceImpl:
     return AuthServiceImpl(
@@ -65,6 +75,7 @@ def service(
         refresh_token_repository=mock_refresh_token_repository,
         auth_code_repository=mock_auth_code_repository,
         group_repository=mock_group_repository,
+        rbac_service=mock_rbac_service,
         settings=settings,
     )
 
@@ -118,6 +129,9 @@ class TestAuthenticate:
         assert decoded["username"] == "testuser"
         assert decoded["rsi_handle"] == "TestPilot"
         assert decoded["rsi_verified"] is False
+        assert decoded["groups"] == []
+        assert decoded["roles"] == []
+        assert decoded["permissions"] == []
         assert "iat" in decoded
         assert "exp" in decoded
 
@@ -335,3 +349,148 @@ class TestRevokeToken:
 
         with pytest.raises(RefreshTokenNotFoundError):
             service.revoke_token("nonexistent")
+
+
+class TestRbacClaims:
+    def test_login_jwt_contains_rbac_claims(
+        self,
+        service: AuthServiceImpl,
+        mock_repository: MagicMock,
+        mock_refresh_token_repository: MagicMock,
+        mock_rbac_service: MagicMock,
+        settings: Settings,
+    ) -> None:
+        user = _make_user(hashed_password=AuthServiceImpl._hash_password("secret"))
+        mock_repository.find_by_username.return_value = user
+        mock_refresh_token_repository.save.side_effect = lambda t: t
+        mock_rbac_service.resolve_rbac_claims.return_value = RbacClaims(
+            groups=["Admins"],
+            roles=["Super Admin"],
+            permissions=["contracts:read", "contracts:write"],
+        )
+
+        result = service.authenticate("testuser", "secret")
+
+        decoded = jwt.decode(result.access_token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
+        assert decoded["groups"] == ["Admins"]
+        assert decoded["roles"] == ["Super Admin"]
+        assert decoded["permissions"] == ["contracts:read", "contracts:write"]
+
+    def test_refresh_re_resolves_rbac_claims_from_db(
+        self,
+        service: AuthServiceImpl,
+        mock_repository: MagicMock,
+        mock_refresh_token_repository: MagicMock,
+        mock_rbac_service: MagicMock,
+        settings: Settings,
+    ) -> None:
+        user = _make_user()
+        existing = RefreshToken(
+            id="rt-1",
+            user_id="user-1",
+            token="old-token",
+            expires_at=datetime.now(tz=datetime.now().astimezone().tzinfo) + timedelta(days=1),
+        )
+        mock_refresh_token_repository.find_by_token.return_value = existing
+        mock_repository.find_by_id.return_value = user
+        mock_refresh_token_repository.save.side_effect = lambda t: t
+        mock_rbac_service.resolve_rbac_claims.return_value = RbacClaims(
+            groups=["Users"],
+            roles=["Member"],
+            permissions=["contracts:read"],
+        )
+
+        result = service.refresh_token("old-token")
+
+        decoded = jwt.decode(result.access_token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
+        assert decoded["groups"] == ["Users"]
+        assert decoded["roles"] == ["Member"]
+        assert decoded["permissions"] == ["contracts:read"]
+        mock_rbac_service.resolve_rbac_claims.assert_called_once_with(user.id)
+
+    def test_token_with_no_groups_has_empty_claims(
+        self,
+        service: AuthServiceImpl,
+        mock_repository: MagicMock,
+        mock_refresh_token_repository: MagicMock,
+        mock_rbac_service: MagicMock,
+        settings: Settings,
+    ) -> None:
+        user = _make_user(hashed_password=AuthServiceImpl._hash_password("secret"))
+        mock_repository.find_by_username.return_value = user
+        mock_refresh_token_repository.save.side_effect = lambda t: t
+        mock_rbac_service.resolve_rbac_claims.return_value = RbacClaims()
+
+        result = service.authenticate("testuser", "secret")
+
+        decoded = jwt.decode(result.access_token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
+        assert decoded["groups"] == []
+        assert decoded["roles"] == []
+        assert decoded["permissions"] == []
+
+    def test_token_with_multiple_groups_deduplicates_permissions(
+        self,
+        service: AuthServiceImpl,
+        mock_repository: MagicMock,
+        mock_refresh_token_repository: MagicMock,
+        mock_rbac_service: MagicMock,
+        settings: Settings,
+    ) -> None:
+        user = _make_user(hashed_password=AuthServiceImpl._hash_password("secret"))
+        mock_repository.find_by_username.return_value = user
+        mock_refresh_token_repository.save.side_effect = lambda t: t
+        mock_rbac_service.resolve_rbac_claims.return_value = RbacClaims(
+            groups=["Admins", "Users"],
+            roles=["Super Admin", "Member"],
+            permissions=["contracts:read", "contracts:write", "users:admin"],
+        )
+
+        result = service.authenticate("testuser", "secret")
+
+        decoded = jwt.decode(result.access_token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
+        assert decoded["groups"] == ["Admins", "Users"]
+        assert decoded["roles"] == ["Super Admin", "Member"]
+        assert decoded["permissions"] == ["contracts:read", "contracts:write", "users:admin"]
+
+    def test_refresh_picks_up_permission_changes(
+        self,
+        service: AuthServiceImpl,
+        mock_repository: MagicMock,
+        mock_refresh_token_repository: MagicMock,
+        mock_rbac_service: MagicMock,
+        settings: Settings,
+    ) -> None:
+        user = _make_user(hashed_password=AuthServiceImpl._hash_password("secret"))
+        mock_repository.find_by_username.return_value = user
+        mock_refresh_token_repository.save.side_effect = lambda t: t
+
+        mock_rbac_service.resolve_rbac_claims.return_value = RbacClaims(
+            groups=["Users"],
+            roles=["Member"],
+            permissions=["contracts:read"],
+        )
+        login_result = service.authenticate("testuser", "secret")
+        login_decoded = jwt.decode(login_result.access_token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
+        assert login_decoded["permissions"] == ["contracts:read"]
+
+        existing = RefreshToken(
+            id="rt-1",
+            user_id="user-1",
+            token=login_result.refresh_token,
+            expires_at=datetime.now(tz=datetime.now().astimezone().tzinfo) + timedelta(days=1),
+        )
+        mock_refresh_token_repository.find_by_token.return_value = existing
+        mock_repository.find_by_id.return_value = user
+
+        mock_rbac_service.resolve_rbac_claims.return_value = RbacClaims(
+            groups=["Admins", "Users"],
+            roles=["Super Admin", "Member"],
+            permissions=["contracts:read", "contracts:write", "users:admin"],
+        )
+        refresh_result = service.refresh_token(login_result.refresh_token)
+        refresh_decoded = jwt.decode(
+            refresh_result.access_token, settings.jwt_secret, algorithms=[settings.jwt_algorithm]
+        )
+        assert refresh_decoded["groups"] == ["Admins", "Users"]
+        assert refresh_decoded["roles"] == ["Super Admin", "Member"]
+        assert refresh_decoded["permissions"] == ["contracts:read", "contracts:write", "users:admin"]
