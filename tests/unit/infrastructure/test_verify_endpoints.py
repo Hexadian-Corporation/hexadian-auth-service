@@ -100,10 +100,26 @@ class TestRegisterEndpoint:
 
         response = client.post(
             "/auth/register",
-            json={"username": "taken", "email": "t@e.com", "password": "pw"},
+            json={"username": "taken", "password": "pw", "rsi_handle": "TakenPilot"},
         )
 
         assert response.status_code == 409
+
+    def test_register_invalid_rsi_handle_returns_422(self, client: TestClient) -> None:
+        response = client.post(
+            "/auth/register",
+            json={"username": "user", "password": "pw", "rsi_handle": "ab"},
+        )
+
+        assert response.status_code == 422
+
+    def test_register_missing_rsi_handle_returns_422(self, client: TestClient) -> None:
+        response = client.post(
+            "/auth/register",
+            json={"username": "user", "password": "pw"},
+        )
+
+        assert response.status_code == 422
 
 
 class TestLoginEndpoint:

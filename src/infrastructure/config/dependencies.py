@@ -21,7 +21,7 @@ class AppModule(Module):
         db = client[self._settings.mongo_db]
         collection = db["users"]
         collection.create_index("username", unique=True)
-        collection.create_index("email", unique=True)
+        collection.create_index("rsi_handle", unique=True)
 
         self.bind(Collection, to_instance=collection, scope=SingletonScope)
         self.bind(UserRepository, to_class=MongoUserRepository, scope=SingletonScope)

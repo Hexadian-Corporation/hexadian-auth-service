@@ -4,10 +4,9 @@ from pydantic import BaseModel, Field
 class UserDTO(BaseModel):
     id: str | None = Field(default=None, alias="_id")
     username: str
-    email: str
     roles: list[str] = Field(default_factory=lambda: ["user"])
     is_active: bool = True
-    rsi_handle: str | None = None
+    rsi_handle: str = ""
     rsi_verified: bool = False
 
     model_config = {"populate_by_name": True}
@@ -15,8 +14,8 @@ class UserDTO(BaseModel):
 
 class RegisterDTO(BaseModel):
     username: str
-    email: str
     password: str
+    rsi_handle: str = Field(pattern=r"^[A-Za-z0-9_-]{3,30}$")
 
 
 class LoginDTO(BaseModel):
