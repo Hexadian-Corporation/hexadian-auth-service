@@ -71,6 +71,32 @@ class TestAppModuleIndexes:
         collections["refresh_tokens"].create_index.assert_any_call("expires_at", expireAfterSeconds=0)
 
     @patch("src.infrastructure.config.dependencies.MongoClient")
+    def test_configure_creates_unique_auth_code_index(
+        self, mock_mongo_client: MagicMock, mock_mongo_collections: tuple[MagicMock, dict[str, MagicMock]]
+    ) -> None:
+        mock_client, collections = mock_mongo_collections
+        mock_mongo_client.return_value = mock_client.return_value
+
+        settings = Settings(jwt_secret="test-secret")
+        module = AppModule(settings)
+        module.configure()
+
+        collections["auth_codes"].create_index.assert_any_call("code", unique=True)
+
+    @patch("src.infrastructure.config.dependencies.MongoClient")
+    def test_configure_creates_ttl_index_on_auth_codes(
+        self, mock_mongo_client: MagicMock, mock_mongo_collections: tuple[MagicMock, dict[str, MagicMock]]
+    ) -> None:
+        mock_client, collections = mock_mongo_collections
+        mock_mongo_client.return_value = mock_client.return_value
+
+        settings = Settings(jwt_secret="test-secret")
+        module = AppModule(settings)
+        module.configure()
+
+        collections["auth_codes"].create_index.assert_any_call("expires_at", expireAfterSeconds=0)
+
+    @patch("src.infrastructure.config.dependencies.MongoClient")
     def test_configure_creates_unique_permission_code_index(
         self, mock_mongo_client: MagicMock, mock_mongo_collections: tuple[MagicMock, dict[str, MagicMock]]
     ) -> None:
