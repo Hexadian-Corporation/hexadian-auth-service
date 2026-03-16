@@ -144,22 +144,16 @@ class TestRbacEndpointsWrongPermissions:
 
 
 class TestRbacEndpointsCorrectPermissions:
-    def test_list_permissions_with_rbac_manage(
-        self, client: TestClient, mock_rbac_service: MagicMock
-    ) -> None:
+    def test_list_permissions_with_rbac_manage(self, client: TestClient, mock_rbac_service: MagicMock) -> None:
         mock_rbac_service.list_permissions.return_value = []
         token = _make_token(permissions=["rbac:manage"])
         response = client.get("/rbac/permissions", headers=_auth_header(token))
         assert response.status_code == 200
 
-    def test_create_permission_with_rbac_manage(
-        self, client: TestClient, mock_rbac_service: MagicMock
-    ) -> None:
+    def test_create_permission_with_rbac_manage(self, client: TestClient, mock_rbac_service: MagicMock) -> None:
         mock_rbac_service.create_permission.return_value = Permission(id="p-1", code="a", description="b")
         token = _make_token(permissions=["rbac:manage"])
-        response = client.post(
-            "/rbac/permissions", json={"code": "a", "description": "b"}, headers=_auth_header(token)
-        )
+        response = client.post("/rbac/permissions", json={"code": "a", "description": "b"}, headers=_auth_header(token))
         assert response.status_code == 201
 
     def test_list_roles_with_rbac_manage(self, client: TestClient, mock_rbac_service: MagicMock) -> None:
@@ -192,33 +186,23 @@ class TestRbacEndpointsCorrectPermissions:
         )
         assert response.status_code == 201
 
-    def test_assign_user_to_group_with_users_admin(
-        self, client: TestClient, mock_rbac_service: MagicMock
-    ) -> None:
+    def test_assign_user_to_group_with_users_admin(self, client: TestClient, mock_rbac_service: MagicMock) -> None:
         token = _make_token(permissions=["users:admin"])
-        response = client.post(
-            "/rbac/users/u-1/groups", json={"group_id": "g-1"}, headers=_auth_header(token)
-        )
+        response = client.post("/rbac/users/u-1/groups", json={"group_id": "g-1"}, headers=_auth_header(token))
         assert response.status_code == 204
 
-    def test_remove_user_from_group_with_users_admin(
-        self, client: TestClient, mock_rbac_service: MagicMock
-    ) -> None:
+    def test_remove_user_from_group_with_users_admin(self, client: TestClient, mock_rbac_service: MagicMock) -> None:
         token = _make_token(permissions=["users:admin"])
         response = client.delete("/rbac/users/u-1/groups/g-1", headers=_auth_header(token))
         assert response.status_code == 204
 
-    def test_resolve_permissions_self_access(
-        self, client: TestClient, mock_rbac_service: MagicMock
-    ) -> None:
+    def test_resolve_permissions_self_access(self, client: TestClient, mock_rbac_service: MagicMock) -> None:
         mock_rbac_service.resolve_permissions.return_value = ["users:read"]
         token = _make_token(sub="user-1", permissions=[])
         response = client.get("/rbac/users/user-1/permissions", headers=_auth_header(token))
         assert response.status_code == 200
 
-    def test_resolve_permissions_with_users_read(
-        self, client: TestClient, mock_rbac_service: MagicMock
-    ) -> None:
+    def test_resolve_permissions_with_users_read(self, client: TestClient, mock_rbac_service: MagicMock) -> None:
         mock_rbac_service.resolve_permissions.return_value = ["users:read"]
         token = _make_token(sub="user-1", permissions=["users:read"])
         response = client.get("/rbac/users/other-user/permissions", headers=_auth_header(token))

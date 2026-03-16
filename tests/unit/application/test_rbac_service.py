@@ -61,7 +61,9 @@ class TestCreatePermission:
     def test_creates_and_returns_permission(
         self, service: RbacServiceImpl, mock_permission_repository: MagicMock
     ) -> None:
-        mock_permission_repository.save.side_effect = lambda p: Permission(id="p-1", code=p.code, description=p.description)
+        mock_permission_repository.save.side_effect = lambda p: Permission(
+            id="p-1", code=p.code, description=p.description
+        )
 
         result = service.create_permission("users:read", "Read users")
 

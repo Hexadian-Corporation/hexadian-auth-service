@@ -85,9 +85,7 @@ class TestPermissionEndpoints:
         assert response.status_code == 404
 
     def test_update_permission(self, client: TestClient, mock_rbac_service: MagicMock) -> None:
-        mock_rbac_service.update_permission.return_value = Permission(
-            id="p-1", code="users:write", description="Write"
-        )
+        mock_rbac_service.update_permission.return_value = Permission(id="p-1", code="users:write", description="Write")
 
         response = client.put("/rbac/permissions/p-1", json={"code": "users:write", "description": "Write"})
 
@@ -315,9 +313,7 @@ class TestResolvedPermissionsEndpoint:
         assert data["user_id"] == "u-1"
         assert data["permissions"] == ["users:read", "users:write"]
 
-    def test_get_resolved_permissions_user_not_found(
-        self, client: TestClient, mock_rbac_service: MagicMock
-    ) -> None:
+    def test_get_resolved_permissions_user_not_found(self, client: TestClient, mock_rbac_service: MagicMock) -> None:
         mock_rbac_service.resolve_permissions.side_effect = UserNotFoundError("missing")
 
         response = client.get("/rbac/users/missing/permissions")
