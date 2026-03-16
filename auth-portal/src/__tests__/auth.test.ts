@@ -5,6 +5,7 @@ import {
   getRefreshToken,
   clearTokens,
   authFetch,
+  parseAccessToken,
 } from "@/lib/auth";
 
 vi.mock("@/api/auth", () => ({
@@ -155,5 +156,73 @@ describe("authFetch", () => {
 
     expect(res.status).toBe(401);
     expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("parseAccessToken", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  function makeJwt(payload: Record<string, unknown>): string {
+    const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+    const body = btoa(JSON.stringify(payload));
+    return `${header}.${body}.signature`;
+  }
+
+  it("returns null when no token stored", () => {
+    expect(parseAccessToken()).toBeNull();
+  });
+
+  it("parses a valid JWT token", () => {
+    const token = makeJwt({
+      sub: "user-123",
+      username: "testuser",
+      rsi_handle: "my-handle",
+      rsi_verified: true,
+    });
+    localStorage.setItem("access_token", token);
+
+    const result = parseAccessToken();
+    expect(result).toEqual({
+      sub: "user-123",
+      username: "testuser",
+      rsi_handle: "my-handle",
+      rsi_verified: true,
+    });
+  });
+
+  it("defaults rsi_handle to null when missing", () => {
+    const token = makeJwt({
+      sub: "user-123",
+      username: "testuser",
+    });
+    localStorage.setItem("access_token", token);
+
+    const result = parseAccessToken();
+    expect(result?.rsi_handle).toBeNull();
+  });
+
+  it("defaults rsi_verified to false when missing", () => {
+    const token = makeJwt({
+      sub: "user-123",
+      username: "testuser",
+    });
+    localStorage.setItem("access_token", token);
+
+    const result = parseAccessToken();
+    expect(result?.rsi_verified).toBe(false);
+  });
+
+  it("returns null for malformed token (not 3 parts)", () => {
+    localStorage.setItem("access_token", "not-a-jwt");
+
+    expect(parseAccessToken()).toBeNull();
+  });
+
+  it("returns null for invalid base64 payload", () => {
+    localStorage.setItem("access_token", "header.!!!invalid!!!.signature");
+
+    expect(parseAccessToken()).toBeNull();
   });
 });
