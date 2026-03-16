@@ -16,6 +16,7 @@ from src.application.ports.outbound.user_repository import UserRepository
 from src.domain.exceptions.user_exceptions import (
     InvalidAuthCodeError,
     InvalidCredentialsError,
+    InvalidPasswordError,
     InvalidRedirectUriError,
     RefreshTokenNotFoundError,
     UserAlreadyExistsError,
@@ -290,3 +291,25 @@ class AuthServiceImpl(AuthService):
         origin = f"{parsed.scheme}://{parsed.netloc}"
         if origin not in self._settings.allowed_redirect_origins:
             raise InvalidRedirectUriError(redirect_uri)
+
+    def change_password(self, user_id: str, old_password: str, new_password: str) -> None:
+        user = self._repository.find_by_id(user_id)
+        if user is None:
+            raise UserNotFoundError(user_id)
+        if not self._verify_password(old_password, user.hashed_password):
+            raise InvalidPasswordError("Old password is incorrect")
+        if len(new_password) < 8:
+            raise InvalidPasswordError("New password must be at least 8 characters")
+        user.hashed_password = self._hash_password(new_password)
+        self._repository.save(user)
+        self._refresh_token_repository.revoke_all_for_user(user_id)
+
+    def reset_password(self, user_id: str, new_password: str) -> None:
+        user = self._repository.find_by_id(user_id)
+        if user is None:
+            raise UserNotFoundError(user_id)
+        if len(new_password) < 8:
+            raise InvalidPasswordError("New password must be at least 8 characters")
+        user.hashed_password = self._hash_password(new_password)
+        self._repository.save(user)
+        self._refresh_token_repository.revoke_all_for_user(user_id)

@@ -51,3 +51,13 @@ class AuthService(ABC):
     def exchange_code(self, code: str, redirect_uri: str) -> TokenResponse:
         """Exchange a valid authorization code for access + refresh tokens."""
         ...
+
+    @abstractmethod
+    def change_password(self, user_id: str, old_password: str, new_password: str) -> None:
+        """Change password for a user after verifying the old password. Revokes all refresh tokens."""
+        ...
+
+    @abstractmethod
+    def reset_password(self, user_id: str, new_password: str) -> None:
+        """Admin reset of a user's password. Revokes all refresh tokens."""
+        ...
