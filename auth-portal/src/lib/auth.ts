@@ -22,8 +22,8 @@ export function parseAccessToken(): AccessTokenPayload | null {
     return {
       sub: payload.sub as string,
       username: payload.username as string,
-      rsi_handle: (payload.rsi_handle as string) ?? null,
-      rsi_verified: (payload.rsi_verified as boolean) ?? false,
+      rsi_handle: (payload.rsi_handle as string | undefined) ?? null,
+      rsi_verified: (payload.rsi_verified as boolean | undefined) ?? false,
     };
   } catch {
     return null;
