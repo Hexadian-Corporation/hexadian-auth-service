@@ -14,6 +14,54 @@ from src.domain.models.user import User
 
 _RSI_HANDLE_PATTERN = re.compile(r"^[A-Za-z0-9_-]{3,30}$")
 
+_VERIFICATION_PREFIX = "Hexadian account validation code: "
+
+# fmt: off
+_WORD_LIST: list[str] = [
+    "alpha", "anchor", "anvil", "apple", "arrow", "atlas", "aurora", "badge",
+    "baker", "basin", "beach", "bell", "berry", "blade", "blaze", "bloom",
+    "board", "bonus", "brave", "brick", "bridge", "bright", "brook", "cabin",
+    "camel", "candy", "cargo", "cedar", "chain", "chalk", "chase", "chess",
+    "chief", "cider", "civil", "claim", "cliff", "climb", "clock", "cloud",
+    "coast", "cobra", "comet", "coral", "crane", "creek", "crisp", "cross",
+    "crown", "curve", "cycle", "dance", "delta", "diary", "dodge", "dove",
+    "draft", "dream", "drift", "drive", "dusk", "eagle", "earth", "ember",
+    "entry", "epoch", "event", "extra", "fable", "fairy", "feast", "fence",
+    "ferry", "field", "flame", "flash", "fleet", "flint", "float", "flood",
+    "flute", "focus", "forge", "forte", "forum", "frost", "fruit", "gale",
+    "garden", "ghost", "giant", "glade", "gleam", "globe", "glory", "grain",
+    "grape", "grasp", "green", "grove", "guard", "guide", "gypsy", "habit",
+    "harbor", "haven", "heart", "hedge", "heron", "honey", "honor", "horse",
+    "house", "ivory", "jewel", "jolly", "judge", "juice", "karma", "kayak",
+    "knack", "knelt", "knife", "knock", "lance", "larch", "laser", "latch",
+    "lemon", "level", "light", "lilac", "linen", "lodge", "lunar", "magic",
+    "maple", "marsh", "medal", "melon", "mercy", "merit", "mirth", "model",
+    "moose", "mount", "music", "noble", "north", "novel", "oasis", "ocean",
+    "olive", "onset", "opera", "orbit", "order", "outer", "oxide", "ozone",
+    "panda", "panel", "pearl", "penny", "piano", "pilot", "pixel", "plain",
+    "plant", "plaza", "plumb", "plume", "point", "polar", "pond", "pouch",
+    "prime", "prism", "proud", "pulse", "quail", "quest", "quiet", "quilt",
+    "radar", "rapid", "raven", "realm", "relay", "ridge", "river", "robin",
+    "royal", "ruby", "saint", "scale", "scene", "scout", "serif", "shade",
+    "sharp", "shell", "shine", "shore", "siege", "sigma", "silk", "skill",
+    "slate", "slope", "smart", "solar", "south", "space", "spark", "spear",
+    "spice", "spine", "spoke", "spray", "stage", "stamp", "steam", "steel",
+    "stern", "stone", "storm", "stove", "straw", "sugar", "suite", "surge",
+    "swift", "sword", "table", "tango", "tempo", "thorn", "tiger", "toast",
+    "token", "torch", "tower", "trace", "trail", "trend", "tribe", "trout",
+    "tulip", "ultra", "unity", "urban", "valve", "vault", "verse", "vigor",
+    "villa", "viola", "vivid", "vocal", "watch", "water", "wheat", "wheel",
+    "world", "yacht", "yield", "zebra", "zephyr",
+]
+# fmt: on
+
+_NUM_WORDS = 6
+
+
+def _generate_verification_code() -> str:
+    words = [secrets.choice(_WORD_LIST) for _ in range(_NUM_WORDS)]
+    return _VERIFICATION_PREFIX + "-".join(words)
+
 
 class AuthServiceImpl(AuthService):
     def __init__(self, repository: UserRepository, rsi_profile_fetcher: RsiProfileFetcher) -> None:
@@ -67,7 +115,7 @@ class AuthServiceImpl(AuthService):
         if user is None:
             raise UserNotFoundError(user_id)
 
-        code = secrets.token_hex(16)
+        code = _generate_verification_code()
         user.rsi_handle = rsi_handle
         user.rsi_verification_code = code
         user.rsi_verified = False

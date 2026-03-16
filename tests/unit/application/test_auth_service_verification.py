@@ -4,7 +4,7 @@ import pytest
 
 from src.application.ports.outbound.rsi_profile_fetcher import RsiProfileFetcher
 from src.application.ports.outbound.user_repository import UserRepository
-from src.application.services.auth_service_impl import AuthServiceImpl
+from src.application.services.auth_service_impl import _VERIFICATION_PREFIX, _WORD_LIST, AuthServiceImpl
 from src.domain.exceptions.user_exceptions import UserNotFoundError
 from src.domain.models.user import User
 
@@ -31,7 +31,11 @@ class TestStartVerification:
 
         code = service.start_verification("user-1", "ValidHandle")
 
-        assert len(code) == 32  # token_hex(16) produces 32-char hex string
+        assert code.startswith(_VERIFICATION_PREFIX)
+        words_part = code[len(_VERIFICATION_PREFIX) :]
+        words = words_part.split("-")
+        assert len(words) == 6
+        assert all(word in _WORD_LIST for word in words)
         assert user.rsi_handle == "ValidHandle"
         assert user.rsi_verification_code == code
         assert user.rsi_verified is False
@@ -80,7 +84,7 @@ class TestConfirmVerification:
     def test_confirm_verification_success(
         self, service: AuthServiceImpl, mock_repository: MagicMock, mock_rsi_fetcher: MagicMock
     ) -> None:
-        code = "abc123verificationcode"
+        code = "Hexadian account validation code: alpha-brave-delta-ember-frost-ocean"
         user = User(
             id="user-1",
             username="test",
@@ -100,12 +104,13 @@ class TestConfirmVerification:
     def test_confirm_verification_code_not_found(
         self, service: AuthServiceImpl, mock_repository: MagicMock, mock_rsi_fetcher: MagicMock
     ) -> None:
+        code = "Hexadian account validation code: alpha-brave-delta-ember-frost-ocean"
         user = User(
             id="user-1",
             username="test",
             email="test@example.com",
             rsi_handle="TestPilot",
-            rsi_verification_code="my-secret-code",
+            rsi_verification_code=code,
         )
         mock_repository.find_by_id.return_value = user
         mock_rsi_fetcher.fetch_profile_bio.return_value = "Some bio without the code"
@@ -119,12 +124,13 @@ class TestConfirmVerification:
     def test_confirm_verification_profile_not_found(
         self, service: AuthServiceImpl, mock_repository: MagicMock, mock_rsi_fetcher: MagicMock
     ) -> None:
+        code = "Hexadian account validation code: alpha-brave-delta-ember-frost-ocean"
         user = User(
             id="user-1",
             username="test",
             email="test@example.com",
             rsi_handle="TestPilot",
-            rsi_verification_code="my-secret-code",
+            rsi_verification_code=code,
         )
         mock_repository.find_by_id.return_value = user
         mock_rsi_fetcher.fetch_profile_bio.return_value = None
@@ -146,3 +152,24 @@ class TestConfirmVerification:
 
         with pytest.raises(ValueError, match="Verification not started"):
             service.confirm_verification("user-1")
+
+    def test_confirm_verification_persists_verified_to_db(
+        self, service: AuthServiceImpl, mock_repository: MagicMock, mock_rsi_fetcher: MagicMock
+    ) -> None:
+        code = "Hexadian account validation code: alpha-brave-delta-ember-frost-ocean"
+        user = User(
+            id="user-1",
+            username="test",
+            email="test@example.com",
+            rsi_handle="TestPilot",
+            rsi_verification_code=code,
+            rsi_verified=False,
+        )
+        mock_repository.find_by_id.return_value = user
+        mock_rsi_fetcher.fetch_profile_bio.return_value = f"Hello! {code} Bye!"
+
+        service.confirm_verification("user-1")
+
+        saved_user = mock_repository.save.call_args[0][0]
+        assert saved_user.rsi_verified is True
+        assert saved_user.id == "user-1"

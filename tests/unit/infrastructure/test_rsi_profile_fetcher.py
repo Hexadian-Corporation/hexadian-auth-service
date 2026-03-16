@@ -19,7 +19,10 @@ class TestRsiProfileFetcherImpl:
         html = """
         <html>
         <body>
-        <span class="value" id="bioval">This is my bio with verification-code-123</span>
+        <div class="entry bio">
+          <span class="label">Bio</span>
+          <div class="value">This is my bio with verification-code-123</div>
+        </div>
         </body>
         </html>
         """
@@ -65,7 +68,7 @@ class TestRsiProfileFetcherImpl:
 
     @patch("src.infrastructure.adapters.outbound.http.rsi_profile_fetcher_impl.httpx.get")
     def test_bio_with_whitespace_is_stripped(self, mock_get: MagicMock) -> None:
-        html = '<span class="value" id="bioval">  spaced bio  </span>'
+        html = '<div class="entry bio"><span class="label">Bio</span><div class="value">  spaced bio  </div></div>'
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.text = html
@@ -76,7 +79,7 @@ class TestRsiProfileFetcherImpl:
 
     @patch("src.infrastructure.adapters.outbound.http.rsi_profile_fetcher_impl.httpx.get")
     def test_redirect_to_different_host_returns_none(self, mock_get: MagicMock) -> None:
-        html = '<span class="value" id="bioval">bio text</span>'
+        html = '<div class="entry bio"><div class="value">bio text</div></div>'
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.text = html
@@ -87,7 +90,7 @@ class TestRsiProfileFetcherImpl:
 
     @patch("src.infrastructure.adapters.outbound.http.rsi_profile_fetcher_impl.httpx.get")
     def test_same_host_redirect_succeeds(self, mock_get: MagicMock) -> None:
-        html = '<span class="value" id="bioval">bio text</span>'
+        html = '<div class="entry bio"><div class="value">bio text</div></div>'
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.text = html
