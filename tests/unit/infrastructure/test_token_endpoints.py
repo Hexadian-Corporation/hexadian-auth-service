@@ -2,6 +2,8 @@ from unittest.mock import MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
+from hexadian_auth_common.context import UserContext
+from hexadian_auth_common.fastapi import _stub_jwt_auth
 
 from src.application.ports.inbound.auth_service import AuthService
 from src.domain.exceptions.user_exceptions import (
@@ -25,6 +27,15 @@ def client(mock_auth_service: MagicMock) -> TestClient:
     init_router(mock_auth_service)
     app = FastAPI()
     app.include_router(router)
+
+    async def _mock_jwt_auth() -> UserContext:
+        return UserContext(
+            user_id="user-1",
+            username="testuser",
+            permissions=["users:read", "users:admin"],
+        )
+
+    app.dependency_overrides[_stub_jwt_auth] = _mock_jwt_auth
     return TestClient(app)
 
 
