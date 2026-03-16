@@ -4,6 +4,31 @@ Authentication and user management microservice by **Hexadian Corporation**.
 
 Designed as a standalone, reusable service across Hexadian projects. Includes RSI account verification for Star Citizen integration.
 
+## Quick Start
+
+```bash
+uv run auth up
+```
+
+This single command builds and starts everything: auth API (`:8006`), MongoDB, auth-portal (`:3003`), and auth-backoffice (`:3002`).
+
+## CLI
+
+All project commands are available via `uv run auth <command>`:
+
+| Command | Description |
+|---|---|
+| `uv run auth up` | Build and start all containers (default if no command given) |
+| `uv run auth down` | Stop all containers |
+| `uv run auth setup` | Install backend and frontend dependencies (`uv sync` + `npm install`) |
+| `uv run auth start` | Start auth API locally with hot-reload (ensures MongoDB is running) |
+| `uv run auth logs [service]` | Follow container logs (optionally specify a service name) |
+| `uv run auth ps` | Show status of all containers |
+| `uv run auth seed` | Run RBAC seed script (permissions, roles, groups, admin user) |
+| `uv run auth test` | Run pytest (extra args are forwarded, e.g. `uv run auth test -v`) |
+| `uv run auth lint` | Run ruff linter |
+| `uv run auth --help` | Show available commands |
+
 ## Domain
 
 Handles user registration, login, role-based access control, and RSI profile verification. Uses PBKDF2-SHA256 for password hashing.
@@ -52,15 +77,37 @@ npm run dev          # starts on port 3003
 ## Prerequisites
 
 - [uv](https://docs.astral.sh/uv/)
-- MongoDB running on localhost:27017
+- MongoDB running on localhost:27017 (or use `uv run auth up` to start everything in Docker)
 
 ## Setup
+
+Using the CLI (recommended):
+
+```bash
+uv run auth setup
+```
+
+Or manually:
 
 ```bash
 uv sync
 ```
 
 ## Run
+
+Using the CLI (recommended — starts everything in Docker):
+
+```bash
+uv run auth up
+```
+
+For local development with hot-reload:
+
+```bash
+uv run auth start
+```
+
+Or manually:
 
 ```bash
 uv run uvicorn src.main:app --reload --port 8006
@@ -69,10 +116,22 @@ uv run uvicorn src.main:app --reload --port 8006
 ## Test
 
 ```bash
+uv run auth test
+```
+
+Or manually:
+
+```bash
 uv run pytest
 ```
 
 ## Lint
+
+```bash
+uv run auth lint
+```
+
+Or manually:
 
 ```bash
 uv run ruff check .
@@ -95,6 +154,12 @@ uv run python -m src.infrastructure.seed.seed_rbac
 The seed is idempotent — safe to run multiple times. Set `HEXADIAN_AUTH_ADMIN_PASSWORD` to configure the admin password (default: `admin`).
 
 ## Run Standalone (Docker)
+
+```bash
+uv run auth up
+```
+
+Or manually:
 
 ```bash
 docker compose up
