@@ -142,12 +142,36 @@ To stop everything: `uv run hhh down` (stops both H³ and auth).
 | `POST` | `/auth/token/revoke` | Revoke a refresh token |
 | `GET` | `/auth/users/{id}` | Get user by ID |
 | `GET` | `/auth/users` | List all users |
+| `PATCH` | `/auth/users/{id}` | Update user profile (self or admin) |
 | `DELETE` | `/auth/users/{id}` | Delete a user |
 | `POST` | `/auth/password/change` | Change own password (authenticated) |
 | `POST` | `/auth/users/{id}/password-reset` | Admin password reset (requires `users:admin`) |
 | `POST` | `/auth/verify/start` | Start RSI verification |
 | `POST` | `/auth/verify/confirm` | Confirm RSI verification |
 | `GET` | `/health` | Health check |
+
+### RBAC Endpoints
+
+| Method | Endpoint | Permission | Description |
+|---|---|---|---|
+| `POST` | `/rbac/permissions` | `rbac:manage` | Create a permission |
+| `GET` | `/rbac/permissions` | `rbac:manage` | List all permissions |
+| `GET` | `/rbac/permissions/{id}` | `rbac:manage` | Get permission by ID |
+| `PUT` | `/rbac/permissions/{id}` | `rbac:manage` | Update a permission |
+| `DELETE` | `/rbac/permissions/{id}` | `rbac:manage` | Delete a permission |
+| `POST` | `/rbac/roles` | `rbac:manage` | Create a role |
+| `GET` | `/rbac/roles` | `rbac:manage` | List all roles |
+| `GET` | `/rbac/roles/{id}` | `rbac:manage` | Get role by ID |
+| `PUT` | `/rbac/roles/{id}` | `rbac:manage` | Update a role |
+| `DELETE` | `/rbac/roles/{id}` | `rbac:manage` | Delete a role |
+| `POST` | `/rbac/groups` | `rbac:manage` | Create a group |
+| `GET` | `/rbac/groups` | `rbac:manage` | List all groups |
+| `GET` | `/rbac/groups/{id}` | `rbac:manage` | Get group by ID |
+| `PUT` | `/rbac/groups/{id}` | `rbac:manage` | Update a group |
+| `DELETE` | `/rbac/groups/{id}` | `rbac:manage` | Delete a group |
+| `POST` | `/rbac/users/{user_id}/groups` | `users:admin` | Assign user to group |
+| `DELETE` | `/rbac/users/{user_id}/groups/{group_id}` | `users:admin` | Remove user from group |
+| `GET` | `/rbac/users/{user_id}/permissions` | `users:read` or self | Get resolved permissions |
 
 ## RSI Verification
 
