@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, HTTPException
 
 from src.application.ports.inbound.auth_service import AuthService
 from src.domain.exceptions.user_exceptions import (
@@ -68,12 +68,11 @@ def refresh_token(dto: RefreshTokenDTO) -> TokenDTO:
 
 
 @router.post("/token/revoke", status_code=204)
-def revoke_token(dto: RefreshTokenDTO) -> Response:
+def revoke_token(dto: RefreshTokenDTO) -> None:
     try:
         _auth_service.revoke_token(dto.refresh_token)
     except RefreshTokenNotFoundError as exc:
         raise HTTPException(status_code=401, detail=str(exc)) from exc
-    return Response(status_code=204)
 
 
 @router.get("/users/{user_id}", response_model=UserDTO)
