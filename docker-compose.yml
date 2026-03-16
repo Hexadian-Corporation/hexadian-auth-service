@@ -21,6 +21,15 @@ services:
       - auth-inner-net
       - hexadian-net
 
+  auth-backoffice:
+    build: ./auth-backoffice
+    ports:
+      - "3002:3002"
+    depends_on:
+      - auth-service
+    networks:
+      - hexadian-net
+
   auth-mongo:
     image: mongo:7
     volumes:

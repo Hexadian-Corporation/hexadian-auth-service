@@ -71,10 +71,46 @@ jobs:
       - name: Run tests
         run: npm test
 
+  backoffice-lint:
+    name: "Backoffice: Lint & Type Check"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: auth-backoffice
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: auth-backoffice/package-lock.json
+      - run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Type check
+        run: npm run type-check
+
+  backoffice-test:
+    name: "Backoffice: Tests"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: auth-backoffice
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: auth-backoffice/package-lock.json
+      - run: npm ci
+      - name: Run tests
+        run: npm test
+
   copilot-fix:
     name: Request Copilot Fix
     runs-on: ubuntu-latest
-    needs: [lint, test, portal-lint, portal-test]
+    needs: [lint, test, portal-lint, portal-test, backoffice-lint, backoffice-test]
     if: failure()
     steps:
       - name: Comment on PR
@@ -85,11 +121,15 @@ jobs:
             const testResult = '${{ needs.test.result }}';
             const portalLintResult = '${{ needs.portal-lint.result }}';
             const portalTestResult = '${{ needs.portal-test.result }}';
+            const boLintResult = '${{ needs.backoffice-lint.result }}';
+            const boTestResult = '${{ needs.backoffice-test.result }}';
             const failures = [];
             if (lintResult === 'failure') failures.push('**Lint & Format** — fix linting or formatting errors');
             if (testResult === 'failure') failures.push('**Tests & Coverage** — fix failing tests or improve coverage to ≥90%');
             if (portalLintResult === 'failure') failures.push('**Auth Portal Lint & Type Check** — fix portal linting or type errors');
             if (portalTestResult === 'failure') failures.push('**Auth Portal Tests** — fix failing portal tests');
+            if (boLintResult === 'failure') failures.push('**Backoffice: Lint & Type Check** — fix lint or type errors in auth-backoffice');
+            if (boTestResult === 'failure') failures.push('**Backoffice: Tests** — fix failing tests in auth-backoffice');
             const prUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/pull/${context.issue.number}`;
             const suggestion = '@copilot Please fix the CI failures listed above.';
             const body = [

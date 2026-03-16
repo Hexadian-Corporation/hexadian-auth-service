@@ -14,8 +14,10 @@ build/
 .coverage
 coverage.xml
 
-# Node / auth-portal
+# Node / frontends
 node_modules/
+auth-backoffice/node_modules/
+auth-backoffice/dist/
 
 # VS Code Copilot local instruction files (only track copilot.instructions.md)
 .github/instructions/*
