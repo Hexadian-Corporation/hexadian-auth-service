@@ -3,19 +3,24 @@ import re
 import secrets
 import uuid
 from datetime import UTC, datetime, timedelta
+from urllib.parse import urlparse
 
 import jwt
 
 from src.application.ports.inbound.auth_service import AuthService
+from src.application.ports.outbound.auth_code_repository import AuthCodeRepository
 from src.application.ports.outbound.refresh_token_repository import RefreshTokenRepository
 from src.application.ports.outbound.rsi_profile_fetcher import RsiProfileFetcher
 from src.application.ports.outbound.user_repository import UserRepository
 from src.domain.exceptions.user_exceptions import (
+    InvalidAuthCodeError,
     InvalidCredentialsError,
+    InvalidRedirectUriError,
     RefreshTokenNotFoundError,
     UserAlreadyExistsError,
     UserNotFoundError,
 )
+from src.domain.models.auth_code import AuthCode
 from src.domain.models.refresh_token import RefreshToken
 from src.domain.models.token_response import TokenResponse
 from src.domain.models.user import User
@@ -78,11 +83,13 @@ class AuthServiceImpl(AuthService):
         repository: UserRepository,
         rsi_profile_fetcher: RsiProfileFetcher,
         refresh_token_repository: RefreshTokenRepository,
+        auth_code_repository: AuthCodeRepository,
         settings: Settings,
     ) -> None:
         self._repository = repository
         self._rsi_profile_fetcher = rsi_profile_fetcher
         self._refresh_token_repository = refresh_token_repository
+        self._auth_code_repository = auth_code_repository
         self._settings = settings
 
     def register(self, username: str, password: str, rsi_handle: str) -> User:
@@ -203,3 +210,46 @@ class AuthServiceImpl(AuthService):
             self._repository.save(user)
             return True
         return False
+
+    def authorize(self, username: str, password: str, redirect_uri: str, state: str) -> AuthCode:
+        # TODO: Consider PKCE for enhanced security
+        user = self._repository.find_by_username(username)
+        if user is None or not self._verify_password(password, user.hashed_password):
+            raise InvalidCredentialsError()
+
+        self._validate_redirect_uri(redirect_uri)
+
+        code = secrets.token_urlsafe(32)
+        auth_code = AuthCode(
+            code=code,
+            user_id=user.id,
+            redirect_uri=redirect_uri,
+            state=state,
+        )
+        return self._auth_code_repository.save(auth_code)
+
+    def exchange_code(self, code: str, redirect_uri: str) -> TokenResponse:
+        # TODO: Consider PKCE for enhanced security
+        auth_code = self._auth_code_repository.find_by_code(code)
+        if auth_code is None:
+            raise InvalidAuthCodeError()
+        if auth_code.used:
+            raise InvalidAuthCodeError("Authorization code has already been used")
+        if auth_code.expires_at < datetime.now(tz=UTC):
+            raise InvalidAuthCodeError("Authorization code has expired")
+        if auth_code.redirect_uri != redirect_uri:
+            raise InvalidAuthCodeError("Redirect URI mismatch")
+
+        self._auth_code_repository.mark_used(code)
+
+        user = self._repository.find_by_id(auth_code.user_id)
+        if user is None:
+            raise UserNotFoundError(auth_code.user_id)
+
+        return self._create_token_pair(user)
+
+    def _validate_redirect_uri(self, redirect_uri: str) -> None:
+        parsed = urlparse(redirect_uri)
+        origin = f"{parsed.scheme}://{parsed.netloc}"
+        if origin not in self._settings.allowed_redirect_origins:
+            raise InvalidRedirectUriError(redirect_uri)
