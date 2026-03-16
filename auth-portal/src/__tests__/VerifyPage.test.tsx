@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import VerifyPage from "@/pages/VerifyPage";
-import type { VerificationStartResponse, TokenResponse } from "@/types/auth";
+import type { VerificationStartResponse } from "@/types/auth";
 
 vi.mock("@/api/auth", () => ({
   startVerification: vi.fn(),
@@ -54,7 +54,7 @@ function setupAuthenticatedUser(overrides?: {
     username: "testuser",
     rsi_handle:
       overrides && "rsi_handle" in overrides
-        ? overrides.rsi_handle
+        ? (overrides.rsi_handle as string | null)
         : "test-handle",
     rsi_verified: overrides?.rsi_verified ?? false,
   });
@@ -317,14 +317,15 @@ describe("VerifyPage", () => {
     });
 
     it("copies code to clipboard on click", async () => {
+      const user = await renderWithCode();
+
+      // Define mock after renderWithCode so userEvent.setup() doesn't replace it
       const writeText = vi.fn().mockResolvedValue(undefined);
       Object.defineProperty(navigator, "clipboard", {
         value: { writeText },
         writable: true,
         configurable: true,
       });
-
-      const user = await renderWithCode();
 
       await user.click(screen.getByRole("button", { name: "Copy" }));
 
@@ -334,14 +335,14 @@ describe("VerifyPage", () => {
     });
 
     it("shows 'Copied!' after clicking copy", async () => {
+      const user = await renderWithCode();
+
       const writeText = vi.fn().mockResolvedValue(undefined);
       Object.defineProperty(navigator, "clipboard", {
         value: { writeText },
         writable: true,
         configurable: true,
       });
-
-      const user = await renderWithCode();
 
       await user.click(screen.getByRole("button", { name: "Copy" }));
 
