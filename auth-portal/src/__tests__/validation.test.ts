@@ -5,6 +5,7 @@ import {
   validateConfirmPassword,
   validateRsiHandle,
   validateRegistrationForm,
+  validateLoginForm,
   hasErrors,
 } from "@/lib/validation";
 
@@ -157,5 +158,42 @@ describe("hasErrors", () => {
 
   it("returns true when errors exist", () => {
     expect(hasErrors({ username: "Required" })).toBe(true);
+  });
+});
+
+describe("validateLoginForm", () => {
+  it("returns no errors for valid form", () => {
+    const errors = validateLoginForm({
+      username: "testuser",
+      password: "password123",
+    });
+    expect(errors).toEqual({});
+  });
+
+  it("returns errors for empty form", () => {
+    const errors = validateLoginForm({
+      username: "",
+      password: "",
+    });
+    expect(errors.username).toBe("Username is required");
+    expect(errors.password).toBe("Password is required");
+  });
+
+  it("returns username error only", () => {
+    const errors = validateLoginForm({
+      username: "  ",
+      password: "password123",
+    });
+    expect(errors.username).toBe("Username is required");
+    expect(errors.password).toBeUndefined();
+  });
+
+  it("returns password error only", () => {
+    const errors = validateLoginForm({
+      username: "testuser",
+      password: "",
+    });
+    expect(errors.username).toBeUndefined();
+    expect(errors.password).toBe("Password is required");
   });
 });
