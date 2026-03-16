@@ -11,8 +11,8 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expiration_minutes: int = 60
     allowed_origins: list[str] = [
-        "http://localhost:3000",  # hhh-frontend
-        "http://localhost:3001",  # hhh-backoffice-frontend
+        "http://localhost:3000",  # H³ player frontend
+        "http://localhost:3001",  # H³ backoffice frontend
         "http://localhost:3002",  # auth-backoffice
         "http://localhost:3003",  # auth-portal
     ]
