@@ -5,7 +5,10 @@ import httpx
 from src.application.ports.outbound.rsi_profile_fetcher import RsiProfileFetcher
 
 _RSI_HANDLE_PATTERN = re.compile(r"^[A-Za-z0-9_-]{3,30}$")
-_BIO_PATTERN = re.compile(r'<span\s+class="value"\s+id="bioval">(.*?)</span>', re.DOTALL)
+_BIO_PATTERN = re.compile(
+    r'<div\s+class="entry\s+bio">.*?<div\s+class="value">\s*(.*?)\s*</div>',
+    re.DOTALL,
+)
 
 
 class RsiProfileFetcherImpl(RsiProfileFetcher):
