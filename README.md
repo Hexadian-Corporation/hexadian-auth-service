@@ -1,8 +1,8 @@
 # hexadian-auth-service
 
-Authentication and user management microservice by **Hexadian Corporation**.
+Centralized identity platform for **Hexadian Corporation** applications. Handles user authentication, JWT token management, RBAC (Groups → Roles → Permissions), RSI account verification, and authorization code flow for external apps.
 
-Designed as a standalone, reusable service across Hexadian projects. Includes RSI account verification for Star Citizen integration.
+Used across Hexadian projects including H³ (Hexadian Hauling Helper).
 
 ## Quick Start
 
@@ -12,214 +12,138 @@ uv run auth up
 
 This single command builds and starts everything: auth API (`:8006`), MongoDB, auth-portal (`:3003`), and auth-backoffice (`:3002`).
 
-## CLI
+## Architecture
 
-All project commands are available via `uv run auth <command>`:
+Hexagonal architecture (Ports & Adapters) with two frontend SPAs in subdirectories:
 
-| Command | Description |
-|---|---|
-| `uv run auth up` | Build and start all containers (default if no command given) |
-| `uv run auth down` | Stop all containers |
-| `uv run auth setup` | Install backend and frontend dependencies (`uv sync` + `npm install`) |
-| `uv run auth start` | Start auth API locally with hot-reload (ensures MongoDB is running) |
-| `uv run auth logs [service]` | Follow container logs (optionally specify a service name) |
-| `uv run auth ps` | Show status of all containers |
-| `uv run auth seed` | Run RBAC seed script (permissions, roles, groups, admin user) |
-| `uv run auth test` | Run pytest (extra args are forwarded, e.g. `uv run auth test -v`) |
-| `uv run auth lint` | Run ruff linter |
-| `uv run auth --help` | Show available commands |
+```
+src/
+├── main.py                          # FastAPI app factory + uvicorn
+├── domain/
+│   ├── models/                      # Pure dataclasses (no framework deps)
+│   └── exceptions/                  # Domain-specific exceptions
+├── application/
+│   ├── ports/
+│   │   ├── inbound/                 # Service interfaces (ABC)
+│   │   └── outbound/               # Repository / external service interfaces (ABC)
+│   └── services/                    # Implementations of inbound ports
+└── infrastructure/
+    ├── config/
+    │   ├── settings.py              # pydantic-settings (env prefix: HEXADIAN_AUTH_)
+    │   └── dependencies.py          # opyoid DI Module
+    ├── adapters/
+    │   ├── inbound/api/             # FastAPI routers, DTOs (Pydantic), API mappers
+    │   └── outbound/
+    │       ├── persistence/         # MongoDB repositories, persistence mappers
+    │       └── http/                # External HTTP adapters (RSI profile fetcher)
+    └── seed/
+        └── seed_rbac.py             # RBAC seed script
 
-## Domain
-
-Handles user registration, login, role-based access control, and RSI profile verification. Uses PBKDF2-SHA256 for password hashing.
+auth-portal/                         # User-facing frontend (port 3003)
+auth-backoffice/                     # Admin frontend (port 3002)
+```
 
 ## Stack
 
-- Python 3.11+ / FastAPI
+- Python 3.11+ / FastAPI / uvicorn
 - MongoDB (database: `hexadian_auth`)
 - opyoid (dependency injection)
-- Hexagonal architecture (Ports & Adapters)
+- pymongo (MongoDB driver, no ODM)
+- pydantic-settings (configuration)
+- PyJWT (token management)
+- hexadian-auth-common (shared JWT auth utilities)
+- httpx (HTTP client for RSI profile fetching)
 
-## Auth Portal (Frontend)
+## Domain Models
 
-The `auth-portal/` directory contains the user-facing authentication portal built with:
-
-- React 19 + TypeScript 5.9 + Vite 8
-- React Router v7
-- Tailwind CSS v4
-- shadcn/ui + lucide-react
-
-### Auth Portal Setup
-
-```bash
-cd auth-portal
-npm install
-npm run dev          # starts on port 3003
-```
-
-### Auth Portal Scripts
-
-| Command | Description |
+| Model | Fields |
 |---|---|
-| `npm run dev` | Start dev server on port 3003 |
-| `npm run build` | Type-check and build for production |
-| `npm run lint` | ESLint check |
-| `npm run type-check` | TypeScript type check |
-| `npm test` | Run tests with Vitest |
-| `npm run preview` | Preview production build |
+| **User** | `id`, `username`, `hashed_password`, `group_ids` (list), `is_active`, `rsi_handle`, `rsi_verified`, `rsi_verification_code` |
+| **Permission** | `id`, `code`, `description` |
+| **Role** | `id`, `name`, `description`, `permission_ids` (list) |
+| **Group** | `id`, `name`, `description`, `role_ids` (list) |
+| **RefreshToken** | `id`, `user_id`, `token`, `expires_at`, `revoked` |
+| **AuthCode** | `id`, `code`, `user_id`, `redirect_uri`, `state`, `expires_at`, `used` |
+| **TokenResponse** | `access_token`, `refresh_token`, `token_type`, `expires_in` |
 
-### Auth Portal Environment Variables
+All domain models are pure Python dataclasses — no Pydantic, no ORM.
 
-| Variable | Default | Description |
-|---|---|---|
-| `VITE_AUTH_API_URL` | `http://localhost:8006` | Auth service API base URL |
+## RBAC Model
 
-## Prerequisites
-
-- [uv](https://docs.astral.sh/uv/)
-- MongoDB running on localhost:27017 (or use `uv run auth up` to start everything in Docker)
-
-## Setup
-
-Using the CLI (recommended):
-
-```bash
-uv run auth setup
-```
-
-Or manually:
-
-```bash
-uv sync
-```
-
-## Run
-
-Using the CLI (recommended — starts everything in Docker):
-
-```bash
-uv run auth up
-```
-
-For local development with hot-reload:
-
-```bash
-uv run auth start
-```
-
-Or manually:
-
-```bash
-uv run uvicorn src.main:app --reload --port 8006
-```
-
-## Test
-
-```bash
-uv run auth test
-```
-
-Or manually:
-
-```bash
-uv run pytest
-```
-
-## Lint
-
-```bash
-uv run auth lint
-```
-
-Or manually:
-
-```bash
-uv run ruff check .
-```
-
-## Format
-
-```bash
-uv run ruff format .
-```
-
-## Seed RBAC Data
-
-Populate default permissions, roles, groups, and admin user:
-
-```bash
-uv run auth seed
-```
-
-Or manually:
-
-```bash
-uv run python -m src.infrastructure.seed.seed_rbac
-```
-
-The seed is idempotent — safe to run multiple times. Set `HEXADIAN_AUTH_ADMIN_PASSWORD` to configure the admin password (default: `admin`).
-
-## Run Standalone (Docker)
-
-```bash
-uv run auth up
-```
-
-Or manually:
-
-```bash
-docker compose up
-```
-
-This starts all containers (auth-service, auth-mongo, auth-portal, auth-backoffice) — no external dependencies.
-The auth portal is available on port 3003, the auth backoffice on port 3002, and the API on port 8006.
-Both frontend services and the API are exposed on the `hexadian-net` Docker network so other compose projects can reach them.
-
-## Integration with H³
-
-The H³ monorepo (`hexadian-hauling-helper`) auto-starts this service via `uv run hhh up`.
-Clone this repo as a sibling of `hexadian-hauling-helper`:
+Three-level hierarchy:
 
 ```
-hhh-workspace/
-├── hexadian-hauling-helper/       # H³ monorepo
-└── hexadian-auth-service/     # This repo (auto-started by hhh CLI)
+Users → Groups → Roles → Permissions
 ```
 
-The CLI detects whether auth is running and starts it automatically if needed.
-To stop everything: `uv run hhh down` (stops both H³ and auth).
+- **Users** belong to **Groups** (via `user.group_ids`)
+- **Groups** contain **Roles** (via `group.role_ids`)
+- **Roles** contain **Permissions** (via `role.permission_ids`)
+- Permissions are resolved from the full hierarchy at token creation/refresh time and embedded in the JWT access token
 
-## Environment Variables
+### Seed Data
 
-| Variable | Default | Description |
-|---|---|---|
-| `HEXADIAN_AUTH_MONGO_URI` | `mongodb://localhost:27017` | MongoDB connection string |
-| `HEXADIAN_AUTH_MONGO_DB` | `hexadian_auth` | Database name |
-| `HEXADIAN_AUTH_PORT` | `8006` | Service port |
-| `HEXADIAN_AUTH_JWT_SECRET` | `change-me-in-production` | JWT signing secret |
-| `HEXADIAN_AUTH_JWT_ALGORITHM` | `HS256` | JWT algorithm |
-| `HEXADIAN_AUTH_JWT_EXPIRATION_MINUTES` | `15` | Access token expiration (minutes) |
-| `HEXADIAN_AUTH_JWT_REFRESH_EXPIRATION_DAYS` | `7` | Refresh token expiration (days) |
-| `HEXADIAN_AUTH_ALLOWED_ORIGINS` | `["http://localhost:3000", ...]` | CORS allowed origins (JSON list) |
-| `HEXADIAN_AUTH_ADMIN_PASSWORD` | `admin` | Default admin user password (used by seed script) |
+The seed script (`uv run auth seed`) creates:
+
+- **22 permissions**: `contracts:read/write/delete`, `locations:read/write/delete`, `commodities:read/write/delete`, `ships:read/write/delete`, `graphs:read/write/delete`, `routes:read/write/delete`, `users:read/write/admin`, `rbac:manage`
+- **3 roles**: Super Admin (all 22), Content Manager (14 read/write), Member (8 read-only + `contracts:write`)
+- **2 groups**: Admins (Super Admin role), Users (Member role — default for new registrations)
+- **Admin user**: `admin` / password from `HEXADIAN_AUTH_ADMIN_PASSWORD` (default: `admin`)
+
+The seed is idempotent and runs automatically on startup if no admin user exists.
+
+## Token Architecture
+
+**Access token** — JWT signed with HS256, 15-minute TTL.
+Claims: `sub` (user_id), `username`, `groups`, `roles`, `permissions`, `rsi_handle`, `rsi_verified`, `iat`, `exp`.
+
+**Refresh token** — Opaque UUID, 7-day TTL, stored in MongoDB with TTL index. Revocable. On refresh, permissions are re-resolved from the RBAC hierarchy.
+
+**Auth middleware** — All endpoints (except `/health`, `/auth/register`, `/auth/login`, `/auth/token/*`, `/auth/authorize`) require a valid JWT. Implemented via `hexadian-auth-common` (`JWTAuthDependency`, `require_permission`).
+
+## Authorization Code Flow
+
+For redirect-based authentication from external apps (e.g., H³ frontends):
+
+1. App redirects to `auth-portal/login?redirect_uri=<callback>&state=<random>`
+2. User authenticates on auth-portal
+3. `POST /auth/authorize` generates a single-use auth code (60s TTL), returns `{code, state, redirect_uri}`
+4. Auth-portal redirects to `redirect_uri?code=<code>&state=<state>`
+5. App calls `POST /auth/token/exchange {code, redirect_uri}` → `{access_token, refresh_token}`
+
+`redirect_uri` is validated against `HEXADIAN_AUTH_ALLOWED_REDIRECT_ORIGINS`.
+
+## RSI Verification Flow
+
+Link a user account to a [Roberts Space Industries](https://robertsspaceindustries.com) profile:
+
+1. `POST /auth/verify/start?user_id={id}` — body: `{"rsi_handle": "..."}`. Generates a verification string, stores it in `rsi_verification_code`.
+2. User pastes the string into their RSI profile bio at `robertsspaceindustries.com/account/profile`.
+3. `POST /auth/verify/confirm?user_id={id}` — scrapes the RSI profile page, checks the bio contains the verification string. Sets `rsi_verified = true` on success.
+
+Handle validation: `^[A-Za-z0-9_-]{3,30}$`.
 
 ## API
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/auth/register` | Register a new user |
-| `POST` | `/auth/login` | Authenticate and get access + refresh tokens |
-| `POST` | `/auth/token/refresh` | Rotate tokens (new access + refresh, old refresh revoked) |
-| `POST` | `/auth/token/revoke` | Revoke a refresh token |
-| `GET` | `/auth/users/{id}` | Get user by ID |
-| `GET` | `/auth/users` | List all users |
-| `PATCH` | `/auth/users/{id}` | Update user profile (self or admin) |
-| `DELETE` | `/auth/users/{id}` | Delete a user |
-| `POST` | `/auth/password/change` | Change own password (authenticated) |
-| `POST` | `/auth/users/{id}/password-reset` | Admin password reset (requires `users:admin`) |
-| `POST` | `/auth/verify/start` | Start RSI verification |
-| `POST` | `/auth/verify/confirm` | Confirm RSI verification |
-| `GET` | `/health` | Health check |
+### Auth Endpoints
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| `POST` | `/auth/register` | None | Register a new user |
+| `POST` | `/auth/login` | None | Authenticate and get tokens |
+| `POST` | `/auth/token/refresh` | None | Refresh access token |
+| `POST` | `/auth/token/revoke` | None | Revoke a refresh token |
+| `POST` | `/auth/authorize` | None | Generate authorization code |
+| `POST` | `/auth/token/exchange` | None | Exchange auth code for tokens |
+| `GET` | `/auth/users/{user_id}` | JWT (self or `users:read`) | Get user by ID |
+| `GET` | `/auth/users` | `users:read` | List all users |
+| `PUT` | `/auth/users/{user_id}` | JWT (self or `users:admin`) | Update user profile |
+| `DELETE` | `/auth/users/{user_id}` | `users:admin` | Delete a user |
+| `POST` | `/auth/password/change` | JWT | Change own password |
+| `POST` | `/auth/users/{user_id}/password-reset` | `users:admin` | Admin password reset |
+| `POST` | `/auth/verify/start` | JWT | Start RSI verification |
+| `POST` | `/auth/verify/confirm` | JWT | Confirm RSI verification |
+| `GET` | `/health` | None | Health check |
 
 ### RBAC Endpoints
 
@@ -244,120 +168,144 @@ To stop everything: `uv run hhh down` (stops both H³ and auth).
 | `DELETE` | `/rbac/users/{user_id}/groups/{group_id}` | `users:admin` | Remove user from group |
 | `GET` | `/rbac/users/{user_id}/permissions` | `users:read` or self | Get resolved permissions |
 
-## RSI Verification
+## Auth Frontends
 
-Link a user account to a [Roberts Space Industries](https://robertsspaceindustries.com) profile.
-The flow generates a unique code, the user places it in their RSI bio, and the service confirms the match.
+### Auth Portal (port 3003)
+
+User-facing authentication SPA in `auth-portal/`. Handles login, registration, RSI verification, password change, and OAuth2 callback.
+
+- React 19 + TypeScript 5.9 + Vite 8
+- React Router v7
+- Tailwind CSS v4 + shadcn/ui + lucide-react
+- Vitest + Testing Library
+
+| Command | Description |
+|---|---|
+| `cd auth-portal && npm install` | Install dependencies |
+| `cd auth-portal && npm run dev` | Start dev server on port 3003 |
+| `cd auth-portal && npm run build` | Type-check and build for production |
+| `cd auth-portal && npm run lint` | ESLint check |
+| `cd auth-portal && npm run type-check` | TypeScript type check |
+| `cd auth-portal && npm test` | Run tests with Vitest |
+
+| Variable | Default | Description |
+|---|---|---|
+| `VITE_AUTH_API_URL` | `http://localhost:8006` | Auth service API base URL |
+
+### Auth Backoffice (port 3002)
+
+Admin SPA in `auth-backoffice/`. Manages users, groups, roles, and permissions.
+
+- React 19 + TypeScript 5.9 + Vite 8
+- React Router v7
+- Tailwind CSS v4 + shadcn/ui + lucide-react
+- Vitest + Testing Library
+
+| Command | Description |
+|---|---|
+| `cd auth-backoffice && npm install` | Install dependencies |
+| `cd auth-backoffice && npm run dev` | Start dev server on port 3002 |
+| `cd auth-backoffice && npm run build` | Type-check and build for production |
+| `cd auth-backoffice && npm run lint` | ESLint check |
+| `cd auth-backoffice && npm run type-check` | TypeScript type check |
+| `cd auth-backoffice && npm test` | Run tests with Vitest |
+
+The backoffice uses relative `/api/` paths, proxied via nginx to the auth service in production.
+
+## Docker Compose
+
+Standalone stack — no external dependencies:
+
+```bash
+uv run auth up        # or: docker compose up
+```
+
+| Service | Port | Description |
+|---|---|---|
+| `auth-service` | 8006 | FastAPI backend |
+| `auth-mongo` | — | MongoDB 7 (internal only) |
+| `auth-portal` | 3003 | User-facing SPA |
+| `auth-backoffice` | 3002 | Admin SPA |
+
+**Networks:**
+
+- `hexadian-auth-inner-net` (internal) — auth-service ↔ auth-mongo only, no external access
+- `hexadian-shared-net` — shared with other compose projects (e.g., H³ monorepo)
+
+**Volumes:**
+
+- `auth-data` — MongoDB data persistence
+
+## Integration with H³
+
+The H³ monorepo (`hexadian-hauling-helper`) auto-starts this service via `uv run hhh up`.
+Clone this repo as a sibling of `hexadian-hauling-helper`:
+
+```
+hhh-workspace/
+├── hexadian-hauling-helper/       # H³ monorepo
+└── hexadian-auth-service/         # This repo (auto-started by hhh CLI)
+```
+
+The CLI detects whether auth is running and starts it automatically if needed.
+To stop everything: `uv run hhh down` (stops both H³ and auth).
+
+## Environment Variables
+
+All settings use `HEXADIAN_AUTH_` prefix via pydantic-settings.
+
+| Variable | Default | Description |
+|---|---|---|
+| `HEXADIAN_AUTH_MONGO_URI` | `mongodb://localhost:27017` | MongoDB connection string |
+| `HEXADIAN_AUTH_MONGO_DB` | `hexadian_auth` | Database name |
+| `HEXADIAN_AUTH_HOST` | `0.0.0.0` | Server bind host |
+| `HEXADIAN_AUTH_PORT` | `8006` | Service port |
+| `HEXADIAN_AUTH_JWT_SECRET` | `change-me-in-production` | JWT signing secret |
+| `HEXADIAN_AUTH_JWT_ALGORITHM` | `HS256` | JWT algorithm |
+| `HEXADIAN_AUTH_JWT_EXPIRATION_MINUTES` | `15` | Access token expiration (minutes) |
+| `HEXADIAN_AUTH_JWT_REFRESH_EXPIRATION_DAYS` | `7` | Refresh token expiration (days) |
+| `HEXADIAN_AUTH_ALLOWED_ORIGINS` | `["http://localhost:3000", ...]` | CORS allowed origins (JSON list) |
+| `HEXADIAN_AUTH_ALLOWED_REDIRECT_ORIGINS` | `["http://localhost:3000", ...]` | Valid redirect URIs for auth code flow |
+| `HEXADIAN_AUTH_ADMIN_PASSWORD` | `admin` | Initial admin user password (seed script) |
+
+## Development
 
 ### Prerequisites
 
-- Auth service running on `http://localhost:8006` (see [Run](#run))
-- A real RSI account at <https://robertsspaceindustries.com>
+- [uv](https://docs.astral.sh/uv/)
+- MongoDB running on localhost:27017 (or use `uv run auth up` to start everything in Docker)
 
-### Step 1 — Register a user
+### CLI
 
-```bash
-curl -s -X POST http://localhost:8006/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"username": "testpilot", "password": "s3cureP@ss", "rsi_handle": "TestPilot"}' | python -m json.tool
-```
+All project commands are available via `uv run auth <command>`:
 
-Example response:
+| Command | Description |
+|---|---|
+| `uv run auth up` | Build and start all containers (default if no command given) |
+| `uv run auth down` | Stop all containers |
+| `uv run auth setup` | Install backend and frontend dependencies (`uv sync` + `npm install`) |
+| `uv run auth start` | Start auth API locally with hot-reload (ensures MongoDB is running) |
+| `uv run auth logs [service]` | Follow container logs (optionally specify a service name) |
+| `uv run auth ps` | Show status of all containers |
+| `uv run auth seed` | Run RBAC seed script (permissions, roles, groups, admin user) |
+| `uv run auth test` | Run pytest (extra args are forwarded, e.g. `uv run auth test -v`) |
+| `uv run auth lint` | Run ruff linter |
+| `uv run auth --help` | Show available commands |
 
-```json
-{
-    "_id": "6649a2f1c...",
-    "username": "testpilot",
-    "roles": ["user"],
-    "is_active": true,
-    "rsi_handle": "TestPilot",
-    "rsi_verified": false
-}
-```
+### Manual Commands (Backend)
 
-Save the `_id` value — you will need it in the following steps.
+| Action | Command |
+|---|---|
+| Setup | `uv sync` (or `uv sync --all-extras` for dev deps) |
+| Run (dev) | `uv run uvicorn src.main:app --reload --port 8006` |
+| Test | `uv run pytest` |
+| Lint | `uv run ruff check .` |
+| Format | `uv run ruff format .` |
+| Seed RBAC data | `uv run python -m src.infrastructure.seed.seed_rbac` |
 
-### Step 2 — Start verification
+## Quality Standards
 
-```bash
-curl -s -X POST "http://localhost:8006/auth/verify/start?user_id=<USER_ID>" \
-  -H "Content-Type: application/json" \
-  -d '{"rsi_handle": "YourRSIHandle"}' | python -m json.tool
-```
-
-Example response:
-
-```json
-{
-    "verification_code": "Hexadian account validation code: alpha-brave-delta-ember-frost-ocean",
-    "verified": false,
-    "message": "Add the verification code to your RSI profile bio at https://robertsspaceindustries.com/account/profile and then call /auth/verify/confirm"
-}
-```
-
-Copy the **full** `verification_code` string (including the `Hexadian account validation code:` prefix).
-
-### Step 3 — Update your RSI profile
-
-1. Go to <https://robertsspaceindustries.com/account/profile>
-2. Paste the full verification string into the **Short Bio** field, for example:
-   ```
-   Hexadian account validation code: alpha-brave-delta-ember-frost-ocean
-   ```
-3. Click **Save**.
-4. Confirm the text is publicly visible by visiting `https://robertsspaceindustries.com/citizens/YourRSIHandle` and checking the **Bio** section.
-
-### Step 4 — Confirm verification
-
-```bash
-curl -s -X POST "http://localhost:8006/auth/verify/confirm?user_id=<USER_ID>" | python -m json.tool
-```
-
-**Success** — code found in bio:
-
-```json
-{
-    "verification_code": null,
-    "verified": true,
-    "message": "RSI account verified successfully"
-}
-```
-
-**Failure** — code not found in bio:
-
-```json
-{
-    "verification_code": null,
-    "verified": false,
-    "message": "Verification code not found in RSI profile bio"
-}
-```
-
-### Step 5 — Verify the result
-
-```bash
-curl -s http://localhost:8006/auth/users/<USER_ID> | python -m json.tool
-```
-
-The user should now show `rsi_verified: true`:
-
-```json
-{
-    "_id": "6649a2f1c...",
-    "username": "testpilot",
-    "roles": ["user"],
-    "is_active": true,
-    "rsi_handle": "YourRSIHandle",
-    "rsi_verified": true
-}
-```
-
-### Troubleshooting
-
-| Problem | Cause | Fix |
-|---|---|---|
-| `"Verification code not found in RSI profile bio"` | Bio is not publicly visible or the code was not saved | Visit `https://robertsspaceindustries.com/citizens/YourRSIHandle` and confirm the code appears in the Bio section |
-| `"Verification code not found in RSI profile bio"` | Only part of the code was pasted | Make sure the **entire** string is in the bio, including the `Hexadian account validation code:` prefix |
-| `422 Unprocessable Entity` on `/verify/start` | RSI handle does not match the required format | Handle must be 3–30 characters using only letters, digits, hyphens, and underscores (`^[A-Za-z0-9_-]{3,30}$`) |
-| `404 Not Found` | Invalid `user_id` | Double-check the `_id` returned from `/auth/register` |
-| Bio is too long after adding the code | RSI bio field has a character limit | Remove other bio text or shorten it so the verification string fits |
+- **Linting**: `ruff check .` + `ruff format --check .` must pass
+- **Testing**: `pytest --cov=src` with ≥90% coverage on changed lines (`diff-cover`)
+- **Type hints**: Required on all functions
+- **Merge strategy**: Squash merge only — PR title becomes the commit message
