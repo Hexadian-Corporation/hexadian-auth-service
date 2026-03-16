@@ -1,13 +1,224 @@
-import { useParams } from "react-router";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import { useParams, useNavigate, Link } from "react-router";
+import { ArrowLeft, Check } from "lucide-react";
+import type { Role, Permission, GroupCreate } from "@/types/rbac";
+import * as rbacApi from "@/api/rbac";
 
 export default function GroupDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const isNew = id === "new";
+
+  const [form, setForm] = useState<GroupCreate>({ name: "", description: "", role_ids: [] });
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [permissions, setPermissions] = useState<Permission[]>([]);
+  const [members, setMembers] = useState<{ _id: string; username: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const [roleList, permList, users] = await Promise.all([
+        rbacApi.listRoles(),
+        rbacApi.listPermissions(),
+        rbacApi.listUsers(),
+      ]);
+      setRoles(roleList);
+      setPermissions(permList);
+
+      if (!isNew && id) {
+        const group = await rbacApi.getGroup(id);
+        setForm({ name: group.name, description: group.description, role_ids: group.role_ids });
+        setMembers(users.filter((u) => u.group_ids.includes(id)));
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load data");
+    } finally {
+      setLoading(false);
+    }
+  }, [id, isNew]);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setSaving(true);
+      setError(null);
+      if (isNew) {
+        await rbacApi.createGroup(form);
+      } else if (id) {
+        await rbacApi.updateGroup(id, form);
+      }
+      void navigate("/rbac/groups");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save group");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleRole = (roleId: string) => {
+    setForm((prev) => ({
+      ...prev,
+      role_ids: prev.role_ids.includes(roleId)
+        ? prev.role_ids.filter((r) => r !== roleId)
+        : [...prev.role_ids, roleId],
+    }));
+  };
+
+  const effectivePermissions = useMemo(() => {
+    const permIds = new Set<string>();
+    for (const role of roles) {
+      if (form.role_ids.includes(role._id)) {
+        for (const pid of role.permission_ids) {
+          permIds.add(pid);
+        }
+      }
+    }
+    return permissions.filter((p) => permIds.has(p._id));
+  }, [form.role_ids, roles, permissions]);
+
+  const getRolePermissions = (roleId: string): string[] => {
+    const role = roles.find((r) => r._id === roleId);
+    if (!role) return [];
+    return role.permission_ids
+      .map((pid) => permissions.find((p) => p._id === pid)?.code)
+      .filter((c): c is string => c !== undefined);
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold">{isNew ? "New Group" : "Edit Group"}</h1>
+        <p className="text-gray-500">Loading...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Group Detail</h1>
-      <p className="text-gray-500">Group ID: {id}</p>
-      <p className="text-gray-500">Group detail view coming soon.</p>
+    <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <Link to="/rbac/groups" className="rounded-md p-1 hover:bg-gray-100" aria-label="Back to groups">
+          <ArrowLeft className="h-5 w-5" />
+        </Link>
+        <h1 className="text-2xl font-bold">{isNew ? "New Group" : "Edit Group"}</h1>
+      </div>
+
+      {error && (
+        <div role="alert" className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="rounded-md border bg-white p-4 space-y-4">
+          <div>
+            <label htmlFor="group-name" className="block text-sm font-medium text-gray-700">Name</label>
+            <input
+              id="group-name"
+              type="text"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="group-description" className="block text-sm font-medium text-gray-700">Description</label>
+            <input
+              id="group-description"
+              type="text"
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+              required
+            />
+          </div>
+        </div>
+
+        <div className="rounded-md border bg-white p-4">
+          <h2 className="mb-4 text-lg font-semibold">Roles</h2>
+          <div className="space-y-2">
+            {roles.map((role) => {
+              const roleCodes = getRolePermissions(role._id);
+              return (
+                <label key={role._id} className="flex items-start gap-2 rounded px-2 py-1 hover:bg-gray-50">
+                  <input
+                    type="checkbox"
+                    checked={form.role_ids.includes(role._id)}
+                    onChange={() => toggleRole(role._id)}
+                    className="mt-0.5 rounded"
+                  />
+                  <div>
+                    <span className="text-sm font-medium">{role.name}</span>
+                    <span className="ml-2 text-xs text-gray-400">— {role.description}</span>
+                    {roleCodes.length > 0 && (
+                      <div className="mt-0.5 text-xs text-gray-400">
+                        Permissions: {roleCodes.join(", ")}
+                      </div>
+                    )}
+                  </div>
+                </label>
+              );
+            })}
+            {roles.length === 0 && (
+              <p className="text-sm text-gray-500">No roles available.</p>
+            )}
+          </div>
+        </div>
+
+        {!isNew && members.length > 0 && (
+          <div className="rounded-md border bg-white p-4">
+            <h2 className="mb-3 text-lg font-semibold">Members</h2>
+            <ul className="space-y-1">
+              {members.map((user) => (
+                <li key={user._id} className="text-sm text-gray-700">{user.username}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div className="rounded-md border bg-white p-4">
+          <h2 className="mb-3 text-lg font-semibold">Effective Permissions</h2>
+          {effectivePermissions.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {effectivePermissions.map((perm) => (
+                <span
+                  key={perm._id}
+                  className="inline-block rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-mono text-gray-700"
+                >
+                  {perm.code}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500">No permissions resolved from selected roles.</p>
+          )}
+        </div>
+
+        <div className="flex gap-3">
+          <button
+            type="submit"
+            disabled={saving || !form.name || !form.description}
+            className="inline-flex items-center gap-2 rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+          >
+            <Check className="h-4 w-4" />
+            {saving ? "Saving..." : isNew ? "Create Group" : "Save Changes"}
+          </button>
+          <Link
+            to="/rbac/groups"
+            className="inline-flex items-center rounded-md border px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Cancel
+          </Link>
+        </div>
+      </form>
     </div>
   );
 }

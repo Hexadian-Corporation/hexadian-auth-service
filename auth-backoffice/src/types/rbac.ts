@@ -1,50 +1,36 @@
 export interface Permission {
-  id: string;
-  name: string;
+  _id: string;
+  code: string;
   description: string;
 }
 
 export interface PermissionCreate {
-  name: string;
+  code: string;
   description: string;
-}
-
-export interface PermissionUpdate {
-  description?: string;
 }
 
 export interface Role {
-  id: string;
+  _id: string;
   name: string;
   description: string;
-  permissions: string[];
+  permission_ids: string[];
 }
 
 export interface RoleCreate {
   name: string;
   description: string;
-  permissions?: string[];
-}
-
-export interface RoleUpdate {
-  description?: string;
-  permissions?: string[];
+  permission_ids: string[];
 }
 
 export interface Group {
-  id: string;
+  _id: string;
   name: string;
   description: string;
-  roles: string[];
+  role_ids: string[];
 }
 
 export interface GroupCreate {
   name: string;
   description: string;
-  roles?: string[];
-}
-
-export interface GroupUpdate {
-  description?: string;
-  roles?: string[];
+  role_ids: string[];
 }

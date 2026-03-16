@@ -1,16 +1,13 @@
 import type {
   Permission,
   PermissionCreate,
-  PermissionUpdate,
   Role,
   RoleCreate,
-  RoleUpdate,
   Group,
   GroupCreate,
-  GroupUpdate,
 } from "@/types/rbac";
 
-const API_BASE = "/api/auth";
+const API_BASE = "/api/rbac";
 
 // Permissions
 export async function listPermissions(): Promise<Permission[]> {
@@ -33,9 +30,9 @@ export async function createPermission(data: PermissionCreate): Promise<Permissi
   return response.json() as Promise<Permission>;
 }
 
-export async function updatePermission(id: string, data: PermissionUpdate): Promise<Permission> {
+export async function updatePermission(id: string, data: PermissionCreate): Promise<Permission> {
   const response = await fetch(`${API_BASE}/permissions/${id}`, {
-    method: "PATCH",
+    method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
@@ -83,9 +80,9 @@ export async function createRole(data: RoleCreate): Promise<Role> {
   return response.json() as Promise<Role>;
 }
 
-export async function updateRole(id: string, data: RoleUpdate): Promise<Role> {
+export async function updateRole(id: string, data: RoleCreate): Promise<Role> {
   const response = await fetch(`${API_BASE}/roles/${id}`, {
-    method: "PATCH",
+    method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
@@ -133,9 +130,9 @@ export async function createGroup(data: GroupCreate): Promise<Group> {
   return response.json() as Promise<Group>;
 }
 
-export async function updateGroup(id: string, data: GroupUpdate): Promise<Group> {
+export async function updateGroup(id: string, data: GroupCreate): Promise<Group> {
   const response = await fetch(`${API_BASE}/groups/${id}`, {
-    method: "PATCH",
+    method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
@@ -152,4 +149,13 @@ export async function deleteGroup(id: string): Promise<void> {
   if (!response.ok) {
     throw new Error(`Failed to delete group: ${response.statusText}`);
   }
+}
+
+// Users in groups
+export async function listUsers(): Promise<{ _id: string; username: string; group_ids: string[] }[]> {
+  const response = await fetch("/api/auth/users");
+  if (!response.ok) {
+    throw new Error(`Failed to list users: ${response.statusText}`);
+  }
+  return response.json() as Promise<{ _id: string; username: string; group_ids: string[] }[]>;
 }
