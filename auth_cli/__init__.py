@@ -69,9 +69,7 @@ def cmd_start() -> None:
 
 
 def cmd_logs(args: list[str]) -> None:
-    cmd = ["docker", "compose", "logs", "-f"]
-    if args:
-        cmd.append(args[0])
+    cmd = ["docker", "compose", "logs", "-f", *args]
     _run(cmd, check=False)
 
 
@@ -94,7 +92,11 @@ def cmd_lint() -> None:
 def main() -> None:
     args = sys.argv[1:]
 
-    if not args or args[0] == "--help" or args[0] == "-h":
+    if not args:
+        cmd_up()
+        return
+
+    if args[0] == "--help" or args[0] == "-h":
         _print_help()
         return
 

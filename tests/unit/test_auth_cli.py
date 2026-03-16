@@ -152,12 +152,10 @@ class TestCmdLint:
 
 class TestMain:
     @patch("auth_cli.cmd_up")
-    def test_no_args_shows_help(self, mock_up: MagicMock, capsys: pytest.CaptureFixture[str]) -> None:
+    def test_no_args_runs_up(self, mock_up: MagicMock) -> None:
         with patch("sys.argv", ["auth"]):
             main()
-        output = capsys.readouterr().out
-        assert "Usage:" in output
-        mock_up.assert_not_called()
+        mock_up.assert_called_once()
 
     @patch("auth_cli.cmd_up")
     def test_help_flag(self, mock_up: MagicMock, capsys: pytest.CaptureFixture[str]) -> None:
