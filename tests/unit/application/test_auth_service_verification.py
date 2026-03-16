@@ -3,11 +3,13 @@ from unittest.mock import MagicMock
 import pytest
 
 from src.application.ports.outbound.auth_code_repository import AuthCodeRepository
+from src.application.ports.outbound.group_repository import GroupRepository
 from src.application.ports.outbound.refresh_token_repository import RefreshTokenRepository
 from src.application.ports.outbound.rsi_profile_fetcher import RsiProfileFetcher
 from src.application.ports.outbound.user_repository import UserRepository
 from src.application.services.auth_service_impl import _VERIFICATION_PREFIX, _WORD_LIST, AuthServiceImpl
 from src.domain.exceptions.user_exceptions import UserAlreadyExistsError, UserNotFoundError
+from src.domain.models.group import Group
 from src.domain.models.user import User
 from src.infrastructure.config.settings import Settings
 
@@ -33,6 +35,11 @@ def mock_auth_code_repository() -> MagicMock:
 
 
 @pytest.fixture()
+def mock_group_repository() -> MagicMock:
+    return MagicMock(spec=GroupRepository)
+
+
+@pytest.fixture()
 def settings() -> Settings:
     return Settings(jwt_secret="test-secret")
 
@@ -43,6 +50,7 @@ def service(
     mock_rsi_fetcher: MagicMock,
     mock_refresh_token_repository: MagicMock,
     mock_auth_code_repository: MagicMock,
+    mock_group_repository: MagicMock,
     settings: Settings,
 ) -> AuthServiceImpl:
     return AuthServiceImpl(
@@ -50,6 +58,7 @@ def service(
         rsi_profile_fetcher=mock_rsi_fetcher,
         refresh_token_repository=mock_refresh_token_repository,
         auth_code_repository=mock_auth_code_repository,
+        group_repository=mock_group_repository,
         settings=settings,
     )
 
@@ -230,3 +239,26 @@ class TestRegister:
     def test_register_invalid_rsi_handle_too_long_raises(self, service: AuthServiceImpl) -> None:
         with pytest.raises(ValueError, match="Invalid RSI handle format"):
             service.register("user", "pw", "a" * 31)
+
+    def test_register_assigns_users_group(
+        self, service: AuthServiceImpl, mock_repository: MagicMock, mock_group_repository: MagicMock
+    ) -> None:
+        mock_repository.find_by_username.return_value = None
+        mock_repository.save.side_effect = lambda u: setattr(u, "id", "new-id") or u
+        mock_group_repository.find_by_name.return_value = Group(id="group-users-id", name="Users")
+
+        user = service.register("newuser", "pw", "ValidPilot")
+
+        mock_group_repository.find_by_name.assert_called_once_with("Users")
+        assert user.group_ids == ["group-users-id"]
+
+    def test_register_no_users_group_succeeds(
+        self, service: AuthServiceImpl, mock_repository: MagicMock, mock_group_repository: MagicMock
+    ) -> None:
+        mock_repository.find_by_username.return_value = None
+        mock_repository.save.side_effect = lambda u: setattr(u, "id", "new-id") or u
+        mock_group_repository.find_by_name.return_value = None
+
+        user = service.register("newuser", "pw", "ValidPilot")
+
+        assert user.group_ids == []

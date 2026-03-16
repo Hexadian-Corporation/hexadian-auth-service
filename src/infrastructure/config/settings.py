@@ -23,5 +23,6 @@ class Settings(BaseSettings):
         "http://localhost:3002",
         "http://localhost:3003",
     ]
+    admin_password: str = "admin"
 
     model_config = {"env_prefix": "HEXADIAN_AUTH_"}

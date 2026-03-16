@@ -5,6 +5,7 @@ import jwt
 import pytest
 
 from src.application.ports.outbound.auth_code_repository import AuthCodeRepository
+from src.application.ports.outbound.group_repository import GroupRepository
 from src.application.ports.outbound.refresh_token_repository import RefreshTokenRepository
 from src.application.ports.outbound.rsi_profile_fetcher import RsiProfileFetcher
 from src.application.ports.outbound.user_repository import UserRepository
@@ -40,6 +41,11 @@ def mock_auth_code_repository() -> MagicMock:
 
 
 @pytest.fixture()
+def mock_group_repository() -> MagicMock:
+    return MagicMock(spec=GroupRepository)
+
+
+@pytest.fixture()
 def settings() -> Settings:
     return Settings(jwt_secret="test-secret", jwt_expiration_minutes=15, jwt_refresh_expiration_days=7)
 
@@ -50,6 +56,7 @@ def service(
     mock_rsi_fetcher: MagicMock,
     mock_refresh_token_repository: MagicMock,
     mock_auth_code_repository: MagicMock,
+    mock_group_repository: MagicMock,
     settings: Settings,
 ) -> AuthServiceImpl:
     return AuthServiceImpl(
@@ -57,6 +64,7 @@ def service(
         rsi_profile_fetcher=mock_rsi_fetcher,
         refresh_token_repository=mock_refresh_token_repository,
         auth_code_repository=mock_auth_code_repository,
+        group_repository=mock_group_repository,
         settings=settings,
     )
 
