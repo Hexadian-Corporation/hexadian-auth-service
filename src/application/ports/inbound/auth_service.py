@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+from src.domain.models.auth_code import AuthCode
 from src.domain.models.token_response import TokenResponse
 from src.domain.models.user import User
 
@@ -34,4 +35,14 @@ class AuthService(ABC):
     @abstractmethod
     def confirm_verification(self, user_id: str) -> bool:
         """Fetch the user's RSI profile and check for the verification code. Returns True if verified."""
+        ...
+
+    @abstractmethod
+    def authorize(self, username: str, password: str, redirect_uri: str, state: str) -> AuthCode:
+        """Validate credentials and redirect_uri, generate a single-use authorization code."""
+        ...
+
+    @abstractmethod
+    def exchange_code(self, code: str, redirect_uri: str) -> TokenResponse:
+        """Exchange a valid authorization code for access + refresh tokens."""
         ...

@@ -2,18 +2,23 @@ from fastapi import APIRouter, HTTPException
 
 from src.application.ports.inbound.auth_service import AuthService
 from src.domain.exceptions.user_exceptions import (
+    InvalidAuthCodeError,
     InvalidCredentialsError,
+    InvalidRedirectUriError,
     RefreshTokenNotFoundError,
     UserAlreadyExistsError,
     UserNotFoundError,
 )
 from src.infrastructure.adapters.inbound.api.auth_api_mapper import AuthApiMapper
 from src.infrastructure.adapters.inbound.api.auth_dto import (
+    AuthorizeDTO,
+    AuthorizeResponseDTO,
     LoginDTO,
     RefreshTokenDTO,
     RegisterDTO,
     StartVerificationDTO,
     TokenDTO,
+    TokenExchangeDTO,
     UserDTO,
     VerificationResultDTO,
 )
@@ -126,3 +131,34 @@ def confirm_verification(user_id: str) -> VerificationResultDTO:
     if verified:
         return VerificationResultDTO(verified=True, message="RSI account verified successfully")
     return VerificationResultDTO(verified=False, message="Verification code not found in RSI profile bio")
+
+
+@router.post("/authorize", response_model=AuthorizeResponseDTO)
+def authorize(dto: AuthorizeDTO) -> AuthorizeResponseDTO:
+    try:
+        auth_code = _auth_service.authorize(dto.username, dto.password, dto.redirect_uri, dto.state)
+    except InvalidCredentialsError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+    except InvalidRedirectUriError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return AuthorizeResponseDTO(
+        code=auth_code.code,
+        state=auth_code.state,
+        redirect_uri=auth_code.redirect_uri,
+    )
+
+
+@router.post("/token/exchange", response_model=TokenDTO)
+def exchange_token(dto: TokenExchangeDTO) -> TokenDTO:
+    try:
+        token_response = _auth_service.exchange_code(dto.code, dto.redirect_uri)
+    except InvalidAuthCodeError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except UserNotFoundError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return TokenDTO(
+        access_token=token_response.access_token,
+        refresh_token=token_response.refresh_token,
+        token_type=token_response.token_type,
+        expires_in=token_response.expires_in,
+    )
