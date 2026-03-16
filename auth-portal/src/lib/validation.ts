@@ -77,3 +77,19 @@ export function validateRegistrationForm(fields: {
 export function hasErrors(errors: ValidationErrors): boolean {
   return Object.keys(errors).length > 0;
 }
+
+export function validateLoginForm(fields: {
+  username: string;
+  password: string;
+}): ValidationErrors {
+  const errors: ValidationErrors = {};
+
+  const usernameError = validateUsername(fields.username);
+  if (usernameError) errors.username = usernameError;
+
+  if (!fields.password) {
+    errors.password = "Password is required";
+  }
+
+  return errors;
+}

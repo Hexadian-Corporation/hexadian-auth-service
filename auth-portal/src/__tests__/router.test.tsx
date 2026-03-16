@@ -17,7 +17,9 @@ describe("LoginPage", () => {
         <LoginPage />
       </MemoryRouter>,
     );
-    expect(screen.getByText("Sign In")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Sign In" }),
+    ).toBeInTheDocument();
   });
 });
 
@@ -62,13 +64,13 @@ describe("ChangePasswordPage", () => {
 });
 
 describe("CallbackPage", () => {
-  it("renders the processing text", async () => {
+  it("renders error when no code param", async () => {
     const { default: CallbackPage } = await import("@/pages/CallbackPage");
     render(
       <MemoryRouter>
         <CallbackPage />
       </MemoryRouter>,
     );
-    expect(screen.getByText("Processing...")).toBeInTheDocument();
+    expect(screen.getByText("Missing authorization code")).toBeInTheDocument();
   });
 });
