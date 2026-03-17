@@ -29,7 +29,15 @@ export default function CallbackPage() {
         setError("Authentication failed. Please try again.");
         setTimeout(() => redirectToPortal(), 2000);
       });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [code, state, navigate]);
+
+  if (!code && !error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#0a0e17]">
+        <p className="text-sm text-red-400">Missing authorization code.</p>
+      </div>
+    );
+  }
 
   if (!code && !error) {
     return (

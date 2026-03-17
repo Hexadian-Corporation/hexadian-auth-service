@@ -51,7 +51,8 @@ def register(dto: RegisterDTO) -> UserDTO:
     except InvalidAppSignatureError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     except UserAlreadyExistsError as exc:
-        raise HTTPException(status_code=409, detail=str(exc)) from exc
+        detail = "Username already taken" if exc.field == "username" else "RSI handle already registered"
+        raise HTTPException(status_code=409, detail={"message": detail, "field": exc.field}) from exc
     return AuthApiMapper.to_dto(user)
 
 
@@ -131,7 +132,8 @@ def update_user(
     except UserNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except UserAlreadyExistsError as exc:
-        raise HTTPException(status_code=409, detail=str(exc)) from exc
+        detail = "Username already taken" if exc.field == "username" else "RSI handle already registered"
+        raise HTTPException(status_code=409, detail={"message": detail, "field": exc.field}) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return AuthApiMapper.to_dto(user)
