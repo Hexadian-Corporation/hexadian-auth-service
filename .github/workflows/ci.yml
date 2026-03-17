@@ -56,21 +56,27 @@ jobs:
         run: npm run type-check
 
   portal-test:
-    name: Auth Portal Tests
+    name: "Auth Portal Tests & Coverage"
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: auth-portal
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: auth-portal/package-lock.json
       - run: npm ci --legacy-peer-deps
-      - name: Run tests
-        run: npm test
+      - name: Install coverage reporter
+        run: npm install --no-save @vitest/coverage-v8@^4.1.0
+      - name: Run tests with coverage
+        run: npm run test:coverage
+      - name: Check coverage on changed lines
+        run: pipx run diff-cover coverage/cobertura-coverage.xml --compare-branch=origin/main --fail-under=90
 
   backoffice-lint:
     name: "Backoffice: Lint & Type Check"
@@ -92,21 +98,27 @@ jobs:
         run: npm run type-check
 
   backoffice-test:
-    name: "Backoffice: Tests"
+    name: "Backoffice: Tests & Coverage"
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: auth-backoffice
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: auth-backoffice/package-lock.json
       - run: npm ci
-      - name: Run tests
-        run: npm test
+      - name: Install coverage reporter
+        run: npm install --no-save @vitest/coverage-v8@^4.1.0
+      - name: Run tests with coverage
+        run: npm run test:coverage
+      - name: Check coverage on changed lines
+        run: pipx run diff-cover coverage/cobertura-coverage.xml --compare-branch=origin/main --fail-under=90
 
   copilot-fix:
     name: Request Copilot Fix
@@ -159,7 +171,7 @@ jobs:
                   '- Check for missing imports, wrong types, or unused variables',
                 ].join('\n');
               } else if (job.name.includes('Auth Portal Tests')) {
-                desc = 'Auth Portal Tests (vitest)';
+                desc = 'Auth Portal Tests & Coverage (vitest + diff-cover \u2265 90%)';
                 fix = [
                   '- Run `cd auth-portal && npm test` locally to reproduce the failure',
                   '- Check that mocks and test fixtures match current code',
@@ -172,7 +184,7 @@ jobs:
                   '- Check for missing imports, wrong types, or unused variables',
                 ].join('\n');
               } else if (job.name.includes('Backoffice') && job.name.includes('Tests')) {
-                desc = 'Backoffice: Tests (vitest)';
+                desc = 'Backoffice: Tests & Coverage (vitest + diff-cover \u2265 90%)';
                 fix = [
                   '- Run `cd auth-backoffice && npm test` locally to reproduce the failure',
                   '- Check that mocks and test fixtures match current code',
