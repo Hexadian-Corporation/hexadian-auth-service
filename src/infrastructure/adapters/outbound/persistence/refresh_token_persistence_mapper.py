@@ -1,8 +1,6 @@
-from datetime import timezone
+from datetime import UTC
 
 from src.domain.models.refresh_token import RefreshToken
-
-_UTC = timezone.utc
 
 
 class RefreshTokenPersistenceMapper:
@@ -17,10 +15,13 @@ class RefreshTokenPersistenceMapper:
 
     @staticmethod
     def to_domain(doc: dict) -> RefreshToken:
+        expires = doc["expires_at"]
+        if expires.tzinfo is None:
+            expires = expires.replace(tzinfo=UTC)
         return RefreshToken(
             id=str(doc["_id"]),
             user_id=doc.get("user_id", ""),
             token=doc.get("token", ""),
-            expires_at=doc["expires_at"].replace(tzinfo=_UTC) if doc["expires_at"].tzinfo is None else doc["expires_at"],
+            expires_at=expires,
             revoked=doc.get("revoked", False),
         )
