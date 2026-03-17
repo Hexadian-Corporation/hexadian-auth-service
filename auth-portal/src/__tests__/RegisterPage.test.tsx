@@ -27,7 +27,6 @@ vi.mock("react-router", async () => {
   };
 });
 
-
 import { register, login } from "@/api/auth";
 import { storeTokens } from "@/lib/auth";
 const mockRegister = vi.mocked(register);
@@ -145,10 +144,10 @@ describe("RegisterPage", () => {
       rsi_verified: false,
     });
     mockLogin.mockResolvedValueOnce({
-      access_token: "token",
-      refresh_token: "refresh",
+      access_token: "test-access",
+      refresh_token: "test-refresh",
       token_type: "bearer",
-      expires_in: 900,
+      expires_in: 3600,
     });
 
     const user = userEvent.setup();
@@ -165,6 +164,13 @@ describe("RegisterPage", () => {
         username: "testuser",
         password: "password123",
         rsi_handle: "test-handle",
+      });
+    });
+
+    await waitFor(() => {
+      expect(mockLogin).toHaveBeenCalledWith({
+        username: "testuser",
+        password: "password123",
       });
     });
 

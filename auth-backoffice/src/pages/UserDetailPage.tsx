@@ -153,8 +153,8 @@ export default function UserDetailPage() {
   if (loading) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold">User Detail</h1>
-        <p className="text-gray-500">Loading…</p>
+        <h1 className="text-2xl font-bold text-slate-100">User Detail</h1>
+        <p className="text-slate-400">Loading…</p>
       </div>
     );
   }
@@ -162,11 +162,11 @@ export default function UserDetailPage() {
   if (!user) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold">User Detail</h1>
-        <p className="text-red-600">{error ?? "User not found"}</p>
+        <h1 className="text-2xl font-bold text-slate-100">User Detail</h1>
+        <p className="text-red-400">{error ?? "User not found"}</p>
         <button
           onClick={() => navigate("/users")}
-          className="text-sm text-blue-600 hover:underline"
+          className="text-sm text-cyan-400 hover:underline"
         >
           ← Back to Users
         </button>
@@ -179,16 +179,16 @@ export default function UserDetailPage() {
       <div className="flex items-center gap-3">
         <button
           onClick={() => navigate("/users")}
-          className="rounded-md p-1 hover:bg-gray-100"
+          className="rounded-md p-1 text-slate-300 hover:bg-slate-800"
           title="Back to users"
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <h1 className="text-2xl font-bold">Edit User</h1>
+        <h1 className="text-2xl font-bold text-slate-100">Edit User</h1>
         <div className="ml-auto flex gap-2">
           <button
             onClick={() => setShowPasswordDialog(true)}
-            className="inline-flex items-center gap-1 rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="inline-flex items-center gap-1 rounded-md border border-slate-600 px-3 py-1.5 text-sm font-medium text-slate-300 hover:bg-slate-800"
           >
             <KeyRound className="h-4 w-4" />
             Reset Password
@@ -204,24 +204,24 @@ export default function UserDetailPage() {
       </div>
 
       {error && (
-        <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        <div className="rounded-md border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-400">
           {error}
         </div>
       )}
       {successMessage && (
-        <div className="rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-700">
+        <div className="rounded-md border border-green-500/30 bg-green-500/10 p-3 text-sm text-green-400">
           {successMessage}
         </div>
       )}
 
       {/* Edit form */}
-      <div className="rounded-lg border border-gray-200 bg-white p-6">
-        <h2 className="mb-4 text-lg font-semibold">User Information</h2>
+      <div className="rounded-lg border border-slate-700 bg-slate-900/80 p-6">
+        <h2 className="mb-4 text-lg font-semibold text-slate-100">User Information</h2>
         <div className="space-y-4">
           <div>
             <label
               htmlFor="username"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-slate-300"
             >
               Username
             </label>
@@ -230,13 +230,13 @@ export default function UserDetailPage() {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+              className="mt-1 w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 focus:outline-none"
             />
           </div>
           <div>
             <label
               htmlFor="rsi-handle"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-slate-300"
             >
               RSI Handle
             </label>
@@ -245,37 +245,37 @@ export default function UserDetailPage() {
               type="text"
               value={rsiHandle}
               onChange={(e) => setRsiHandle(e.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+              className="mt-1 w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 focus:outline-none"
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-slate-500">
               Changing the RSI handle will reset RSI verification.
             </p>
           </div>
           <div className="flex items-center gap-4">
             <div>
-              <span className="block text-sm font-medium text-gray-700">
+              <span className="block text-sm font-medium text-slate-300">
                 Active
               </span>
               {user.is_active ? (
-                <span className="inline-flex rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                <span className="inline-flex rounded-full bg-green-500/20 px-2 py-0.5 text-xs font-medium text-green-400">
                   Active
                 </span>
               ) : (
-                <span className="inline-flex rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+                <span className="inline-flex rounded-full bg-red-500/20 px-2 py-0.5 text-xs font-medium text-red-400">
                   Inactive
                 </span>
               )}
             </div>
             <div>
-              <span className="block text-sm font-medium text-gray-700">
+              <span className="block text-sm font-medium text-slate-300">
                 RSI Verified
               </span>
               {user.rsi_verified ? (
-                <span className="inline-flex rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                <span className="inline-flex rounded-full bg-green-500/20 px-2 py-0.5 text-xs font-medium text-green-400">
                   Verified
                 </span>
               ) : (
-                <span className="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+                <span className="inline-flex rounded-full bg-slate-700 px-2 py-0.5 text-xs font-medium text-slate-300">
                   Unverified
                 </span>
               )}
@@ -285,7 +285,7 @@ export default function UserDetailPage() {
             <button
               onClick={handleSave}
               disabled={saving}
-              className="inline-flex items-center gap-1 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-md bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-500 disabled:opacity-50"
             >
               <Save className="h-4 w-4" />
               {saving ? "Saving…" : "Save"}
@@ -295,20 +295,20 @@ export default function UserDetailPage() {
       </div>
 
       {/* Group management */}
-      <div className="rounded-lg border border-gray-200 bg-white p-6">
-        <h2 className="mb-4 text-lg font-semibold">Groups</h2>
+      <div className="rounded-lg border border-slate-700 bg-slate-900/80 p-6">
+        <h2 className="mb-4 text-lg font-semibold text-slate-100">Groups</h2>
         <div className="space-y-3">
           {user.group_ids.length > 0 ? (
             <div className="flex flex-wrap gap-2">
               {user.group_ids.map((gid) => (
                 <span
                   key={gid}
-                  className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-700"
+                  className="inline-flex items-center gap-1 rounded-full bg-cyan-500/20 px-3 py-1 text-sm font-medium text-cyan-400"
                 >
                   {getGroupName(gid)}
                   <button
                     onClick={() => handleRemoveGroup(gid)}
-                    className="ml-1 rounded-full p-0.5 hover:bg-blue-200"
+                    className="ml-1 rounded-full p-0.5 hover:bg-cyan-500/30"
                     title={`Remove ${getGroupName(gid)}`}
                   >
                     <X className="h-3 w-3" />
@@ -317,14 +317,14 @@ export default function UserDetailPage() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-500">No groups assigned.</p>
+            <p className="text-sm text-slate-400">No groups assigned.</p>
           )}
           {availableGroups().length > 0 && (
             <div className="flex items-center gap-2">
               <select
                 value={addGroupId}
                 onChange={(e) => setAddGroupId(e.target.value)}
-                className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                className="rounded-md border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 focus:outline-none"
               >
                 <option value="">Add group…</option>
                 {availableGroups().map((g) => (
@@ -336,7 +336,7 @@ export default function UserDetailPage() {
               <button
                 onClick={handleAddGroup}
                 disabled={!addGroupId}
-                className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                className="rounded-md bg-cyan-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-cyan-500 disabled:opacity-50"
               >
                 Add
               </button>
@@ -348,9 +348,9 @@ export default function UserDetailPage() {
       {/* Delete confirmation dialog */}
       {showDeleteDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
-            <h2 className="text-lg font-semibold">Delete User</h2>
-            <p className="mt-2 text-sm text-gray-600">
+          <div className="w-full max-w-sm rounded-lg border border-slate-700 bg-slate-900 p-6 shadow-xl">
+            <h2 className="text-lg font-semibold text-slate-100">Delete User</h2>
+            <p className="mt-2 text-sm text-slate-300">
               Are you sure you want to delete{" "}
               <strong>{user.username}</strong>? This action cannot be undone.
             </p>
@@ -358,7 +358,7 @@ export default function UserDetailPage() {
               <button
                 onClick={() => setShowDeleteDialog(false)}
                 disabled={deleting}
-                className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                className="rounded-md border border-slate-600 px-3 py-1.5 text-sm font-medium text-slate-300 hover:bg-slate-800 disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -377,20 +377,20 @@ export default function UserDetailPage() {
       {/* Password reset dialog */}
       {showPasswordDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
-            <h2 className="text-lg font-semibold">Reset Password</h2>
-            <p className="mt-2 text-sm text-gray-600">
+          <div className="w-full max-w-sm rounded-lg border border-slate-700 bg-slate-900 p-6 shadow-xl">
+            <h2 className="text-lg font-semibold text-slate-100">Reset Password</h2>
+            <p className="mt-2 text-sm text-slate-300">
               Set a new password for <strong>{user.username}</strong>.
             </p>
             {passwordError && (
-              <div className="mt-2 rounded-md border border-red-200 bg-red-50 p-2 text-sm text-red-700">
+              <div className="mt-2 rounded-md border border-red-500/30 bg-red-500/10 p-2 text-sm text-red-400">
                 {passwordError}
               </div>
             )}
             <div className="mt-3">
               <label
                 htmlFor="new-password"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-slate-300"
               >
                 New Password
               </label>
@@ -400,7 +400,7 @@ export default function UserDetailPage() {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Minimum 8 characters"
-                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                className="mt-1 w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 focus:outline-none"
               />
             </div>
             <div className="mt-4 flex justify-end gap-2">
@@ -411,14 +411,14 @@ export default function UserDetailPage() {
                   setPasswordError(null);
                 }}
                 disabled={resettingPassword}
-                className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                className="rounded-md border border-slate-600 px-3 py-1.5 text-sm font-medium text-slate-300 hover:bg-slate-800 disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleResetPassword}
                 disabled={resettingPassword}
-                className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                className="rounded-md bg-cyan-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-cyan-500 disabled:opacity-50"
               >
                 {resettingPassword ? "Resetting…" : "Reset Password"}
               </button>
