@@ -34,7 +34,7 @@ describe("LoginPage", () => {
     // Reset window.location.href mock
     Object.defineProperty(window, "location", {
       writable: true,
-      value: { href: "http://localhost:3003/login" },
+      value: { href: "http://localhost:3003/login", search: "" },
     });
   });
 

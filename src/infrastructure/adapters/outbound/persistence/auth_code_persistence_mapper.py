@@ -1,8 +1,6 @@
-from datetime import timezone
+from datetime import UTC
 
 from src.domain.models.auth_code import AuthCode
-
-_UTC = timezone.utc
 
 
 class AuthCodePersistenceMapper:
@@ -19,12 +17,15 @@ class AuthCodePersistenceMapper:
 
     @staticmethod
     def to_domain(doc: dict) -> AuthCode:
+        expires_at = doc["expires_at"]
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=UTC)
         return AuthCode(
             id=str(doc["_id"]),
             code=doc.get("code", ""),
             user_id=doc.get("user_id", ""),
             redirect_uri=doc.get("redirect_uri", ""),
             state=doc.get("state", ""),
-            expires_at=doc["expires_at"].replace(tzinfo=_UTC) if doc["expires_at"].tzinfo is None else doc["expires_at"],
+            expires_at=expires_at,
             used=doc.get("used", False),
         )
