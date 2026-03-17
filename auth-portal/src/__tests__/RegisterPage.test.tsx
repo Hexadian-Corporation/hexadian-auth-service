@@ -5,10 +5,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import RegisterPage from "@/pages/RegisterPage";
 import type { User } from "@/types/auth";
 
-vi.mock("@/api/auth", () => ({
-  register: vi.fn(),
-  login: vi.fn(),
-}));
+vi.mock("@/api/auth", async () => {
+  const actual = await vi.importActual("@/api/auth");
+  return {
+    ...actual,
+    register: vi.fn(),
+    login: vi.fn(),
+  };
+});
 
 vi.mock("@/lib/auth", async () => {
   const actual = await vi.importActual("@/lib/auth");
@@ -27,7 +31,7 @@ vi.mock("react-router", async () => {
   };
 });
 
-import { register, login } from "@/api/auth";
+import { register, login, DuplicateFieldError } from "@/api/auth";
 import { storeTokens } from "@/lib/auth";
 const mockRegister = vi.mocked(register);
 const mockLogin = vi.mocked(login);
@@ -264,5 +268,57 @@ describe("RegisterPage", () => {
     await waitFor(() => {
       expect(screen.getByText("Registration failed")).toBeInTheDocument();
     });
+  });
+
+  it("shows field error for duplicate username", async () => {
+    mockRegister.mockRejectedValueOnce(
+      new DuplicateFieldError("username", "Username already taken"),
+    );
+
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.type(screen.getByLabelText("Username"), "taken");
+    await user.type(screen.getByLabelText("Password"), "password123");
+    await user.type(screen.getByLabelText("Confirm Password"), "password123");
+    await user.type(screen.getByLabelText("RSI Handle"), "test-handle");
+    await user.click(screen.getByRole("button", { name: "Create Account" }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          "This username is already taken. Please choose a different one.",
+        ),
+      ).toBeInTheDocument();
+    });
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it("shows field error for duplicate RSI handle", async () => {
+    mockRegister.mockRejectedValueOnce(
+      new DuplicateFieldError("rsi_handle", "RSI handle already registered"),
+    );
+
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.type(screen.getByLabelText("Username"), "newuser");
+    await user.type(screen.getByLabelText("Password"), "password123");
+    await user.type(screen.getByLabelText("Confirm Password"), "password123");
+    await user.type(screen.getByLabelText("RSI Handle"), "TakenPilot");
+    await user.click(screen.getByRole("button", { name: "Create Account" }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          "This RSI handle is already registered to another account.",
+        ),
+      ).toBeInTheDocument();
+    });
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 });
