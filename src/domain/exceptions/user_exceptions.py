@@ -5,9 +5,10 @@ class UserNotFoundError(Exception):
 
 
 class UserAlreadyExistsError(Exception):
-    def __init__(self, username: str) -> None:
-        super().__init__(f"User already exists: {username}")
-        self.username = username
+    def __init__(self, identifier: str, field: str = "username") -> None:
+        super().__init__(f"User already exists: {identifier}")
+        self.identifier = identifier
+        self.field = field
 
 
 class InvalidCredentialsError(Exception):

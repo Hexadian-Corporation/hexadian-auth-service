@@ -106,12 +106,27 @@ class TestUpdateUserValidation:
 
 
 class TestUpdateUserConflict:
-    def test_duplicate_username_returns_409(self, client: TestClient, mock_auth_service: MagicMock) -> None:
-        mock_auth_service.update_user.side_effect = UserAlreadyExistsError("taken")
+    def test_duplicate_username_returns_409_with_field(self, client: TestClient, mock_auth_service: MagicMock) -> None:
+        mock_auth_service.update_user.side_effect = UserAlreadyExistsError("taken", field="username")
 
         response = client.put("/auth/users/user-1", json={"username": "taken"})
 
         assert response.status_code == 409
+        data = response.json()
+        assert data["detail"]["field"] == "username"
+        assert data["detail"]["message"] == "Username already taken"
+
+    def test_duplicate_rsi_handle_returns_409_with_field(
+        self, client: TestClient, mock_auth_service: MagicMock
+    ) -> None:
+        mock_auth_service.update_user.side_effect = UserAlreadyExistsError("TakenHandle", field="rsi_handle")
+
+        response = client.put("/auth/users/user-1", json={"rsi_handle": "TakenHandle"})
+
+        assert response.status_code == 409
+        data = response.json()
+        assert data["detail"]["field"] == "rsi_handle"
+        assert data["detail"]["message"] == "RSI handle already registered"
 
 
 class TestUpdateUserValueError:

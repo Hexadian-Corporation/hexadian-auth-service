@@ -459,3 +459,17 @@ class TestSeedDataDefinitions:
         for group in GROUPS:
             for name in group["role_names"]:
                 assert name in valid_names, f"Group '{group['name']}' has invalid role name: {name}"
+
+    def test_groups_have_auto_assign_apps_field(self) -> None:
+        for group in GROUPS:
+            assert "auto_assign_apps" in group, f"Group '{group['name']}' missing auto_assign_apps"
+            assert isinstance(group["auto_assign_apps"], list)
+
+    def test_users_group_auto_assign_apps(self) -> None:
+        users_group = next(g for g in GROUPS if g["name"] == "Users")
+        assert "hhh-frontend" in users_group["auto_assign_apps"]
+        assert "hhh-backoffice" in users_group["auto_assign_apps"]
+
+    def test_admins_group_has_empty_auto_assign_apps(self) -> None:
+        admins_group = next(g for g in GROUPS if g["name"] == "Admins")
+        assert admins_group["auto_assign_apps"] == []

@@ -8,13 +8,15 @@ from src.domain.models.user import User
 
 class AuthService(ABC):
     @abstractmethod
-    def register(self, username: str, password: str, rsi_handle: str) -> User: ...
+    def register(
+        self, username: str, password: str, rsi_handle: str, app_id: str | None = None, app_signature: str | None = None
+    ) -> User: ...
 
     @abstractmethod
     def authenticate(self, username: str, password: str) -> TokenResponse: ...
 
     @abstractmethod
-    def [REDACTED]_token(self, token: str) -> TokenResponse: ...
+    def refresh_token(self, token: str) -> TokenResponse: ...
 
     @abstractmethod
     def revoke_token(self, token: str) -> None: ...
@@ -30,12 +32,12 @@ class AuthService(ABC):
 
     @abstractmethod
     def start_verification(self, user_id: str, rsi_handle: str) -> str:
-        """Generate a verification code and store it on the user. [REDACTED] the code."""
+        """Generate a verification code and store it on the user. Returns the code."""
         ...
 
     @abstractmethod
     def confirm_verification(self, user_id: str) -> bool:
-        """Fetch the user's RSI profile and check for the verification code. [REDACTED] True if verified."""
+        """Fetch the user's RSI profile and check for the verification code. Returns True if verified."""
         ...
 
     @abstractmethod
@@ -45,32 +47,32 @@ class AuthService(ABC):
 
     @abstractmethod
     def update_user(self, user_id: str, updates: dict) -> User:
-        """Update allowed profile fields for a user. [REDACTED] the updated user."""
+        """Update allowed profile fields for a user. Returns the updated user."""
         ...  # pragma: no cover
 
     @abstractmethod
     def exchange_code(self, code: str, redirect_uri: str) -> TokenResponse:
-        """Exchange a valid authorization code for access + [REDACTED] tokens."""
+        """Exchange a valid authorization code for access + refresh tokens."""
         ...
 
     @abstractmethod
     def change_password(self, user_id: str, old_password: str, new_password: str) -> None:
-        """Change password for a user [REDACTED] [REDACTED] the old password. [REDACTED] all [REDACTED] tokens."""
+        """Change password for a user after verifying the old password. Revokes all refresh tokens."""
         ...
 
     @abstractmethod
     def reset_password(self, user_id: str, new_password: str) -> None:
-        """Admin reset of a user's password. [REDACTED] all [REDACTED] tokens."""
+        """Admin reset of a user's password. Revokes all refresh tokens."""
         ...
 
     @abstractmethod
     def forgot_password(self, username: str, rsi_handle: str) -> str:
-        """Generate a verification code for password reset via RSI bio. [REDACTED] the code."""
+        """Generate a verification code for password reset via RSI bio. Returns the code."""
         ...
 
     @abstractmethod
     def confirm_forgot_password(self, username: str, rsi_handle: str, new_password: str) -> None:
-        """Confirm forgot-password by [REDACTED] RSI bio for verification code, then reset password."""
+        """Confirm forgot-password by checking RSI bio for verification code, then reset password."""
         ...
 
     @abstractmethod

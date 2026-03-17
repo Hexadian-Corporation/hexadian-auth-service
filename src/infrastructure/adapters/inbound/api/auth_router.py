@@ -5,6 +5,7 @@ from hexadian_auth_common.context import UserContext
 from hexadian_auth_common.fastapi import _stub_jwt_auth, require_permission
 
 from src.application.ports.inbound.auth_service import AuthService
+from src.domain.exceptions.app_signature_exceptions import InvalidAppSignatureError
 from src.domain.exceptions.user_exceptions import (
     InvalidAuthCodeError,
     InvalidCredentialsError,
@@ -50,9 +51,12 @@ def init_router(auth_service: AuthService) -> None:
 @router.post("/register", response_model=UserDTO, status_code=201)
 def register(dto: RegisterDTO) -> UserDTO:
     try:
-        user = _auth_service.register(dto.username, dto.password, dto.rsi_handle)
+        user = _auth_service.register(dto.username, dto.password, dto.rsi_handle, dto.app_id, dto.app_signature)
+    except InvalidAppSignatureError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
     except UserAlreadyExistsError as exc:
-        raise HTTPException(status_code=409, detail=str(exc)) from exc
+        detail = "Username already taken" if exc.field == "username" else "RSI handle already registered"
+        raise HTTPException(status_code=409, detail={"message": detail, "field": exc.field}) from exc
     return AuthApiMapper.to_dto(user)
 
 
@@ -132,7 +136,8 @@ def update_user(
     except UserNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except UserAlreadyExistsError as exc:
-        raise HTTPException(status_code=409, detail=str(exc)) from exc
+        detail = "Username already taken" if exc.field == "username" else "RSI handle already registered"
+        raise HTTPException(status_code=409, detail={"message": detail, "field": exc.field}) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return AuthApiMapper.to_dto(user)
