@@ -4,6 +4,13 @@ Centralized identity platform for **Hexadian Corporation** applications. Handles
 
 Used across Hexadian projects including H³ (Hexadian Hauling Helper).
 
+## Related Repositories
+
+| Repo | Purpose |
+|------|---------|
+| [`hexadian-auth-common`](https://github.com/Hexadian-Corporation/hexadian-auth-common) | Shared Python library for JWT validation + FastAPI auth dependencies. Installed in all H³ Python services. |
+| [`hexadian-auth-common-php`](https://github.com/Hexadian-Corporation/hexadian-auth-common-php) | PHP counterpart — same JWT contract, PSR-15 middleware. For PHP consumers. |
+
 ## Quick Start
 
 ```bash
