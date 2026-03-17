@@ -17,6 +17,15 @@ import type {
 const AUTH_API_URL =
   import.meta.env.VITE_AUTH_API_URL ?? "http://localhost:8006";
 
+export class DuplicateFieldError extends Error {
+  field: string;
+  constructor(field: string, message: string) {
+    super(message);
+    this.name = "DuplicateFieldError";
+    this.field = field;
+  }
+}
+
 async function request<T>(
   path: string,
   options: RequestInit = {},
@@ -29,6 +38,15 @@ async function request<T>(
   if (!res.ok) {
     const body = await res.json().catch(() => null);
     const detail = (body as { detail?: unknown } | null)?.detail;
+    if (
+      res.status === 409 &&
+      typeof detail === "object" &&
+      detail !== null &&
+      "field" in detail
+    ) {
+      const d = detail as { field: string; message?: string };
+      throw new DuplicateFieldError(d.field, d.message ?? "Conflict");
+    }
     const message =
       typeof detail === "string"
         ? detail

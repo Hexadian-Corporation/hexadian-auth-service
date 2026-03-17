@@ -1,7 +1,7 @@
 import { type FormEvent, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import AuthLayout from "@/layouts/AuthLayout";
-import { register, login } from "@/api/auth";
+import { register, login, DuplicateFieldError } from "@/api/auth";
 import { storeTokens } from "@/lib/auth";
 import {
   validateRegistrationForm,
@@ -41,7 +41,21 @@ export default function RegisterPage() {
       storeTokens(tokens);
       navigate(`/verify?${searchParams.toString()}`);
     } catch (err) {
-      setApiError(err instanceof Error ? err.message : "Registration failed");
+      if (err instanceof DuplicateFieldError) {
+        if (err.field === "username") {
+          setErrors((prev) => ({
+            ...prev,
+            username: "This username is already taken. Please choose a different one.",
+          }));
+        } else if (err.field === "rsi_handle") {
+          setErrors((prev) => ({
+            ...prev,
+            rsiHandle: "This RSI handle is already registered to another account.",
+          }));
+        }
+      } else {
+        setApiError(err instanceof Error ? err.message : "Registration failed");
+      }
     } finally {
       setSubmitting(false);
     }
