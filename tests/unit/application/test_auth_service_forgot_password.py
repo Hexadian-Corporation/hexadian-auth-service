@@ -8,7 +8,7 @@ from src.application.ports.outbound.group_repository import GroupRepository
 from src.application.ports.outbound.refresh_token_repository import RefreshTokenRepository
 from src.application.ports.outbound.rsi_profile_fetcher import RsiProfileFetcher
 from src.application.ports.outbound.user_repository import UserRepository
-from src.application.services.auth_service_impl import AuthServiceImpl, _VERIFICATION_PREFIX, _WORD_LIST
+from src.application.services.auth_service_impl import _VERIFICATION_PREFIX, _WORD_LIST, AuthServiceImpl
 from src.domain.exceptions.user_exceptions import (
     RsiHandleMismatchError,
     UserNotFoundError,
@@ -166,9 +166,7 @@ class TestConfirmForgotPassword:
 
         mock_refresh_token_repository.revoke_all_for_user.assert_called_once_with("user-1")
 
-    def test_confirm_forgot_password_user_not_found(
-        self, service: AuthServiceImpl, mock_repository: MagicMock
-    ) -> None:
+    def test_confirm_forgot_password_user_not_found(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
         mock_repository.find_by_username.return_value = None
 
         with pytest.raises(UserNotFoundError):

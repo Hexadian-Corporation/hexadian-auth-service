@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { exchangeCode } from "@/api/auth";
 import { storeTokens, redirectToPortal } from "@/lib/auth";
@@ -7,13 +7,17 @@ export default function CallbackPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [error, setError] = useState("");
+  const didRun = useRef(false);
 
   useEffect(() => {
+    if (didRun.current) return;
+    didRun.current = true;
+
     const code = searchParams.get("code");
     const state = searchParams.get("state");
 
     if (!code) {
-      setError("Missing authorization code.");
+      queueMicrotask(() => setError("Missing authorization code."));
       setTimeout(() => redirectToPortal(), 2000);
       return;
     }

@@ -125,9 +125,7 @@ class TestForgotPasswordConfirmEndpoint:
 
         assert response.status_code == 400
 
-    def test_confirm_forgot_password_code_not_in_bio(
-        self, client: TestClient, mock_auth_service: MagicMock
-    ) -> None:
+    def test_confirm_forgot_password_code_not_in_bio(self, client: TestClient, mock_auth_service: MagicMock) -> None:
         mock_auth_service.confirm_forgot_password.side_effect = ValueError("Verification code not found")
 
         response = client.post(
