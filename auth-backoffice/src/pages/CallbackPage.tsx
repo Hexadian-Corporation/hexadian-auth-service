@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { exchangeCode } from "@/api/auth";
 import { storeTokens, redirectToPortal } from "@/lib/auth";
@@ -6,20 +6,25 @@ import { storeTokens, redirectToPortal } from "@/lib/auth";
 export default function CallbackPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [error, setError] = useState("");
+  const [error, setError] = useState(() => {
+    const code = new URLSearchParams(window.location.search).get("code");
+    return code ? "" : "Missing authorization code.";
+  });
+  const exchanged = useRef(false);
 
   useEffect(() => {
-    const code = searchParams.get("code");
-    const state = searchParams.get("state");
-
-    if (!code) {
-      setError("Missing authorization code.");
+    if (error) {
       setTimeout(() => redirectToPortal(), 2000);
       return;
     }
 
+    if (exchanged.current) return;
+    exchanged.current = true;
+
+    const code = searchParams.get("code");
+    const state = searchParams.get("state");
     const redirectUri = `${window.location.origin}/callback`;
-    exchangeCode(code, redirectUri)
+    exchangeCode(code!, redirectUri)
       .then(({ access_token, refresh_token }) => {
         storeTokens(access_token, refresh_token);
         const returnPath = state ? decodeURIComponent(state) : "/";
@@ -29,7 +34,7 @@ export default function CallbackPage() {
         setError("Authentication failed. Please try again.");
         setTimeout(() => redirectToPortal(), 2000);
       });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [error, searchParams, navigate]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#0a0e17]">
