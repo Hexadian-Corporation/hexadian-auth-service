@@ -1,13 +1,16 @@
 from abc import ABC, abstractmethod
 
 from src.domain.models.auth_code import AuthCode
+from src.domain.models.introspection_result import IntrospectionResult
 from src.domain.models.token_response import TokenResponse
 from src.domain.models.user import User
 
 
 class AuthService(ABC):
     @abstractmethod
-    def register(self, username: str, password: str, rsi_handle: str) -> User: ...
+    def register(
+        self, username: str, password: str, rsi_handle: str, app_id: str | None = None, app_signature: str | None = None
+    ) -> User: ...
 
     @abstractmethod
     def authenticate(self, username: str, password: str) -> TokenResponse: ...
@@ -60,4 +63,9 @@ class AuthService(ABC):
     @abstractmethod
     def reset_password(self, user_id: str, new_password: str) -> None:
         """Admin reset of a user's password. Revokes all refresh tokens."""
+        ...
+
+    @abstractmethod
+    def introspect_token(self, token: str) -> IntrospectionResult:
+        """Validate a JWT access token and return the user's active status plus resolved claims."""
         ...

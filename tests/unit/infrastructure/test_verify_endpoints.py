@@ -6,6 +6,7 @@ from hexadian_auth_common.context import UserContext
 from hexadian_auth_common.fastapi import _stub_jwt_auth
 
 from src.application.ports.inbound.auth_service import AuthService
+from src.domain.exceptions.app_signature_exceptions import InvalidAppSignatureError
 from src.domain.exceptions.user_exceptions import (
     InvalidCredentialsError,
     UserAlreadyExistsError,
@@ -106,8 +107,10 @@ class TestVerifyConfirmEndpoint:
 
 
 class TestRegisterEndpoint:
-    def test_register_duplicate_returns_409(self, client: TestClient, mock_auth_service: MagicMock) -> None:
-        mock_auth_service.register.side_effect = UserAlreadyExistsError("taken")
+    def test_register_duplicate_username_returns_409_with_field(
+        self, client: TestClient, mock_auth_service: MagicMock
+    ) -> None:
+        mock_auth_service.register.side_effect = UserAlreadyExistsError("taken", field="username")
 
         response = client.post(
             "/auth/register",
@@ -115,6 +118,24 @@ class TestRegisterEndpoint:
         )
 
         assert response.status_code == 409
+        data = response.json()
+        assert data["detail"]["field"] == "username"
+        assert data["detail"]["message"] == "Username already taken"
+
+    def test_register_duplicate_rsi_handle_returns_409_with_field(
+        self, client: TestClient, mock_auth_service: MagicMock
+    ) -> None:
+        mock_auth_service.register.side_effect = UserAlreadyExistsError("TakenPilot", field="rsi_handle")
+
+        response = client.post(
+            "/auth/register",
+            json={"username": "newuser", "password": "pw", "rsi_handle": "TakenPilot"},
+        )
+
+        assert response.status_code == 409
+        data = response.json()
+        assert data["detail"]["field"] == "rsi_handle"
+        assert data["detail"]["message"] == "RSI handle already registered"
 
     def test_register_invalid_rsi_handle_returns_422(self, client: TestClient) -> None:
         response = client.post(
@@ -131,6 +152,41 @@ class TestRegisterEndpoint:
         )
 
         assert response.status_code == 422
+
+    def test_register_invalid_app_signature_returns_403(self, client: TestClient, mock_auth_service: MagicMock) -> None:
+        mock_auth_service.register.side_effect = InvalidAppSignatureError()
+
+        response = client.post(
+            "/auth/register",
+            json={
+                "username": "user",
+                "password": "pw",
+                "rsi_handle": "ValidPilot",
+                "app_id": "hhh-frontend",
+                "app_signature": "bad-sig",
+            },
+        )
+
+        assert response.status_code == 403
+
+    def test_register_with_app_id_passes_to_service(self, client: TestClient, mock_auth_service: MagicMock) -> None:
+        from src.domain.models.user import User
+
+        mock_auth_service.register.return_value = User(id="u-1", username="newuser", rsi_handle="ValidPilot")
+
+        response = client.post(
+            "/auth/register",
+            json={
+                "username": "newuser",
+                "password": "pw",
+                "rsi_handle": "ValidPilot",
+                "app_id": "hhh-frontend",
+                "app_signature": "some-sig",
+            },
+        )
+
+        assert response.status_code == 201
+        mock_auth_service.register.assert_called_once_with("newuser", "pw", "ValidPilot", "hhh-frontend", "some-sig")
 
 
 class TestLoginEndpoint:

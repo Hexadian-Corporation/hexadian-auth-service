@@ -77,11 +77,13 @@ GROUPS: list[dict[str, object]] = [
         "name": "Admins",
         "description": "Full system access. For administrators.",
         "role_names": ["Super Admin"],
+        "auto_assign_apps": [],
     },
     {
         "name": "Users",
         "description": "Default group for new registered users. Read access + can create contracts.",
         "role_names": ["Member"],
+        "auto_assign_apps": ["hhh-frontend", "hhh-backoffice"],
     },
 ]
 
@@ -148,11 +150,14 @@ def seed(settings: Settings | None = None) -> None:
                 role_names = group_def["role_names"]
                 assert isinstance(role_names, list)
                 role_ids = [role_id_map[rn] for rn in role_names]
+                auto_assign_apps = group_def.get("auto_assign_apps", [])
+                assert isinstance(auto_assign_apps, list)
                 result = groups_col.insert_one(
                     {
                         "name": name,
                         "description": group_def["description"],
                         "role_ids": role_ids,
+                        "auto_assign_apps": auto_assign_apps,
                     }
                 )
                 group_id_map[name] = str(result.inserted_id)

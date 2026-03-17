@@ -24,5 +24,6 @@ class Settings(BaseSettings):
         "http://localhost:3003",
     ]
     admin_password: str = "admin"
+    app_signing_secret: str = "change-me-in-production"
 
     model_config = {"env_prefix": "HEXADIAN_AUTH_"}

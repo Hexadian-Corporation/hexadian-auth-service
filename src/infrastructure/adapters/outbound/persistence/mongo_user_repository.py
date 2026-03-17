@@ -23,7 +23,10 @@ class MongoUserRepository(UserRepository):
             user.id = str(result.inserted_id)
             return user
         except DuplicateKeyError as exc:
-            raise UserAlreadyExistsError(user.username) from exc
+            key_pattern = exc.details.get("keyPattern", {}) if exc.details else {}
+            if "rsi_handle" in key_pattern:
+                raise UserAlreadyExistsError(user.rsi_handle, field="rsi_handle") from exc
+            raise UserAlreadyExistsError(user.username, field="username") from exc
 
     def find_by_id(self, user_id: str) -> User | None:
         doc = self._collection.find_one({"_id": ObjectId(user_id)})
@@ -33,6 +36,12 @@ class MongoUserRepository(UserRepository):
 
     def find_by_username(self, username: str) -> User | None:
         doc = self._collection.find_one({"username": username})
+        if doc is None:
+            return None
+        return UserPersistenceMapper.to_domain(doc)
+
+    def find_by_rsi_handle(self, rsi_handle: str) -> User | None:
+        doc = self._collection.find_one({"rsi_handle": rsi_handle})
         if doc is None:
             return None
         return UserPersistenceMapper.to_domain(doc)
@@ -52,7 +61,10 @@ class MongoUserRepository(UserRepository):
                 return_document=ReturnDocument.AFTER,
             )
         except DuplicateKeyError as exc:
-            raise UserAlreadyExistsError(fields.get("username", user_id)) from exc
+            key_pattern = exc.details.get("keyPattern", {}) if exc.details else {}
+            if "rsi_handle" in key_pattern:
+                raise UserAlreadyExistsError(fields.get("rsi_handle", user_id), field="rsi_handle") from exc
+            raise UserAlreadyExistsError(fields.get("username", user_id), field="username") from exc
         if result is None:
             return None
         return UserPersistenceMapper.to_domain(result)

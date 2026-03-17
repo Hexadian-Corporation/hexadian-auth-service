@@ -96,6 +96,35 @@ class TestGroupFind:
         assert len(result) == 1
         mock_collection.find.assert_called_once()
 
+    def test_find_by_app_id_returns_matching_groups(
+        self, repository: MongoGroupRepository, mock_collection: MagicMock
+    ) -> None:
+        mock_collection.find.return_value = [
+            {
+                "_id": "1",
+                "name": "Users",
+                "description": "Users group",
+                "role_ids": [],
+                "auto_assign_apps": ["hhh-frontend"],
+            },
+        ]
+
+        result = repository.find_by_app_id("hhh-frontend")
+
+        assert len(result) == 1
+        assert result[0].name == "Users"
+        assert result[0].auto_assign_apps == ["hhh-frontend"]
+        mock_collection.find.assert_called_once_with({"auto_assign_apps": "hhh-frontend"})
+
+    def test_find_by_app_id_returns_empty_when_no_match(
+        self, repository: MongoGroupRepository, mock_collection: MagicMock
+    ) -> None:
+        mock_collection.find.return_value = []
+
+        result = repository.find_by_app_id("unknown-app")
+
+        assert result == []
+
 
 class TestGroupDelete:
     def test_delete_returns_true(self, repository: MongoGroupRepository, mock_collection: MagicMock) -> None:
