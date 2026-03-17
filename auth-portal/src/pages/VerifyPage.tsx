@@ -75,9 +75,9 @@ export default function VerifyPage() {
 
   useEffect(() => {
     if (!tokenPayload) {
-      navigate("/login?redirect_uri=/verify", { replace: true });
+      navigate(`/login?${searchParams.toString()}`, { replace: true });
     }
-  }, [tokenPayload, navigate]);
+  }, [tokenPayload, navigate, searchParams]);
 
   if (!tokenPayload) {
     return null;

@@ -73,7 +73,7 @@ describe("VerifyPage", () => {
       renderPage();
 
       expect(mockNavigate).toHaveBeenCalledWith(
-        "/login?redirect_uri=/verify",
+        "/login?",
         { replace: true },
       );
     });

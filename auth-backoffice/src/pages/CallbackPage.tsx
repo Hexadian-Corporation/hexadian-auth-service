@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { exchangeCode } from "@/api/auth";
 import { storeTokens, redirectToPortal } from "@/lib/auth";
@@ -7,17 +7,12 @@ export default function CallbackPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [error, setError] = useState("");
-  const didRun = useRef(false);
+
+  const code = searchParams.get("code");
+  const state = searchParams.get("state");
 
   useEffect(() => {
-    if (didRun.current) return;
-    didRun.current = true;
-
-    const code = searchParams.get("code");
-    const state = searchParams.get("state");
-
     if (!code) {
-      queueMicrotask(() => setError("Missing authorization code."));
       setTimeout(() => redirectToPortal(), 2000);
       return;
     }
@@ -34,6 +29,14 @@ export default function CallbackPage() {
         setTimeout(() => redirectToPortal(), 2000);
       });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!code && !error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#0a0e17]">
+        <p className="text-sm text-red-400">Missing authorization code.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#0a0e17]">

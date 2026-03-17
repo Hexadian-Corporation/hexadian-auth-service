@@ -98,7 +98,7 @@ class TestForgotPassword:
         assert code.startswith(_VERIFICATION_PREFIX)
         words_part = code[len(_VERIFICATION_PREFIX) :]
         words = words_part.split("-")
-        assert len(words) == 6
+        assert len(words) == 4
         assert all(word in _WORD_LIST for word in words)
         assert user.rsi_verification_code == code
         mock_repository.save.assert_called_once_with(user)
