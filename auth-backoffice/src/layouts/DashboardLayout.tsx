@@ -18,8 +18,12 @@ export default function DashboardLayout() {
       {/* Sidebar */}
       <aside className="flex w-64 flex-col border-r border-slate-700 bg-slate-900">
         <div className="border-b border-slate-700 p-4">
-          <h2 className="text-lg font-bold text-cyan-400">Hexadian</h2>
-          <p className="text-xs text-slate-400">Auth Backoffice</p>
+          <img
+            src="/brand/HEXADIAN-Letters.svg"
+            alt="Hexadian"
+            className="h-7"
+          />
+          <p className="mt-1 text-xs text-slate-400">Auth Backoffice</p>
         </div>
 
         <nav className="flex-1 space-y-1 p-2">

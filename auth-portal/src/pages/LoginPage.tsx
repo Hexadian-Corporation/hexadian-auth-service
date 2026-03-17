@@ -117,7 +117,7 @@ export default function LoginPage() {
       <p className="mt-4 text-center text-sm text-slate-400">
         Don&apos;t have an account?{" "}
         <Link
-          to={`/register${window.location.search}`}
+          to={`/register?${searchParams.toString()}`}
           className="text-cyan-400 hover:underline"
         >
           Register

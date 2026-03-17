@@ -13,7 +13,7 @@ describe("Router", () => {
     );
     render(<RouterProvider router={router} />);
     expect(screen.getByText("Auth Backoffice")).toBeInTheDocument();
-    expect(screen.getByText("Hexadian")).toBeInTheDocument();
+    expect(screen.getByAltText("Hexadian")).toBeInTheDocument();
   });
 
   it("renders the users page inside dashboard layout", () => {
@@ -60,9 +60,9 @@ describe("Router", () => {
       { initialEntries: ["/users"] },
     );
     render(<RouterProvider router={router} />);
-    const heading = screen.getByText("Hexadian");
-    expect(heading).toBeInTheDocument();
-    expect(heading.className).toContain("text-cyan-400");
+    const logo = screen.getByAltText("Hexadian");
+    expect(logo).toBeInTheDocument();
+    expect(logo).toHaveAttribute("src", "/brand/HEXADIAN-Letters.svg");
   });
 
   it("renders login page with dark theme", () => {

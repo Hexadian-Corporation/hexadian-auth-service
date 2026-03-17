@@ -3,9 +3,11 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-[#0b0e17] px-4">
       <div className="w-full max-w-md space-y-8">
         <div className="flex flex-col items-center gap-2">
-          <h1 className="text-3xl font-bold tracking-tight text-cyan-400">
-            Hexadian
-          </h1>
+          <img
+            src="/brand/HEXADIAN-Letters.svg"
+            alt="Hexadian"
+            className="h-9"
+          />
           <p className="text-sm text-slate-400">Auth Backoffice</p>
         </div>
         <div className="rounded-xl border border-slate-700/60 bg-slate-900/80 p-8 shadow-lg backdrop-blur-sm">
