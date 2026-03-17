@@ -10,9 +10,13 @@ vi.mock("@/api/auth", () => ({
   login: vi.fn(),
 }));
 
-vi.mock("@/lib/auth", () => ({
-  storeTokens: vi.fn(),
-}));
+vi.mock("@/lib/auth", async () => {
+  const actual = await vi.importActual("@/lib/auth");
+  return {
+    ...actual,
+    storeTokens: vi.fn(),
+  };
+});
 
 const mockNavigate = vi.fn();
 vi.mock("react-router", async () => {
@@ -77,12 +81,12 @@ describe("RegisterPage", () => {
 
     await user.click(screen.getByRole("button", { name: "Create Account" }));
 
-    expect(screen.getByText("Username is required")).toBeInTheDocument();
-    expect(screen.getByText("Password is required")).toBeInTheDocument();
+    expect(screen.getByText("Username is [REDACTED]")).toBeInTheDocument();
+    expect(screen.getByText("Password is [REDACTED]")).toBeInTheDocument();
     expect(
       screen.getByText("Please confirm your password"),
     ).toBeInTheDocument();
-    expect(screen.getByText("RSI handle is required")).toBeInTheDocument();
+    expect(screen.getByText("RSI handle is [REDACTED]")).toBeInTheDocument();
   });
 
   it("shows password mismatch error", async () => {
@@ -90,7 +94,7 @@ describe("RegisterPage", () => {
     renderPage();
 
     await user.type(screen.getByLabelText("Username"), "testuser");
-    await user.type(screen.getByLabelText("Password"), "password123");
+    await user.type(screen.getByLabelText("Password"), "[REDACTED]");
     await user.type(screen.getByLabelText("Confirm Password"), "different");
     await user.type(screen.getByLabelText("RSI Handle"), "test-handle");
     await user.click(screen.getByRole("button", { name: "Create Account" }));
@@ -118,8 +122,8 @@ describe("RegisterPage", () => {
     renderPage();
 
     await user.type(screen.getByLabelText("Username"), "testuser");
-    await user.type(screen.getByLabelText("Password"), "password123");
-    await user.type(screen.getByLabelText("Confirm Password"), "password123");
+    await user.type(screen.getByLabelText("Password"), "[REDACTED]");
+    await user.type(screen.getByLabelText("Confirm Password"), "[REDACTED]");
     await user.type(screen.getByLabelText("RSI Handle"), "a@");
     await user.click(screen.getByRole("button", { name: "Create Account" }));
 
@@ -150,15 +154,15 @@ describe("RegisterPage", () => {
     renderPage();
 
     await user.type(screen.getByLabelText("Username"), "testuser");
-    await user.type(screen.getByLabelText("Password"), "password123");
-    await user.type(screen.getByLabelText("Confirm Password"), "password123");
+    await user.type(screen.getByLabelText("Password"), "[REDACTED]");
+    await user.type(screen.getByLabelText("Confirm Password"), "[REDACTED]");
     await user.type(screen.getByLabelText("RSI Handle"), "test-handle");
     await user.click(screen.getByRole("button", { name: "Create Account" }));
 
     await waitFor(() => {
       expect(mockRegister).toHaveBeenCalledWith({
         username: "testuser",
-        password: "password123",
+        password: "[REDACTED]",
         rsi_handle: "test-handle",
       });
     });
@@ -166,7 +170,7 @@ describe("RegisterPage", () => {
     await waitFor(() => {
       expect(mockLogin).toHaveBeenCalledWith({
         username: "testuser",
-        password: "password123",
+        password: "[REDACTED]",
       });
     });
 
@@ -183,8 +187,8 @@ describe("RegisterPage", () => {
     renderPage();
 
     await user.type(screen.getByLabelText("Username"), "testuser");
-    await user.type(screen.getByLabelText("Password"), "password123");
-    await user.type(screen.getByLabelText("Confirm Password"), "password123");
+    await user.type(screen.getByLabelText("Password"), "[REDACTED]");
+    await user.type(screen.getByLabelText("Confirm Password"), "[REDACTED]");
     await user.type(screen.getByLabelText("RSI Handle"), "test-handle");
     await user.click(screen.getByRole("button", { name: "Create Account" }));
 
@@ -219,8 +223,8 @@ describe("RegisterPage", () => {
     renderPage();
 
     await user.type(screen.getByLabelText("Username"), "testuser");
-    await user.type(screen.getByLabelText("Password"), "password123");
-    await user.type(screen.getByLabelText("Confirm Password"), "password123");
+    await user.type(screen.getByLabelText("Password"), "[REDACTED]");
+    await user.type(screen.getByLabelText("Confirm Password"), "[REDACTED]");
     await user.type(screen.getByLabelText("RSI Handle"), "test-handle");
     await user.click(screen.getByRole("button", { name: "Create Account" }));
 
@@ -247,8 +251,8 @@ describe("RegisterPage", () => {
     renderPage();
 
     await user.type(screen.getByLabelText("Username"), "testuser");
-    await user.type(screen.getByLabelText("Password"), "password123");
-    await user.type(screen.getByLabelText("Confirm Password"), "password123");
+    await user.type(screen.getByLabelText("Password"), "[REDACTED]");
+    await user.type(screen.getByLabelText("Confirm Password"), "[REDACTED]");
     await user.type(screen.getByLabelText("RSI Handle"), "test-handle");
     await user.click(screen.getByRole("button", { name: "Create Account" }));
 
