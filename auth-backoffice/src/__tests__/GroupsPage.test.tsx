@@ -5,7 +5,7 @@ import { createMemoryRouter, RouterProvider } from "react-router";
 import GroupsPage from "@/pages/GroupsPage";
 
 const mockGroups = [
-  { _id: "g1", name: "Admins", description: "Administrator group", role_ids: ["r1", "r2"], auto_assign_apps: [] },
+  { _id: "g1", name: "Admins", description: "Administrator group", role_ids: ["r1", "r2"], auto_assign_apps: ["hhh-frontend", "hhh-backoffice"] },
   { _id: "g2", name: "Users", description: "Default user group", role_ids: ["r3"], auto_assign_apps: [] },
 ];
 
@@ -86,6 +86,21 @@ describe("GroupsPage", () => {
     // Users: 1 role, 2 members
     expect(rows[2]).toHaveTextContent("1");
     expect(rows[2]).toHaveTextContent("2");
+  });
+
+  it("shows Apps column header and auto_assign_apps count", async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText("Admins")).toBeInTheDocument();
+    });
+    expect(screen.getByText("Apps")).toBeInTheDocument();
+    const rows = screen.getAllByRole("row");
+    // Admins: 2 apps
+    const adminsCells = rows[1].querySelectorAll("td");
+    expect(adminsCells[3]).toHaveTextContent("2");
+    // Users: 0 apps
+    const usersCells = rows[2].querySelectorAll("td");
+    expect(usersCells[3]).toHaveTextContent("0");
   });
 
   it("has New Group link", async () => {

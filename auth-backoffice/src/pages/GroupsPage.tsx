@@ -107,6 +107,7 @@ export default function GroupsPage() {
               <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-slate-400 uppercase">Name</th>
               <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-slate-400 uppercase">Description</th>
               <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-slate-400 uppercase">Roles</th>
+              <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-slate-400 uppercase">Apps</th>
               <th className="px-4 py-3 text-left text-xs font-medium tracking-wider text-slate-400 uppercase">Members</th>
               <th className="px-4 py-3 text-right text-xs font-medium tracking-wider text-slate-400 uppercase">Actions</th>
             </tr>
@@ -117,6 +118,7 @@ export default function GroupsPage() {
                 <td className="px-4 py-3 text-sm font-medium text-slate-100">{group.name}</td>
                 <td className="px-4 py-3 text-sm text-slate-300">{group.description}</td>
                 <td className="px-4 py-3 text-sm text-slate-300">{group.role_ids.length}</td>
+                <td className="px-4 py-3 text-sm text-slate-300">{(group.auto_assign_apps ?? []).length}</td>
                 <td className="px-4 py-3 text-sm text-slate-300">{memberCounts[group._id] ?? 0}</td>
                 <td className="px-4 py-3 text-right">
                   <div className="flex justify-end gap-2">
@@ -141,7 +143,7 @@ export default function GroupsPage() {
             ))}
             {groups.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-sm text-slate-400">
+                <td colSpan={6} className="px-4 py-8 text-center text-sm text-slate-400">
                   No groups found.
                 </td>
               </tr>
