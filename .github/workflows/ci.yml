@@ -63,14 +63,20 @@ jobs:
         working-directory: auth-portal
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: auth-portal/package-lock.json
       - run: npm ci --legacy-peer-deps
-      - name: Run tests
-        run: npm test
+      - name: Install coverage reporter
+        run: npm install --save-dev @vitest/coverage-v8@^4.1.0
+      - name: Run tests with coverage
+        run: npm run test:coverage
+      - name: Check coverage on changed lines
+        run: pipx run diff-cover coverage/cobertura-coverage.xml --compare-branch=origin/main --fail-under=90
 
   backoffice-lint:
     name: "Backoffice: Lint & Type Check"
@@ -99,14 +105,20 @@ jobs:
         working-directory: auth-backoffice
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: auth-backoffice/package-lock.json
       - run: npm ci
-      - name: Run tests
-        run: npm test
+      - name: Install coverage reporter
+        run: npm install --save-dev @vitest/coverage-v8@^4.1.0
+      - name: Run tests with coverage
+        run: npm run test:coverage
+      - name: Check coverage on changed lines
+        run: pipx run diff-cover coverage/cobertura-coverage.xml --compare-branch=origin/main --fail-under=90
 
   copilot-fix:
     name: Request Copilot Fix

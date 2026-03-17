@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "type-check": "tsc -b --noEmit",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "preview": "vite preview"

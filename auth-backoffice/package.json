@@ -10,6 +10,7 @@
     "type-check": "tsc -b",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
   },
