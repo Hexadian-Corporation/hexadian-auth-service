@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { Link, Outlet, useLocation } from "react-router";
-import { Users, Shield, KeyRound, Layers, LogOut } from "lucide-react";
+import { Users, Shield, KeyRound, Layers, LogOut, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { clearTokens, redirectToPortal } from "@/lib/auth";
+import { changePassword } from "@/api/auth";
+import ChangePasswordDialog from "@/components/ChangePasswordDialog";
 
 const navItems = [
   { to: "/users", label: "Users", icon: Users },
@@ -10,8 +13,19 @@ const navItems = [
   { to: "/rbac/groups", label: "Groups", icon: Layers },
 ];
 
+const PORTAL_URL = import.meta.env.VITE_AUTH_PORTAL_URL ?? "http://localhost:3003";
+
 export default function DashboardLayout() {
   const location = useLocation();
+  const [showChangePassword, setShowChangePassword] = useState(false);
+
+  async function handleChangePassword(oldPassword: string, newPassword: string) {
+    await changePassword(oldPassword, newPassword);
+    clearTokens();
+    setTimeout(() => {
+      window.location.href = `${PORTAL_URL}/login`;
+    }, 2000);
+  }
 
   return (
     <div className="flex h-screen bg-[#0b0e17]">
@@ -46,6 +60,13 @@ export default function DashboardLayout() {
 
         <div className="border-t border-slate-700 p-2">
           <button
+            onClick={() => setShowChangePassword(true)}
+            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-800 hover:text-slate-100"
+          >
+            <Lock className="h-4 w-4" />
+            Change Password
+          </button>
+          <button
             onClick={() => { clearTokens(); redirectToPortal(); }}
             className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-800 hover:text-slate-100"
           >
@@ -59,6 +80,12 @@ export default function DashboardLayout() {
       <main className="flex-1 overflow-auto p-6">
         <Outlet />
       </main>
+
+      <ChangePasswordDialog
+        open={showChangePassword}
+        onClose={() => setShowChangePassword(false)}
+        onSubmit={handleChangePassword}
+      />
     </div>
   );
 }

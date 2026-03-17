@@ -174,8 +174,13 @@ describe("RegisterPage", () => {
       });
     });
 
-    expect(mockStoreTokens).toHaveBeenCalled();
-    expect(mockNavigate).toHaveBeenCalledWith("/verify?");
+    await waitFor(() => {
+      expect(mockStoreTokens).toHaveBeenCalled();
+    });
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith("/verify?");
+    });
   });
 
   it("displays API error on failure", async () => {

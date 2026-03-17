@@ -33,4 +33,5 @@ class RbacApiMapper:
             name=group.name,
             description=group.description,
             role_ids=group.role_ids,
+            auto_assign_apps=group.auto_assign_apps,
         )

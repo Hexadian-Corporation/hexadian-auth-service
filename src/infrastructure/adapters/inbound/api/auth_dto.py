@@ -16,6 +16,8 @@ class RegisterDTO(BaseModel):
     username: str
     password: str
     rsi_handle: str = Field(pattern=r"^[A-Za-z0-9_-]{3,30}$")
+    app_id: str | None = None
+    app_signature: str | None = None
 
 
 class LoginDTO(BaseModel):
@@ -74,3 +76,38 @@ class PasswordChangeDTO(BaseModel):
 
 class PasswordResetDTO(BaseModel):
     new_password: str = Field(min_length=8)
+
+
+class ForgotPasswordDTO(BaseModel):
+    username: str
+    rsi_handle: str = Field(pattern=r"^[A-Za-z0-9_-]{3,30}$")
+
+
+class ForgotPasswordConfirmDTO(BaseModel):
+    username: str
+    rsi_handle: str = Field(pattern=r"^[A-Za-z0-9_-]{3,30}$")
+    new_password: str = Field(min_length=8)
+
+
+class ForgotPasswordResultDTO(BaseModel):
+    verification_code: str
+    message: str
+
+
+class TokenIntrospectRequestDTO(BaseModel):
+    token: str
+
+
+class TokenIntrospectResponseDTO(BaseModel):
+    active: bool
+    sub: str | None = None
+    username: str | None = None
+    groups: list[str] | None = None
+    roles: list[str] | None = None
+    permissions: list[str] | None = None
+    rsi_handle: str | None = None
+    rsi_verified: bool | None = None
+    exp: int | None = None
+    iat: int | None = None
+    is_user_active: bool | None = None
+    reason: str | None = None

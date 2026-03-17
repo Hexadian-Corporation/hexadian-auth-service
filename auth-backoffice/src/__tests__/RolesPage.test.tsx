@@ -10,8 +10,8 @@ const mockRoles = [
 ];
 
 const mockGroups = [
-  { _id: "g1", name: "Admins", description: "Admin group", role_ids: ["r1"] },
-  { _id: "g2", name: "Users", description: "User group", role_ids: [] },
+  { _id: "g1", name: "Admins", description: "Admin group", role_ids: ["r1"], auto_assign_apps: [] },
+  { _id: "g2", name: "Users", description: "User group", role_ids: [], auto_assign_apps: [] },
 ];
 
 vi.mock("@/api/rbac", () => ({

@@ -14,16 +14,20 @@ from src.application.ports.outbound.group_repository import GroupRepository
 from src.application.ports.outbound.refresh_token_repository import RefreshTokenRepository
 from src.application.ports.outbound.rsi_profile_fetcher import RsiProfileFetcher
 from src.application.ports.outbound.user_repository import UserRepository
+from src.application.services.app_signature import verify_app_signature
+from src.domain.exceptions.app_signature_exceptions import InvalidAppSignatureError
 from src.domain.exceptions.user_exceptions import (
     InvalidAuthCodeError,
     InvalidCredentialsError,
     InvalidPasswordError,
     InvalidRedirectUriError,
     RefreshTokenNotFoundError,
+    RsiHandleMismatchError,
     UserAlreadyExistsError,
     UserNotFoundError,
 )
 from src.domain.models.auth_code import AuthCode
+from src.domain.models.introspection_result import IntrospectionResult
 from src.domain.models.refresh_token import RefreshToken
 from src.domain.models.token_response import TokenResponse
 from src.domain.models.user import User
@@ -31,7 +35,7 @@ from src.infrastructure.config.settings import Settings
 
 _RSI_HANDLE_PATTERN = re.compile(r"^[A-Za-z0-9_-]{3,30}$")
 
-_VERIFICATION_PREFIX = "Hexadian account validation code: "
+_VERIFICATION_PREFIX = "hxn_"
 
 # fmt: off
 _WORD_LIST: list[str] = [
@@ -72,7 +76,7 @@ _WORD_LIST: list[str] = [
 ]
 # fmt: on
 
-_NUM_WORDS = 6
+_NUM_WORDS = 4
 
 
 def _generate_verification_code() -> str:
@@ -99,16 +103,36 @@ class AuthServiceImpl(AuthService):
         self._rbac_service = rbac_service
         self._settings = settings
 
-    def register(self, username: str, password: str, rsi_handle: str) -> User:
+    def register(
+        self, username: str, password: str, rsi_handle: str, app_id: str | None = None, app_signature: str | None = None
+    ) -> User:
         if not _RSI_HANDLE_PATTERN.match(rsi_handle):
             raise ValueError(f"Invalid RSI handle format: {rsi_handle}")
+        if app_id is not None and (
+            app_signature is None or not verify_app_signature(app_id, app_signature, self._settings.app_signing_secret)
+        ):
+            raise InvalidAppSignatureError()
         if self._repository.find_by_username(username) is not None:
             raise UserAlreadyExistsError(username)
         hashed = self._hash_password(password)
         user = User(username=username, hashed_password=hashed, rsi_handle=rsi_handle)
+
+        group_ids: list[str] = []
+        seen_ids: set[str] = set()
+
+        if app_id is not None:
+            matched_groups = self._group_repository.find_by_app_id(app_id)
+            for g in matched_groups:
+                if g.id not in seen_ids:
+                    seen_ids.add(g.id)
+                    group_ids.append(g.id)
+
         users_group = self._group_repository.find_by_name("Users")
-        if users_group is not None:
-            user.group_ids = [users_group.id]
+        if users_group is not None and users_group.id not in seen_ids:
+            seen_ids.add(users_group.id)
+            group_ids.append(users_group.id)
+
+        user.group_ids = group_ids
         return self._repository.save(user)
 
     def authenticate(self, username: str, password: str) -> TokenResponse:
@@ -320,3 +344,67 @@ class AuthServiceImpl(AuthService):
         user.hashed_password = self._hash_password(new_password)
         self._repository.save(user)
         self._refresh_token_repository.revoke_all_for_user(user_id)
+
+    def forgot_password(self, username: str, rsi_handle: str) -> str:
+        user = self._repository.find_by_username(username)
+        if user is None:
+            raise UserNotFoundError(username)
+        if user.rsi_handle != rsi_handle:
+            raise RsiHandleMismatchError(username)
+        code = _generate_verification_code()
+        user.rsi_verification_code = code
+        self._repository.save(user)
+        return code
+
+    def confirm_forgot_password(self, username: str, rsi_handle: str, new_password: str) -> None:
+        user = self._repository.find_by_username(username)
+        if user is None:
+            raise UserNotFoundError(username)
+        if user.rsi_handle != rsi_handle:
+            raise RsiHandleMismatchError(username)
+        if not user.rsi_verification_code:
+            raise ValueError("No verification code set. Call forgot_password first.")
+        bio = self._rsi_profile_fetcher.fetch_profile_bio(user.rsi_handle)
+        if bio is None or user.rsi_verification_code not in bio:
+            raise ValueError("Verification code not found in RSI profile bio.")
+        user.hashed_password = self._hash_password(new_password)
+        user.rsi_verification_code = None
+        self._repository.save(user)
+        self._refresh_token_repository.revoke_all_for_user(user.id)
+
+    def introspect_token(self, token: str) -> IntrospectionResult:
+        try:
+            claims = jwt.decode(
+                token,
+                self._settings.jwt_secret,
+                algorithms=[self._settings.jwt_algorithm],
+            )
+        except jwt.PyJWTError:
+            return IntrospectionResult(active=False)
+
+        user_id = claims.get("sub")
+        if user_id is None:
+            return IntrospectionResult(active=False)
+
+        user = self._repository.find_by_id(user_id)
+        if user is None or not user.is_active:
+            return IntrospectionResult(
+                active=False,
+                sub=user_id,
+                reason="user_deactivated",
+                is_user_active=False,
+            )
+
+        return IntrospectionResult(
+            active=True,
+            sub=user_id,
+            username=claims.get("username"),
+            groups=claims.get("groups", []),
+            roles=claims.get("roles", []),
+            permissions=claims.get("permissions", []),
+            rsi_handle=claims.get("rsi_handle"),
+            rsi_verified=claims.get("rsi_verified", False),
+            exp=claims.get("exp"),
+            iat=claims.get("iat"),
+            is_user_active=True,
+        )

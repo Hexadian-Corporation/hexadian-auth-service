@@ -5,12 +5,14 @@ from hexadian_auth_common.context import UserContext
 from hexadian_auth_common.fastapi import _stub_jwt_auth, require_permission
 
 from src.application.ports.inbound.auth_service import AuthService
+from src.domain.exceptions.app_signature_exceptions import InvalidAppSignatureError
 from src.domain.exceptions.user_exceptions import (
     InvalidAuthCodeError,
     InvalidCredentialsError,
     InvalidPasswordError,
     InvalidRedirectUriError,
     RefreshTokenNotFoundError,
+    RsiHandleMismatchError,
     UserAlreadyExistsError,
     UserNotFoundError,
 )
@@ -18,6 +20,9 @@ from src.infrastructure.adapters.inbound.api.auth_api_mapper import AuthApiMappe
 from src.infrastructure.adapters.inbound.api.auth_dto import (
     AuthorizeDTO,
     AuthorizeResponseDTO,
+    ForgotPasswordConfirmDTO,
+    ForgotPasswordDTO,
+    ForgotPasswordResultDTO,
     LoginDTO,
     PasswordChangeDTO,
     PasswordResetDTO,
@@ -26,6 +31,8 @@ from src.infrastructure.adapters.inbound.api.auth_dto import (
     StartVerificationDTO,
     TokenDTO,
     TokenExchangeDTO,
+    TokenIntrospectRequestDTO,
+    TokenIntrospectResponseDTO,
     UserDTO,
     UserUpdateDTO,
     VerificationResultDTO,
@@ -44,9 +51,12 @@ def init_router(auth_service: AuthService) -> None:
 @router.post("/register", response_model=UserDTO, status_code=201)
 def register(dto: RegisterDTO) -> UserDTO:
     try:
-        user = _auth_service.register(dto.username, dto.password, dto.rsi_handle)
+        user = _auth_service.register(dto.username, dto.password, dto.rsi_handle, dto.app_id, dto.app_signature)
+    except InvalidAppSignatureError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
     except UserAlreadyExistsError as exc:
-        raise HTTPException(status_code=409, detail=str(exc)) from exc
+        detail = "Username already taken" if exc.field == "username" else "RSI handle already registered"
+        raise HTTPException(status_code=409, detail={"message": detail, "field": exc.field}) from exc
     return AuthApiMapper.to_dto(user)
 
 
@@ -126,7 +136,8 @@ def update_user(
     except UserNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except UserAlreadyExistsError as exc:
-        raise HTTPException(status_code=409, detail=str(exc)) from exc
+        detail = "Username already taken" if exc.field == "username" else "RSI handle already registered"
+        raise HTTPException(status_code=409, detail={"message": detail, "field": exc.field}) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return AuthApiMapper.to_dto(user)
@@ -219,3 +230,51 @@ def reset_password(user_id: str, dto: PasswordResetDTO) -> None:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except InvalidPasswordError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/password/forgot", response_model=ForgotPasswordResultDTO)
+def forgot_password(dto: ForgotPasswordDTO) -> ForgotPasswordResultDTO:
+    try:
+        code = _auth_service.forgot_password(dto.username, dto.rsi_handle)
+    except UserNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except RsiHandleMismatchError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return ForgotPasswordResultDTO(
+        verification_code=code,
+        message=(
+            "Add the verification code to your RSI profile bio at "
+            "https://robertsspaceindustries.com/account/profile and then call /auth/password/forgot-confirm"
+        ),
+    )
+
+
+@router.post("/password/forgot-confirm", status_code=204)
+def confirm_forgot_password(dto: ForgotPasswordConfirmDTO) -> None:
+    try:
+        _auth_service.confirm_forgot_password(dto.username, dto.rsi_handle, dto.new_password)
+    except UserNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except RsiHandleMismatchError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/token/introspect", response_model=TokenIntrospectResponseDTO)
+def introspect_token(dto: TokenIntrospectRequestDTO) -> TokenIntrospectResponseDTO:
+    result = _auth_service.introspect_token(dto.token)
+    return TokenIntrospectResponseDTO(
+        active=result.active,
+        sub=result.sub,
+        username=result.username,
+        groups=result.groups,
+        roles=result.roles,
+        permissions=result.permissions,
+        rsi_handle=result.rsi_handle,
+        rsi_verified=result.rsi_verified,
+        exp=result.exp,
+        iat=result.iat,
+        is_user_active=result.is_user_active,
+        reason=result.reason,
+    )

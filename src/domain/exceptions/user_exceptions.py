@@ -5,9 +5,10 @@ class UserNotFoundError(Exception):
 
 
 class UserAlreadyExistsError(Exception):
-    def __init__(self, username: str) -> None:
-        super().__init__(f"User already exists: {username}")
-        self.username = username
+    def __init__(self, identifier: str, field: str = "username") -> None:
+        super().__init__(f"User already exists: {identifier}")
+        self.identifier = identifier
+        self.field = field
 
 
 class InvalidCredentialsError(Exception):
@@ -35,3 +36,9 @@ class InvalidRedirectUriError(Exception):
 class InvalidPasswordError(Exception):
     def __init__(self, message: str) -> None:
         super().__init__(message)
+
+
+class RsiHandleMismatchError(Exception):
+    def __init__(self, username: str) -> None:
+        super().__init__(f"RSI handle does not match user: {username}")
+        self.username = username

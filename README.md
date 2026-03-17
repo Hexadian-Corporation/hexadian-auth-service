@@ -188,6 +188,7 @@ Handle validation: `^[A-Za-z0-9_-]{3,30}$`.
 | `POST` | `/auth/token/revoke` | None | Revoke a refresh token |
 | `POST` | `/auth/authorize` | None | Generate authorization code |
 | `POST` | `/auth/token/exchange` | None | Exchange auth code for tokens |
+| `POST` | `/auth/token/introspect` | None | Validate token and return claims |
 | `GET` | `/auth/users/{user_id}` | JWT (self or `users:read`) | Get user by ID |
 | `GET` | `/auth/users` | `users:read` | List all users |
 | `PUT` | `/auth/users/{user_id}` | JWT (self or `users:admin`) | Update user profile |
@@ -320,6 +321,7 @@ All settings use `HEXADIAN_AUTH_` prefix via pydantic-settings.
 | `HEXADIAN_AUTH_ALLOWED_ORIGINS` | `["http://localhost:3000", ...]` | CORS allowed origins (JSON list) |
 | `HEXADIAN_AUTH_ALLOWED_REDIRECT_ORIGINS` | `["http://localhost:3000", ...]` | Valid redirect URIs for auth code flow |
 | `HEXADIAN_AUTH_ADMIN_PASSWORD` | `admin` | Initial admin user password (seed script) |
+| `HEXADIAN_AUTH_APP_SIGNING_SECRET` | `change-me-in-production` | HMAC-SHA256 secret for verifying `app_id` signatures during registration |
 
 ## Development
 
