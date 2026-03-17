@@ -14,6 +14,8 @@ from src.application.ports.outbound.group_repository import GroupRepository
 from src.application.ports.outbound.refresh_token_repository import RefreshTokenRepository
 from src.application.ports.outbound.rsi_profile_fetcher import RsiProfileFetcher
 from src.application.ports.outbound.user_repository import UserRepository
+from src.application.services.app_signature import verify_app_signature
+from src.domain.exceptions.app_signature_exceptions import InvalidAppSignatureError
 from src.domain.exceptions.user_exceptions import (
     InvalidAuthCodeError,
     InvalidCredentialsError,
@@ -99,16 +101,37 @@ class AuthServiceImpl(AuthService):
         self._rbac_service = rbac_service
         self._settings = settings
 
-    def register(self, username: str, password: str, rsi_handle: str) -> User:
+    def register(
+        self, username: str, password: str, rsi_handle: str, app_id: str | None = None, app_signature: str | None = None
+    ) -> User:
         if not _RSI_HANDLE_PATTERN.match(rsi_handle):
             raise ValueError(f"Invalid RSI handle format: {rsi_handle}")
+        if app_id is not None:
+            if app_signature is None or not verify_app_signature(
+                app_id, app_signature, self._settings.app_signing_secret
+            ):
+                raise InvalidAppSignatureError()
         if self._repository.find_by_username(username) is not None:
             raise UserAlreadyExistsError(username)
         hashed = self._hash_password(password)
         user = User(username=username, hashed_password=hashed, rsi_handle=rsi_handle)
+
+        group_ids: list[str] = []
+        seen_ids: set[str] = set()
+
+        if app_id is not None:
+            matched_groups = self._group_repository.find_by_app_id(app_id)
+            for g in matched_groups:
+                if g.id not in seen_ids:
+                    seen_ids.add(g.id)
+                    group_ids.append(g.id)
+
         users_group = self._group_repository.find_by_name("Users")
-        if users_group is not None:
-            user.group_ids = [users_group.id]
+        if users_group is not None and users_group.id not in seen_ids:
+            seen_ids.add(users_group.id)
+            group_ids.append(users_group.id)
+
+        user.group_ids = group_ids
         return self._repository.save(user)
 
     def authenticate(self, username: str, password: str) -> TokenResponse:

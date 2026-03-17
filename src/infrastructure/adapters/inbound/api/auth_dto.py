@@ -16,6 +16,8 @@ class RegisterDTO(BaseModel):
     username: str
     password: str
     rsi_handle: str = Field(pattern=r"^[A-Za-z0-9_-]{3,30}$")
+    app_id: str | None = None
+    app_signature: str | None = None
 
 
 class LoginDTO(BaseModel):

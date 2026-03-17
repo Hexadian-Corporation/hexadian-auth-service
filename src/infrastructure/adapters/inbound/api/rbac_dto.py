@@ -33,6 +33,7 @@ class GroupCreateDTO(BaseModel):
     name: str
     description: str
     role_ids: list[str] = Field(default_factory=list)
+    auto_assign_apps: list[str] = Field(default_factory=list)
 
 
 class GroupDTO(BaseModel):
@@ -40,6 +41,7 @@ class GroupDTO(BaseModel):
     name: str
     description: str
     role_ids: list[str] = Field(default_factory=list)
+    auto_assign_apps: list[str] = Field(default_factory=list)
 
     model_config = {"populate_by_name": True}
 

@@ -7,7 +7,7 @@ class TestGroupPersistenceMapper:
         group = Group(id="grp-1", name="Admins", description="Admin group", role_ids=["r1", "r2"])
         doc = GroupPersistenceMapper.to_document(group)
 
-        assert doc == {"name": "Admins", "description": "Admin group", "role_ids": ["r1", "r2"]}
+        assert doc == {"name": "Admins", "description": "Admin group", "role_ids": ["r1", "r2"], "auto_assign_apps": []}
         assert "_id" not in doc
 
     def test_to_domain(self) -> None:
@@ -18,6 +18,7 @@ class TestGroupPersistenceMapper:
         assert group.name == "Admins"
         assert group.description == "Admin group"
         assert group.role_ids == ["r1"]
+        assert group.auto_assign_apps == []
 
     def test_to_domain_missing_fields_defaults(self) -> None:
         doc = {"_id": "abc123"}
@@ -27,3 +28,4 @@ class TestGroupPersistenceMapper:
         assert group.name == ""
         assert group.description == ""
         assert group.role_ids == []
+        assert group.auto_assign_apps == []

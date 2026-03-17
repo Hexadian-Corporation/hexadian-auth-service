@@ -31,6 +31,9 @@ class MongoGroupRepository(GroupRepository):
             return None
         return GroupPersistenceMapper.to_domain(doc)
 
+    def find_by_app_id(self, app_id: str) -> list[Group]:
+        return [GroupPersistenceMapper.to_domain(doc) for doc in self._collection.find({"auto_assign_apps": app_id})]
+
     def find_all(self) -> list[Group]:
         return [GroupPersistenceMapper.to_domain(doc) for doc in self._collection.find()]
 

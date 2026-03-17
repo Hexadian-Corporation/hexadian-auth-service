@@ -169,7 +169,7 @@ def delete_role(role_id: str) -> None:
     dependencies=[Depends(require_permission("rbac:manage"))],
 )
 def create_group(dto: GroupCreateDTO) -> GroupDTO:
-    group = _rbac_service.create_group(dto.name, dto.description, dto.role_ids)
+    group = _rbac_service.create_group(dto.name, dto.description, dto.role_ids, dto.auto_assign_apps)
     return RbacApiMapper.group_to_dto(group)
 
 
@@ -202,7 +202,7 @@ def get_group(group_id: str) -> GroupDTO:
 )
 def update_group(group_id: str, dto: GroupCreateDTO) -> GroupDTO:
     try:
-        group = _rbac_service.update_group(group_id, dto.name, dto.description, dto.role_ids)
+        group = _rbac_service.update_group(group_id, dto.name, dto.description, dto.role_ids, dto.auto_assign_apps)
     except GroupNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     return RbacApiMapper.group_to_dto(group)
