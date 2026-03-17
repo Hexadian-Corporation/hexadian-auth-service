@@ -15,13 +15,13 @@ class RefreshTokenPersistenceMapper:
 
     @staticmethod
     def to_domain(doc: dict) -> RefreshToken:
-        expires = doc["expires_at"]
-        if expires.tzinfo is None:
-            expires = expires.replace(tzinfo=UTC)
+        expires_at = doc["expires_at"]
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=UTC)
         return RefreshToken(
             id=str(doc["_id"]),
             user_id=doc.get("user_id", ""),
             token=doc.get("token", ""),
-            expires_at=expires,
+            expires_at=expires_at,
             revoked=doc.get("revoked", False),
         )
