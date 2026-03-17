@@ -13,7 +13,7 @@ export default function CallbackPage() {
     const state = searchParams.get("state");
 
     if (!code) {
-      setError("Missing authorization code.");
+      queueMicrotask(() => setError("Missing authorization code."));
       setTimeout(() => redirectToPortal(), 2000);
       return;
     }

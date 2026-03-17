@@ -73,7 +73,7 @@ describe("VerifyPage", () => {
       renderPage();
 
       expect(mockNavigate).toHaveBeenCalledWith(
-        "/login?redirect_uri=/verify",
+        "/login?",
         { replace: true },
       );
     });
@@ -185,6 +185,7 @@ describe("VerifyPage", () => {
 
       await waitFor(() => {
         expect(mockStartVerification).toHaveBeenCalledWith(
+          "user-1",
           { rsi_handle: "test-handle" },
           "mock-access-token",
         );
@@ -426,7 +427,7 @@ describe("VerifyPage", () => {
 
       await waitFor(() => {
         expect(mockConfirmVerification).toHaveBeenCalledWith(
-          { rsi_handle: "test-handle" },
+          "user-1",
           "mock-access-token",
         );
       });
