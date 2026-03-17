@@ -366,7 +366,7 @@ class TestRbacClaims:
         mock_rbac_service.resolve_rbac_claims.return_value = RbacClaims(
             groups=["Admins"],
             roles=["Super Admin"],
-            permissions=["contracts:read", "contracts:write"],
+            permissions=["hhh:contracts:read", "hhh:contracts:write"],
         )
 
         result = service.authenticate("testuser", "secret")
@@ -374,7 +374,7 @@ class TestRbacClaims:
         decoded = jwt.decode(result.access_token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
         assert decoded["groups"] == ["Admins"]
         assert decoded["roles"] == ["Super Admin"]
-        assert decoded["permissions"] == ["contracts:read", "contracts:write"]
+        assert decoded["permissions"] == ["hhh:contracts:read", "hhh:contracts:write"]
 
     def test_refresh_re_resolves_rbac_claims_from_db(
         self,
@@ -397,7 +397,7 @@ class TestRbacClaims:
         mock_rbac_service.resolve_rbac_claims.return_value = RbacClaims(
             groups=["Users"],
             roles=["Member"],
-            permissions=["contracts:read"],
+            permissions=["hhh:contracts:read"],
         )
 
         result = service.refresh_token("old-token")
@@ -405,7 +405,7 @@ class TestRbacClaims:
         decoded = jwt.decode(result.access_token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
         assert decoded["groups"] == ["Users"]
         assert decoded["roles"] == ["Member"]
-        assert decoded["permissions"] == ["contracts:read"]
+        assert decoded["permissions"] == ["hhh:contracts:read"]
         mock_rbac_service.resolve_rbac_claims.assert_called_once_with(user.id)
 
     def test_token_with_no_groups_has_empty_claims(
@@ -442,7 +442,7 @@ class TestRbacClaims:
         mock_rbac_service.resolve_rbac_claims.return_value = RbacClaims(
             groups=["Admins", "Users"],
             roles=["Super Admin", "Member"],
-            permissions=["contracts:read", "contracts:write", "users:admin"],
+            permissions=["hhh:contracts:read", "hhh:contracts:write", "auth:users:admin"],
         )
 
         result = service.authenticate("testuser", "secret")
@@ -450,7 +450,7 @@ class TestRbacClaims:
         decoded = jwt.decode(result.access_token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
         assert decoded["groups"] == ["Admins", "Users"]
         assert decoded["roles"] == ["Super Admin", "Member"]
-        assert decoded["permissions"] == ["contracts:read", "contracts:write", "users:admin"]
+        assert decoded["permissions"] == ["hhh:contracts:read", "hhh:contracts:write", "auth:users:admin"]
 
     def test_refresh_picks_up_permission_changes(
         self,
@@ -467,11 +467,11 @@ class TestRbacClaims:
         mock_rbac_service.resolve_rbac_claims.return_value = RbacClaims(
             groups=["Users"],
             roles=["Member"],
-            permissions=["contracts:read"],
+            permissions=["hhh:contracts:read"],
         )
         login_result = service.authenticate("testuser", "secret")
         login_decoded = jwt.decode(login_result.access_token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
-        assert login_decoded["permissions"] == ["contracts:read"]
+        assert login_decoded["permissions"] == ["hhh:contracts:read"]
 
         existing = RefreshToken(
             id="rt-1",
@@ -485,7 +485,7 @@ class TestRbacClaims:
         mock_rbac_service.resolve_rbac_claims.return_value = RbacClaims(
             groups=["Admins", "Users"],
             roles=["Super Admin", "Member"],
-            permissions=["contracts:read", "contracts:write", "users:admin"],
+            permissions=["hhh:contracts:read", "hhh:contracts:write", "auth:users:admin"],
         )
         refresh_result = service.refresh_token(login_result.refresh_token)
         refresh_decoded = jwt.decode(
@@ -493,4 +493,4 @@ class TestRbacClaims:
         )
         assert refresh_decoded["groups"] == ["Admins", "Users"]
         assert refresh_decoded["roles"] == ["Super Admin", "Member"]
-        assert refresh_decoded["permissions"] == ["contracts:read", "contracts:write", "users:admin"]
+        assert refresh_decoded["permissions"] == ["hhh:contracts:read", "hhh:contracts:write", "auth:users:admin"]

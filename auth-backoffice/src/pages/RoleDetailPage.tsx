@@ -8,7 +8,7 @@ function groupPermissionsByService(permissions: Permission[]): Record<string, Pe
   const groups: Record<string, Permission[]> = {};
   for (const perm of permissions) {
     const parts = perm.code.split(":");
-    const service = parts.length > 1 ? parts[0] : "other";
+    const service = parts.length > 2 ? parts.slice(0, -1).join(":") : parts.length > 1 ? parts[0] : "other";
     if (!groups[service]) {
       groups[service] = [];
     }

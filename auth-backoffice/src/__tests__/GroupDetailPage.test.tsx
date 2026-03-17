@@ -5,9 +5,9 @@ import { createMemoryRouter, RouterProvider } from "react-router";
 import GroupDetailPage from "@/pages/GroupDetailPage";
 
 const mockPermissions = [
-  { _id: "p1", code: "contracts:read", description: "Read contracts" },
-  { _id: "p2", code: "contracts:write", description: "Write contracts" },
-  { _id: "p3", code: "users:read", description: "Read users" },
+  { _id: "p1", code: "hhh:contracts:read", description: "Read contracts" },
+  { _id: "p2", code: "hhh:contracts:write", description: "Write contracts" },
+  { _id: "p3", code: "auth:users:read", description: "Read users" },
 ];
 
 const mockRoles = [
@@ -140,8 +140,8 @@ describe("GroupDetailPage", () => {
     await waitFor(() => {
       expect(screen.getByText("Admin")).toBeInTheDocument();
     });
-    // Admin role has contracts:read, contracts:write, users:read
-    expect(screen.getByText(/contracts:read, contracts:write, users:read/)).toBeInTheDocument();
+    // Admin role has hhh:contracts:read, hhh:contracts:write, auth:users:read
+    expect(screen.getByText(/hhh:contracts:read, hhh:contracts:write, auth:users:read/)).toBeInTheDocument();
   });
 
   it("shows members for existing group", async () => {
@@ -170,9 +170,9 @@ describe("GroupDetailPage", () => {
     });
     expect(screen.getByRole("heading", { name: "Effective Permissions" })).toBeInTheDocument();
     // Admin role (r1) has p1, p2, p3
-    expect(screen.getByText("contracts:read")).toBeInTheDocument();
-    expect(screen.getByText("contracts:write")).toBeInTheDocument();
-    expect(screen.getByText("users:read")).toBeInTheDocument();
+    expect(screen.getByText("hhh:contracts:read")).toBeInTheDocument();
+    expect(screen.getByText("hhh:contracts:write")).toBeInTheDocument();
+    expect(screen.getByText("auth:users:read")).toBeInTheDocument();
   });
 
   it("shows empty effective permissions when no roles selected", async () => {
@@ -199,7 +199,7 @@ describe("GroupDetailPage", () => {
     });
     expect(screen.getByText("No permissions resolved from selected roles.")).toBeInTheDocument();
 
-    // Toggle the Viewer role (r2: has p1 = contracts:read)
+    // Toggle the Viewer role (r2: has p1 = hhh:contracts:read)
     const checkboxes = screen.getAllByRole("checkbox");
     const viewerCheckbox = checkboxes.find((cb) => {
       const label = cb.closest("label");
@@ -207,9 +207,9 @@ describe("GroupDetailPage", () => {
     })!;
     await user.click(viewerCheckbox);
 
-    // Now contracts:read should appear as effective permission
+    // Now hhh:contracts:read should appear as effective permission
     const effectiveSection = screen.getByRole("heading", { name: "Effective Permissions" }).parentElement!;
-    expect(effectiveSection).toHaveTextContent("contracts:read");
+    expect(effectiveSection).toHaveTextContent("hhh:contracts:read");
   });
 
   it("saves updated group", async () => {

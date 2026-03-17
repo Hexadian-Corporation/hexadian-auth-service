@@ -2,15 +2,15 @@ import { useState } from "react";
 import { Link, Outlet, useLocation } from "react-router";
 import { Users, Shield, KeyRound, Layers, LogOut, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { clearTokens, redirectToPortal } from "@/lib/auth";
+import { clearTokens, redirectToPortal, hasAnyPermission } from "@/lib/auth";
 import { changePassword } from "@/api/auth";
 import ChangePasswordDialog from "@/components/ChangePasswordDialog";
 
 const navItems = [
-  { to: "/users", label: "Users", icon: Users },
-  { to: "/rbac/permissions", label: "Permissions", icon: KeyRound },
-  { to: "/rbac/roles", label: "Roles", icon: Shield },
-  { to: "/rbac/groups", label: "Groups", icon: Layers },
+  { to: "/users", label: "Users", icon: Users, permissions: ["auth:users:read", "auth:users:admin"] },
+  { to: "/rbac/permissions", label: "Permissions", icon: KeyRound, permissions: ["auth:rbac:manage"] },
+  { to: "/rbac/roles", label: "Roles", icon: Shield, permissions: ["auth:rbac:manage"] },
+  { to: "/rbac/groups", label: "Groups", icon: Layers, permissions: ["auth:rbac:manage"] },
 ];
 
 const PORTAL_URL = import.meta.env.VITE_AUTH_PORTAL_URL ?? "http://localhost:3003";
@@ -48,7 +48,9 @@ export default function DashboardLayout() {
         </div>
 
         <nav className="flex-1 space-y-1 p-2">
-          {navItems.map(({ to, label, icon: Icon }) => (
+          {navItems
+            .filter(({ permissions }) => hasAnyPermission(permissions))
+            .map(({ to, label, icon: Icon }) => (
             <Link
               key={to}
               to={to}

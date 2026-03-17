@@ -23,9 +23,9 @@ This single command builds and starts everything: auth API (`:8006`), MongoDB, a
 
 On **first startup** (no admin user in the database), the service automatically seeds the RBAC data:
 
-- **22 permissions** (e.g., `contracts:read`, `users:admin`, `rbac:manage`)
-- **3 roles** — Super Admin, Content Manager, Member
-- **2 groups** — Admins, Users
+- **22 permissions** (e.g., `hhh:contracts:read`, `auth:users:admin`, `auth:rbac:manage`)
+- **9 roles** — Auth Admin, Auth User Manager, HHH Contracts/Locations/Commodities/Ships/Graphs/Routes Manager, HHH Viewer
+- **3 groups** — Admins, Users, Content Managers
 - **1 admin user** — username `admin`, password `admin`
 
 The seed is **idempotent** — if an admin user already exists, the seed is skipped entirely. You will see one of these log messages on startup:
@@ -138,9 +138,9 @@ Users → Groups → Roles → Permissions
 
 The seed script (`uv run auth seed`) creates:
 
-- **22 permissions**: `contracts:read/write/delete`, `locations:read/write/delete`, `commodities:read/write/delete`, `ships:read/write/delete`, `graphs:read/write/delete`, `routes:read/write/delete`, `users:read/write/admin`, `rbac:manage`
-- **3 roles**: Super Admin (all 22), Content Manager (14 read/write), Member (8 read-only + `contracts:write`)
-- **2 groups**: Admins (Super Admin role), Users (Member role — default for new registrations)
+- **22 permissions**: `hhh:contracts:read/write/delete`, `hhh:locations:read/write/delete`, `hhh:commodities:read/write/delete`, `hhh:ships:read/write/delete`, `hhh:graphs:read/write/delete`, `hhh:routes:read/write/delete`, `auth:users:read/write/admin`, `auth:rbac:manage`
+- **9 roles**: Auth Admin (all `auth:*`), Auth User Manager (`auth:users:read/write`), HHH Contracts/Locations/Commodities/Ships/Graphs/Routes Manager (per-resource `hhh:*:read/write/delete`), HHH Viewer (all `hhh:*:read`)
+- **3 groups**: Admins (Auth Admin + all HHH Managers), Users (HHH Viewer + HHH Contracts Manager — auto-assigned from `hhh-frontend`), Content Managers (Auth User Manager + all HHH Managers)
 - **Admin user**: `admin` / password from `HEXADIAN_AUTH_ADMIN_PASSWORD` (default: `admin`)
 
 The seed is idempotent and runs automatically on startup if no admin user exists.
@@ -189,12 +189,12 @@ Handle validation: `^[A-Za-z0-9_-]{3,30}$`.
 | `POST` | `/auth/authorize` | None | Generate authorization code |
 | `POST` | `/auth/token/exchange` | None | Exchange auth code for tokens |
 | `POST` | `/auth/token/introspect` | None | Validate token and return claims |
-| `GET` | `/auth/users/{user_id}` | JWT (self or `users:read`) | Get user by ID |
-| `GET` | `/auth/users` | `users:read` | List all users |
-| `PUT` | `/auth/users/{user_id}` | JWT (self or `users:admin`) | Update user profile |
-| `DELETE` | `/auth/users/{user_id}` | `users:admin` | Delete a user |
+| `GET` | `/auth/users/{user_id}` | JWT (self or `auth:users:read`) | Get user by ID |
+| `GET` | `/auth/users` | `auth:users:read` | List all users |
+| `PUT` | `/auth/users/{user_id}` | JWT (self or `auth:users:admin`) | Update user profile |
+| `DELETE` | `/auth/users/{user_id}` | `auth:users:admin` | Delete a user |
 | `POST` | `/auth/password/change` | JWT | Change own password |
-| `POST` | `/auth/users/{user_id}/password-reset` | `users:admin` | Admin password reset |
+| `POST` | `/auth/users/{user_id}/password-reset` | `auth:users:admin` | Admin password reset |
 | `POST` | `/auth/verify/start` | JWT | Start RSI verification |
 | `POST` | `/auth/verify/confirm` | JWT | Confirm RSI verification |
 | `GET` | `/health` | None | Health check |
@@ -203,24 +203,24 @@ Handle validation: `^[A-Za-z0-9_-]{3,30}$`.
 
 | Method | Endpoint | Permission | Description |
 |---|---|---|---|
-| `POST` | `/rbac/permissions` | `rbac:manage` | Create a permission |
-| `GET` | `/rbac/permissions` | `rbac:manage` | List all permissions |
-| `GET` | `/rbac/permissions/{id}` | `rbac:manage` | Get permission by ID |
-| `PUT` | `/rbac/permissions/{id}` | `rbac:manage` | Update a permission |
-| `DELETE` | `/rbac/permissions/{id}` | `rbac:manage` | Delete a permission |
-| `POST` | `/rbac/roles` | `rbac:manage` | Create a role |
-| `GET` | `/rbac/roles` | `rbac:manage` | List all roles |
-| `GET` | `/rbac/roles/{id}` | `rbac:manage` | Get role by ID |
-| `PUT` | `/rbac/roles/{id}` | `rbac:manage` | Update a role |
-| `DELETE` | `/rbac/roles/{id}` | `rbac:manage` | Delete a role |
-| `POST` | `/rbac/groups` | `rbac:manage` | Create a group |
-| `GET` | `/rbac/groups` | `rbac:manage` | List all groups |
-| `GET` | `/rbac/groups/{id}` | `rbac:manage` | Get group by ID |
-| `PUT` | `/rbac/groups/{id}` | `rbac:manage` | Update a group |
-| `DELETE` | `/rbac/groups/{id}` | `rbac:manage` | Delete a group |
-| `POST` | `/rbac/users/{user_id}/groups` | `users:admin` | Assign user to group |
-| `DELETE` | `/rbac/users/{user_id}/groups/{group_id}` | `users:admin` | Remove user from group |
-| `GET` | `/rbac/users/{user_id}/permissions` | `users:read` or self | Get resolved permissions |
+| `POST` | `/rbac/permissions` | `auth:rbac:manage` | Create a permission |
+| `GET` | `/rbac/permissions` | `auth:rbac:manage` | List all permissions |
+| `GET` | `/rbac/permissions/{id}` | `auth:rbac:manage` | Get permission by ID |
+| `PUT` | `/rbac/permissions/{id}` | `auth:rbac:manage` | Update a permission |
+| `DELETE` | `/rbac/permissions/{id}` | `auth:rbac:manage` | Delete a permission |
+| `POST` | `/rbac/roles` | `auth:rbac:manage` | Create a role |
+| `GET` | `/rbac/roles` | `auth:rbac:manage` | List all roles |
+| `GET` | `/rbac/roles/{id}` | `auth:rbac:manage` | Get role by ID |
+| `PUT` | `/rbac/roles/{id}` | `auth:rbac:manage` | Update a role |
+| `DELETE` | `/rbac/roles/{id}` | `auth:rbac:manage` | Delete a role |
+| `POST` | `/rbac/groups` | `auth:rbac:manage` | Create a group |
+| `GET` | `/rbac/groups` | `auth:rbac:manage` | List all groups |
+| `GET` | `/rbac/groups/{id}` | `auth:rbac:manage` | Get group by ID |
+| `PUT` | `/rbac/groups/{id}` | `auth:rbac:manage` | Update a group |
+| `DELETE` | `/rbac/groups/{id}` | `auth:rbac:manage` | Delete a group |
+| `POST` | `/rbac/users/{user_id}/groups` | `auth:users:admin` | Assign user to group |
+| `DELETE` | `/rbac/users/{user_id}/groups/{group_id}` | `auth:users:admin` | Remove user from group |
+| `GET` | `/rbac/users/{user_id}/permissions` | `auth:users:read` or self | Get resolved permissions |
 
 ## Auth Frontends
 

@@ -20,7 +20,7 @@ class TestPermissionSave:
     def test_insert_new_permission_sets_id(
         self, repository: MongoPermissionRepository, mock_collection: MagicMock
     ) -> None:
-        permission = Permission(code="contracts:read", description="View contracts")
+        permission = Permission(code="hhh:contracts:read", description="View contracts")
         mock_collection.insert_one.return_value = MagicMock(inserted_id="generated_id")
 
         result = repository.save(permission)
@@ -31,7 +31,7 @@ class TestPermissionSave:
     def test_replace_existing_permission(
         self, repository: MongoPermissionRepository, mock_collection: MagicMock
     ) -> None:
-        permission = Permission(id="507f1f77bcf86cd799439011", code="contracts:read", description="View contracts")
+        permission = Permission(id="507f1f77bcf86cd799439011", code="hhh:contracts:read", description="View contracts")
 
         result = repository.save(permission)
 
@@ -45,14 +45,14 @@ class TestPermissionFind:
     ) -> None:
         mock_collection.find_one.return_value = {
             "_id": "507f1f77bcf86cd799439011",
-            "code": "contracts:read",
+            "code": "hhh:contracts:read",
             "description": "View contracts",
         }
 
         result = repository.find_by_id("507f1f77bcf86cd799439011")
 
         assert result is not None
-        assert result.code == "contracts:read"
+        assert result.code == "hhh:contracts:read"
 
     def test_find_by_id_returns_none(self, repository: MongoPermissionRepository, mock_collection: MagicMock) -> None:
         mock_collection.find_one.return_value = None
@@ -66,14 +66,14 @@ class TestPermissionFind:
     ) -> None:
         mock_collection.find_one.return_value = {
             "_id": "abc123",
-            "code": "contracts:read",
+            "code": "hhh:contracts:read",
             "description": "View contracts",
         }
 
-        result = repository.find_by_code("contracts:read")
+        result = repository.find_by_code("hhh:contracts:read")
 
         assert result is not None
-        assert result.code == "contracts:read"
+        assert result.code == "hhh:contracts:read"
 
     def test_find_by_code_returns_none(self, repository: MongoPermissionRepository, mock_collection: MagicMock) -> None:
         mock_collection.find_one.return_value = None
@@ -84,8 +84,8 @@ class TestPermissionFind:
 
     def test_find_all(self, repository: MongoPermissionRepository, mock_collection: MagicMock) -> None:
         mock_collection.find.return_value = [
-            {"_id": "1", "code": "contracts:read", "description": "View contracts"},
-            {"_id": "2", "code": "contracts:write", "description": "Edit contracts"},
+            {"_id": "1", "code": "hhh:contracts:read", "description": "View contracts"},
+            {"_id": "2", "code": "hhh:contracts:write", "description": "Edit contracts"},
         ]
 
         result = repository.find_all()
@@ -94,7 +94,7 @@ class TestPermissionFind:
 
     def test_find_by_ids(self, repository: MongoPermissionRepository, mock_collection: MagicMock) -> None:
         mock_collection.find.return_value = [
-            {"_id": "1", "code": "contracts:read", "description": "View contracts"},
+            {"_id": "1", "code": "hhh:contracts:read", "description": "View contracts"},
         ]
 
         result = repository.find_by_ids(["507f1f77bcf86cd799439011"])

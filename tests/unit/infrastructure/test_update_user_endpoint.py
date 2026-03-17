@@ -39,12 +39,12 @@ def _make_client(mock_auth_service: MagicMock, user_id: str, permissions: list[s
 
 @pytest.fixture()
 def client(mock_auth_service: MagicMock) -> TestClient:
-    return _make_client(mock_auth_service, "user-1", ["users:read", "users:admin"])
+    return _make_client(mock_auth_service, "user-1", ["auth:users:read", "auth:users:admin"])
 
 
 @pytest.fixture()
 def regular_client(mock_auth_service: MagicMock) -> TestClient:
-    return _make_client(mock_auth_service, "user-1", ["users:read"])
+    return _make_client(mock_auth_service, "user-1", ["auth:users:read"])
 
 
 class TestUpdateUserSelfEdit:

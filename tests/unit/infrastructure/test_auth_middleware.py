@@ -202,19 +202,19 @@ class TestProtectedEndpointsWrongPermissions:
         token = _make_token(permissions=[])
         response = client.get("/auth/users", headers=_auth_header(token))
         assert response.status_code == 403
-        assert "users:read" in response.json()["detail"]
+        assert "auth:users:read" in response.json()["detail"]
 
     def test_delete_user_no_admin_permission_returns_403(self, client: TestClient) -> None:
-        token = _make_token(permissions=["users:read"])
+        token = _make_token(permissions=["auth:users:read"])
         response = client.delete("/auth/users/user-1", headers=_auth_header(token))
         assert response.status_code == 403
-        assert "users:admin" in response.json()["detail"]
+        assert "auth:users:admin" in response.json()["detail"]
 
     def test_get_user_other_user_no_permission_returns_403(self, client: TestClient) -> None:
         token = _make_token(sub="user-1", permissions=[])
         response = client.get("/auth/users/other-user", headers=_auth_header(token))
         assert response.status_code == 403
-        assert "users:read" in response.json()["detail"]
+        assert "auth:users:read" in response.json()["detail"]
 
 
 # ---------------------------------------------------------------------------
@@ -225,18 +225,18 @@ class TestProtectedEndpointsWrongPermissions:
 class TestProtectedEndpointsCorrectPermissions:
     def test_list_users_with_read_permission(self, client: TestClient, mock_auth_service: MagicMock) -> None:
         mock_auth_service.list_users.return_value = []
-        token = _make_token(permissions=["users:read"])
+        token = _make_token(permissions=["auth:users:read"])
         response = client.get("/auth/users", headers=_auth_header(token))
         assert response.status_code == 200
 
     def test_delete_user_with_admin_permission(self, client: TestClient, mock_auth_service: MagicMock) -> None:
-        token = _make_token(permissions=["users:admin"])
+        token = _make_token(permissions=["auth:users:admin"])
         response = client.delete("/auth/users/user-1", headers=_auth_header(token))
         assert response.status_code == 204
 
     def test_get_user_with_read_permission(self, client: TestClient, mock_auth_service: MagicMock) -> None:
         mock_auth_service.get_user.return_value = _make_user(id="other-user")
-        token = _make_token(sub="user-1", permissions=["users:read"])
+        token = _make_token(sub="user-1", permissions=["auth:users:read"])
         response = client.get("/auth/users/other-user", headers=_auth_header(token))
         assert response.status_code == 200
 
@@ -278,7 +278,7 @@ class TestSelfAccessPattern:
         self, client: TestClient, mock_auth_service: MagicMock
     ) -> None:
         mock_auth_service.get_user.return_value = _make_user(id="other-user")
-        token = _make_token(sub="user-1", permissions=["users:read"])
+        token = _make_token(sub="user-1", permissions=["auth:users:read"])
         response = client.get("/auth/users/other-user", headers=_auth_header(token))
         assert response.status_code == 200
 

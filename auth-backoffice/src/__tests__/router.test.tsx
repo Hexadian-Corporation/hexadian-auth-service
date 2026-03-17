@@ -1,9 +1,17 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import DashboardLayout from "@/layouts/DashboardLayout";
 import UsersPage from "@/pages/UsersPage";
 import LoginPage from "@/pages/LoginPage";
+
+vi.mock("@/lib/auth", () => ({
+  clearTokens: vi.fn(),
+  redirectToPortal: vi.fn(),
+  getAccessToken: vi.fn(() => "mock-token"),
+  authFetch: vi.fn(),
+  hasAnyPermission: vi.fn(() => true),
+}));
 
 describe("Router", () => {
   it("renders the login page", () => {
@@ -62,7 +70,7 @@ describe("Router", () => {
     render(<RouterProvider router={router} />);
     const logo = screen.getByAltText("Hexadian");
     expect(logo).toBeInTheDocument();
-    expect(logo).toHaveAttribute("src", "/brand/HEXADIAN-Letters.svg");
+    expect(logo).toHaveAttribute("src", "/brand/HEXADIAN-Background_Round.png");
   });
 
   it("renders login page with dark theme", () => {

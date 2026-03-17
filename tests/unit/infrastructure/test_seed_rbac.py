@@ -101,7 +101,7 @@ class TestSeedPermissions:
 
 class TestSeedRoles:
     @patch("src.infrastructure.seed.seed_rbac.MongoClient")
-    def test_creates_3_roles(
+    def test_creates_9_roles(
         self,
         mock_mongo_client: MagicMock,
         mock_db: MagicMock,
@@ -120,7 +120,7 @@ class TestSeedRoles:
 
         seed(settings)
 
-        assert mock_collections["roles"].insert_one.call_count == 3
+        assert mock_collections["roles"].insert_one.call_count == 9
 
     @patch("src.infrastructure.seed.seed_rbac.MongoClient")
     def test_role_names_match_spec(
@@ -143,10 +143,20 @@ class TestSeedRoles:
         seed(settings)
 
         inserted_names = [c[0][0]["name"] for c in mock_collections["roles"].insert_one.call_args_list]
-        assert inserted_names == ["Super Admin", "Member", "Content Manager"]
+        assert inserted_names == [
+            "Auth Admin",
+            "Auth User Manager",
+            "HHH Contracts Manager",
+            "HHH Locations Manager",
+            "HHH Commodities Manager",
+            "HHH Ships Manager",
+            "HHH Graphs Manager",
+            "HHH Routes Manager",
+            "HHH Viewer",
+        ]
 
     @patch("src.infrastructure.seed.seed_rbac.MongoClient")
-    def test_super_admin_has_all_permission_ids(
+    def test_auth_admin_has_4_permission_ids(
         self,
         mock_mongo_client: MagicMock,
         mock_db: MagicMock,
@@ -168,13 +178,13 @@ class TestSeedRoles:
 
         seed(settings)
 
-        super_admin_call = mock_collections["roles"].insert_one.call_args_list[0]
-        super_admin_doc = super_admin_call[0][0]
-        assert super_admin_doc["name"] == "Super Admin"
-        assert len(super_admin_doc["permission_ids"]) == 22
+        auth_admin_call = mock_collections["roles"].insert_one.call_args_list[0]
+        auth_admin_doc = auth_admin_call[0][0]
+        assert auth_admin_doc["name"] == "Auth Admin"
+        assert len(auth_admin_doc["permission_ids"]) == 4
 
     @patch("src.infrastructure.seed.seed_rbac.MongoClient")
-    def test_member_has_8_permission_ids(
+    def test_auth_user_manager_has_2_permission_ids(
         self,
         mock_mongo_client: MagicMock,
         mock_db: MagicMock,
@@ -196,13 +206,13 @@ class TestSeedRoles:
 
         seed(settings)
 
-        member_call = mock_collections["roles"].insert_one.call_args_list[1]
-        member_doc = member_call[0][0]
-        assert member_doc["name"] == "Member"
-        assert len(member_doc["permission_ids"]) == 8
+        user_mgr_call = mock_collections["roles"].insert_one.call_args_list[1]
+        user_mgr_doc = user_mgr_call[0][0]
+        assert user_mgr_doc["name"] == "Auth User Manager"
+        assert len(user_mgr_doc["permission_ids"]) == 2
 
     @patch("src.infrastructure.seed.seed_rbac.MongoClient")
-    def test_content_manager_has_14_permission_ids(
+    def test_hhh_contracts_manager_has_3_permission_ids(
         self,
         mock_mongo_client: MagicMock,
         mock_db: MagicMock,
@@ -224,10 +234,10 @@ class TestSeedRoles:
 
         seed(settings)
 
-        cm_call = mock_collections["roles"].insert_one.call_args_list[2]
-        cm_doc = cm_call[0][0]
-        assert cm_doc["name"] == "Content Manager"
-        assert len(cm_doc["permission_ids"]) == 14
+        contracts_mgr_call = mock_collections["roles"].insert_one.call_args_list[2]
+        contracts_mgr_doc = contracts_mgr_call[0][0]
+        assert contracts_mgr_doc["name"] == "HHH Contracts Manager"
+        assert len(contracts_mgr_doc["permission_ids"]) == 3
 
     @patch("src.infrastructure.seed.seed_rbac.MongoClient")
     def test_skips_existing_roles(
@@ -250,7 +260,7 @@ class TestSeedRoles:
 
 class TestSeedGroups:
     @patch("src.infrastructure.seed.seed_rbac.MongoClient")
-    def test_creates_2_groups(
+    def test_creates_3_groups(
         self,
         mock_mongo_client: MagicMock,
         mock_db: MagicMock,
@@ -269,7 +279,7 @@ class TestSeedGroups:
 
         seed(settings)
 
-        assert mock_collections["groups"].insert_one.call_count == 2
+        assert mock_collections["groups"].insert_one.call_count == 3
 
     @patch("src.infrastructure.seed.seed_rbac.MongoClient")
     def test_group_names_match_spec(
@@ -292,7 +302,7 @@ class TestSeedGroups:
         seed(settings)
 
         inserted_names = [c[0][0]["name"] for c in mock_collections["groups"].insert_one.call_args_list]
-        assert inserted_names == ["Admins", "Users"]
+        assert inserted_names == ["Admins", "Users", "Content Managers"]
 
     @patch("src.infrastructure.seed.seed_rbac.MongoClient")
     def test_skips_existing_groups(
@@ -431,10 +441,10 @@ class TestSeedDataDefinitions:
         assert len(PERMISSIONS) == 22
 
     def test_roles_count(self) -> None:
-        assert len(ROLES) == 3
+        assert len(ROLES) == 9
 
     def test_groups_count(self) -> None:
-        assert len(GROUPS) == 2
+        assert len(GROUPS) == 3
 
     def test_all_permission_codes_unique(self) -> None:
         codes = [p["code"] for p in PERMISSIONS]
@@ -468,7 +478,7 @@ class TestSeedDataDefinitions:
     def test_users_group_auto_assign_apps(self) -> None:
         users_group = next(g for g in GROUPS if g["name"] == "Users")
         assert "hhh-frontend" in users_group["auto_assign_apps"]
-        assert "hhh-backoffice" in users_group["auto_assign_apps"]
+        assert "hhh-backoffice" not in users_group["auto_assign_apps"]
 
     def test_admins_group_has_empty_auto_assign_apps(self) -> None:
         admins_group = next(g for g in GROUPS if g["name"] == "Admins")

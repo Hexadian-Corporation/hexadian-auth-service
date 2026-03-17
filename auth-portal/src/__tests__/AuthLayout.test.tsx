@@ -7,7 +7,7 @@ describe("AuthLayout", () => {
     render(<AuthLayout>content</AuthLayout>);
     const logo = screen.getByAltText("Hexadian");
     expect(logo).toBeInTheDocument();
-    expect(logo).toHaveAttribute("src", "/brand/HEXADIAN-Letters.png");
+    expect(logo).toHaveAttribute("src", "/brand/HEXADIAN-Background_Round.png");
   });
 
   it("renders the Authentication Portal subtitle", () => {
@@ -25,7 +25,7 @@ describe("AuthLayout", () => {
     const { container } = render(<AuthLayout>content</AuthLayout>);
     const outer = container.firstElementChild as HTMLElement;
     expect(outer.style.backgroundImage).toContain(
-      "HEXADIAN-Background.png",
+      "hxn_back.jpg",
     );
   });
 
@@ -33,6 +33,6 @@ describe("AuthLayout", () => {
     const { container } = render(<AuthLayout>content</AuthLayout>);
     const overlay = container.querySelector("[aria-hidden='true']");
     expect(overlay).toBeInTheDocument();
-    expect(overlay).toHaveClass("bg-black/85");
+    expect(overlay).toHaveClass("bg-black/60");
   });
 });

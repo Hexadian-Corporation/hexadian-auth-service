@@ -93,7 +93,7 @@ def _make_access_token(settings: Settings, **overrides: object) -> str:
         "username": "testuser",
         "groups": ["Admins"],
         "roles": ["Super Admin"],
-        "permissions": ["contracts:read", "contracts:write"],
+        "permissions": ["hhh:contracts:read", "hhh:contracts:write"],
         "rsi_handle": "TestPilot",
         "rsi_verified": False,
         "iat": now,
@@ -120,7 +120,7 @@ class TestIntrospectTokenActiveUser:
         assert result.username == "testuser"
         assert result.groups == ["Admins"]
         assert result.roles == ["Super Admin"]
-        assert result.permissions == ["contracts:read", "contracts:write"]
+        assert result.permissions == ["hhh:contracts:read", "hhh:contracts:write"]
         assert result.rsi_handle == "TestPilot"
         assert result.rsi_verified is False
         assert result.is_user_active is True

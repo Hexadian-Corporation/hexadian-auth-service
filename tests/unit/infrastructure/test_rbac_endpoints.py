@@ -33,7 +33,7 @@ def client(mock_rbac_service: MagicMock) -> TestClient:
         return UserContext(
             user_id="user-1",
             username="admin",
-            permissions=["rbac:manage", "users:admin", "users:read"],
+            permissions=["auth:rbac:manage", "auth:users:admin", "auth:users:read"],
         )
 
     app.dependency_overrides[_stub_jwt_auth] = _mock_jwt_auth
@@ -48,15 +48,15 @@ def client(mock_rbac_service: MagicMock) -> TestClient:
 class TestPermissionEndpoints:
     def test_create_permission(self, client: TestClient, mock_rbac_service: MagicMock) -> None:
         mock_rbac_service.create_permission.return_value = Permission(
-            id="p-1", code="users:read", description="Read users"
+            id="p-1", code="auth:users:read", description="Read users"
         )
 
-        response = client.post("/rbac/permissions", json={"code": "users:read", "description": "Read users"})
+        response = client.post("/rbac/permissions", json={"code": "auth:users:read", "description": "Read users"})
 
         assert response.status_code == 201
         data = response.json()
         assert data["_id"] == "p-1"
-        assert data["code"] == "users:read"
+        assert data["code"] == "auth:users:read"
 
     def test_list_permissions(self, client: TestClient, mock_rbac_service: MagicMock) -> None:
         mock_rbac_service.list_permissions.return_value = [
@@ -70,7 +70,7 @@ class TestPermissionEndpoints:
         assert len(response.json()) == 2
 
     def test_get_permission(self, client: TestClient, mock_rbac_service: MagicMock) -> None:
-        mock_rbac_service.get_permission.return_value = Permission(id="p-1", code="users:read", description="Read")
+        mock_rbac_service.get_permission.return_value = Permission(id="p-1", code="auth:users:read", description="Read")
 
         response = client.get("/rbac/permissions/p-1")
 
@@ -85,12 +85,12 @@ class TestPermissionEndpoints:
         assert response.status_code == 404
 
     def test_update_permission(self, client: TestClient, mock_rbac_service: MagicMock) -> None:
-        mock_rbac_service.update_permission.return_value = Permission(id="p-1", code="users:write", description="Write")
+        mock_rbac_service.update_permission.return_value = Permission(id="p-1", code="auth:users:write", description="Write")
 
-        response = client.put("/rbac/permissions/p-1", json={"code": "users:write", "description": "Write"})
+        response = client.put("/rbac/permissions/p-1", json={"code": "auth:users:write", "description": "Write"})
 
         assert response.status_code == 200
-        assert response.json()["code"] == "users:write"
+        assert response.json()["code"] == "auth:users:write"
 
     def test_update_permission_not_found(self, client: TestClient, mock_rbac_service: MagicMock) -> None:
         mock_rbac_service.update_permission.side_effect = PermissionNotFoundError("missing")
@@ -354,14 +354,14 @@ class TestUserGroupAssignment:
 
 class TestResolvedPermissionsEndpoint:
     def test_get_resolved_permissions(self, client: TestClient, mock_rbac_service: MagicMock) -> None:
-        mock_rbac_service.resolve_permissions.return_value = ["users:read", "users:write"]
+        mock_rbac_service.resolve_permissions.return_value = ["auth:users:read", "auth:users:write"]
 
         response = client.get("/rbac/users/u-1/permissions")
 
         assert response.status_code == 200
         data = response.json()
         assert data["user_id"] == "u-1"
-        assert data["permissions"] == ["users:read", "users:write"]
+        assert data["permissions"] == ["auth:users:read", "auth:users:write"]
 
     def test_get_resolved_permissions_user_not_found(self, client: TestClient, mock_rbac_service: MagicMock) -> None:
         mock_rbac_service.resolve_permissions.side_effect = UserNotFoundError("missing")
@@ -384,12 +384,12 @@ class TestResolvedPermissionsEndpoint:
         app.dependency_overrides[_stub_jwt_auth] = _mock_jwt_auth_no_perms
         client = TestClient(app)
 
-        mock_rbac_service.resolve_permissions.return_value = ["users:read"]
+        mock_rbac_service.resolve_permissions.return_value = ["auth:users:read"]
 
         response = client.get("/rbac/users/user-1/permissions")
 
         assert response.status_code == 200
-        assert response.json()["permissions"] == ["users:read"]
+        assert response.json()["permissions"] == ["auth:users:read"]
 
     def test_other_user_access_denied_without_users_read(self, mock_rbac_service: MagicMock) -> None:
         """Cannot view another user's permissions without users:read."""

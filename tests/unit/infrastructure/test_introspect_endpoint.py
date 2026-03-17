@@ -27,7 +27,7 @@ def client(mock_auth_service: MagicMock) -> TestClient:
         return UserContext(
             user_id="user-1",
             username="testuser",
-            permissions=["users:read", "users:admin"],
+            permissions=["auth:users:read", "auth:users:admin"],
         )
 
     app.dependency_overrides[_stub_jwt_auth] = _mock_jwt_auth
@@ -46,7 +46,7 @@ class TestIntrospectEndpointActiveToken:
             username="bob",
             groups=["alpha"],
             roles=["admin"],
-            permissions=["contracts:read", "contracts:write"],
+            permissions=["hhh:contracts:read", "hhh:contracts:write"],
             rsi_handle="BobInSpace",
             rsi_verified=True,
             exp=1700000900,
@@ -63,7 +63,7 @@ class TestIntrospectEndpointActiveToken:
         assert data["username"] == "bob"
         assert data["groups"] == ["alpha"]
         assert data["roles"] == ["admin"]
-        assert data["permissions"] == ["contracts:read", "contracts:write"]
+        assert data["permissions"] == ["hhh:contracts:read", "hhh:contracts:write"]
         assert data["rsi_handle"] == "BobInSpace"
         assert data["rsi_verified"] is True
         assert data["exp"] == 1700000900

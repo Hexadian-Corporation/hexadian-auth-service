@@ -65,10 +65,10 @@ class TestCreatePermission:
             id="p-1", code=p.code, description=p.description
         )
 
-        result = service.create_permission("users:read", "Read users")
+        result = service.create_permission("auth:users:read", "Read users")
 
         assert result.id == "p-1"
-        assert result.code == "users:read"
+        assert result.code == "auth:users:read"
         assert result.description == "Read users"
         mock_permission_repository.save.assert_called_once()
 
@@ -77,7 +77,7 @@ class TestGetPermission:
     def test_returns_permission_when_found(
         self, service: RbacServiceImpl, mock_permission_repository: MagicMock
     ) -> None:
-        mock_permission_repository.find_by_id.return_value = Permission(id="p-1", code="users:read", description="Read")
+        mock_permission_repository.find_by_id.return_value = Permission(id="p-1", code="auth:users:read", description="Read")
 
         result = service.get_permission("p-1")
 
@@ -349,13 +349,13 @@ class TestResolvePermissions:
         mock_group_repository.find_by_ids.return_value = [Group(id="g-1", role_ids=["r-1"])]
         mock_role_repository.find_by_ids.return_value = [Role(id="r-1", permission_ids=["p-1", "p-2"])]
         mock_permission_repository.find_by_ids.return_value = [
-            Permission(id="p-1", code="users:read"),
-            Permission(id="p-2", code="users:write"),
+            Permission(id="p-1", code="auth:users:read"),
+            Permission(id="p-2", code="auth:users:write"),
         ]
 
         result = service.resolve_permissions("u-1")
 
-        assert result == ["users:read", "users:write"]
+        assert result == ["auth:users:read", "auth:users:write"]
 
     def test_deduplicates_permissions_from_overlapping_roles(
         self,
@@ -377,15 +377,15 @@ class TestResolvePermissions:
             Role(id="r-2", permission_ids=["p-2", "p-3"]),
         ]
         mock_permission_repository.find_by_ids.return_value = [
-            Permission(id="p-1", code="users:read"),
-            Permission(id="p-2", code="users:write"),
-            Permission(id="p-2b", code="users:write"),
-            Permission(id="p-3", code="users:admin"),
+            Permission(id="p-1", code="auth:users:read"),
+            Permission(id="p-2", code="auth:users:write"),
+            Permission(id="p-2b", code="auth:users:write"),
+            Permission(id="p-3", code="auth:users:admin"),
         ]
 
         result = service.resolve_permissions("u-1")
 
-        assert result == ["users:read", "users:write", "users:admin"]
+        assert result == ["auth:users:read", "auth:users:write", "auth:users:admin"]
 
     def test_returns_empty_list_when_user_has_no_groups(
         self,
@@ -559,13 +559,13 @@ class TestResolveRbacClaims:
         mock_user_repository.find_by_id.return_value = user
         mock_group_repository.find_by_ids.return_value = [Group(id="g-1", name="Admins", role_ids=["r-1"])]
         mock_role_repository.find_by_ids.return_value = [Role(id="r-1", name="Super Admin", permission_ids=["p-1"])]
-        mock_permission_repository.find_by_ids.return_value = [Permission(id="p-1", code="users:admin")]
+        mock_permission_repository.find_by_ids.return_value = [Permission(id="p-1", code="auth:users:admin")]
 
         result = service.resolve_rbac_claims("u-1")
 
         assert result.groups == ["Admins"]
         assert result.roles == ["Super Admin"]
-        assert result.permissions == ["users:admin"]
+        assert result.permissions == ["auth:users:admin"]
 
     def test_returns_empty_claims_when_no_groups(
         self,
@@ -635,16 +635,16 @@ class TestResolveRbacClaims:
             Role(id="r-2", name="Member", permission_ids=["p-1"]),
         ]
         mock_permission_repository.find_by_ids.return_value = [
-            Permission(id="p-1", code="contracts:read"),
-            Permission(id="p-2", code="contracts:write"),
-            Permission(id="p-1b", code="contracts:read"),
+            Permission(id="p-1", code="hhh:contracts:read"),
+            Permission(id="p-2", code="hhh:contracts:write"),
+            Permission(id="p-1b", code="hhh:contracts:read"),
         ]
 
         result = service.resolve_rbac_claims("u-1")
 
         assert result.groups == ["Admins", "Users"]
         assert result.roles == ["Super Admin", "Member"]
-        assert result.permissions == ["contracts:read", "contracts:write"]
+        assert result.permissions == ["hhh:contracts:read", "hhh:contracts:write"]
 
     def test_raises_when_user_not_found(
         self,

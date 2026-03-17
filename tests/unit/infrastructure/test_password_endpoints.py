@@ -30,7 +30,7 @@ def client(mock_auth_service: MagicMock) -> TestClient:
         return UserContext(
             user_id="user-1",
             username="testuser",
-            permissions=["users:read", "users:admin"],
+            permissions=["auth:users:read", "auth:users:admin"],
         )
 
     app.dependency_overrides[_stub_jwt_auth] = _mock_jwt_auth
@@ -49,7 +49,7 @@ def client_no_admin(mock_auth_service: MagicMock) -> TestClient:
         return UserContext(
             user_id="user-1",
             username="testuser",
-            permissions=["users:read"],
+            permissions=["auth:users:read"],
         )
 
     app.dependency_overrides[_stub_jwt_auth] = _mock_jwt_auth_no_admin

@@ -84,7 +84,7 @@ auth-backoffice/                     # Admin frontend (port 3002)
 ## Domain Models
 
 - **User** — `id`, `username`, `hashed_password`, `group_ids` (list[str]), `is_active`, `rsi_handle`, `rsi_verified`, `rsi_verification_code`
-- **Permission** — `id`, `code` (e.g., `contracts:read`), `description`
+- **Permission** — `id`, `code` (e.g., `hhh:contracts:read`, `auth:rbac:manage`), `description`
 - **Role** — `id`, `name`, `description`, `permission_ids` (list[str])
 - **Group** — `id`, `name`, `description`, `role_ids` (list[str])
 - **RefreshToken** — `id`, `user_id`, `token` (opaque UUID), `expires_at`, `revoked`
@@ -105,9 +105,9 @@ Groups → Roles → Permissions
 - Permissions are **resolved at JWT refresh time** — the full permission set is embedded in the access token
 
 **Seed data** (`uv run python -m src.infrastructure.seed.seed_rbac`):
-- 22 permissions: `contracts:read/write/delete`, `locations:read/write/delete`, `commodities:read/write/delete`, `ships:read/write/delete`, `graphs:read/write/delete`, `routes:read/write/delete`, `users:read/write/admin`, `rbac:manage`
-- 3 roles: Super Admin (all), Content Manager (read/write), Member (read-only + `contracts:write`)
-- 2 groups: Admins (Super Admin role), Users (Member role — default for new registrations)
+- 22 permissions: `hhh:contracts:read/write/delete`, `hhh:locations:read/write/delete`, `hhh:commodities:read/write/delete`, `hhh:ships:read/write/delete`, `hhh:graphs:read/write/delete`, `hhh:routes:read/write/delete`, `auth:users:read/write/admin`, `auth:rbac:manage`
+- 9 roles: Auth Admin, Auth User Manager, HHH Contracts/Locations/Commodities/Ships/Graphs/Routes Manager, HHH Viewer
+- 3 groups: Admins (Auth Admin + all HHH Managers), Users (HHH Viewer + HHH Contracts Manager — auto-assigned from `hhh-frontend`), Content Managers (Auth User Manager + all HHH Managers)
 - Admin user: `admin` / `HEXADIAN_AUTH_ADMIN_PASSWORD` env var (default: `"admin"`)
 
 ## JWT / Token Architecture
@@ -167,9 +167,9 @@ All settings use `HEXADIAN_AUTH_` prefix.
 | `POST` | `/auth/token/revoke` | None | Revoke a refresh token |
 | `POST` | `/auth/authorize` | None | Generate authorization code (redirect auth flow) |
 | `POST` | `/auth/token/exchange` | None | Exchange authorization code for tokens |
-| `GET` | `/auth/users/{user_id}` | JWT (self or `users:read`) | Get user by ID |
-| `GET` | `/auth/users` | `users:read` | List all users |
-| `DELETE` | `/auth/users/{user_id}` | `users:admin` | Delete a user |
+| `GET` | `/auth/users/{user_id}` | JWT (self or `auth:users:read`) | Get user by ID |
+| `GET` | `/auth/users` | `auth:users:read` | List all users |
+| `DELETE` | `/auth/users/{user_id}` | `auth:users:admin` | Delete a user |
 | `POST` | `/auth/verify/start` | JWT | Start RSI verification (generates code) |
 | `POST` | `/auth/verify/confirm` | JWT | Confirm RSI verification (checks profile bio) |
 | `GET` | `/health` | None | Health check |

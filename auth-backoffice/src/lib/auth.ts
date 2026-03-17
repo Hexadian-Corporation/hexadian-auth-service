@@ -1,3 +1,13 @@
+interface UserContext {
+  userId: string;
+  username: string;
+  groups: string[];
+  roles: string[];
+  permissions: string[];
+  rsiHandle: string | null;
+  rsiVerified: boolean;
+}
+
 const ACCESS_TOKEN_KEY = "access_token";
 const REFRESH_TOKEN_KEY = "refresh_token";
 
@@ -16,6 +26,31 @@ export function isAuthenticated(): boolean {
   } catch {
     return false;
   }
+}
+
+export function getUserContext(): UserContext | null {
+  const token = getAccessToken();
+  if (!token) return null;
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    return {
+      userId: payload.sub ?? payload.user_id ?? "",
+      username: payload.username ?? "",
+      groups: payload.groups ?? [],
+      roles: payload.roles ?? [],
+      permissions: payload.permissions ?? [],
+      rsiHandle: payload.rsi_handle ?? null,
+      rsiVerified: payload.rsi_verified ?? false,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function hasAnyPermission(required: string[]): boolean {
+  const ctx = getUserContext();
+  if (!ctx) return false;
+  return required.some((p) => ctx.permissions.includes(p));
 }
 
 export function storeTokens(accessToken: string, refreshToken: string): void {

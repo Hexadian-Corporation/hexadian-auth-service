@@ -13,6 +13,7 @@ vi.mock("@/lib/auth", () => ({
   redirectToPortal: vi.fn(),
   getAccessToken: vi.fn(() => "mock-token"),
   authFetch: vi.fn(),
+  hasAnyPermission: vi.fn(() => true),
 }));
 
 import { changePassword } from "@/api/auth";

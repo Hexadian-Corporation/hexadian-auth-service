@@ -9,7 +9,7 @@ class TestPermissionModel:
         assert permission.description == ""
 
     def test_custom_values(self) -> None:
-        permission = Permission(id="perm-1", code="contracts:read", description="View contracts")
+        permission = Permission(id="perm-1", code="hhh:contracts:read", description="View contracts")
         assert permission.id == "perm-1"
-        assert permission.code == "contracts:read"
+        assert permission.code == "hhh:contracts:read"
         assert permission.description == "View contracts"

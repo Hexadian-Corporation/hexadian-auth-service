@@ -25,6 +25,9 @@ rbac_router = APIRouter(prefix="/rbac", tags=["rbac"])
 
 _rbac_service: RbacService | None = None
 
+_manage = [Depends(require_permission("auth:rbac:manage"))]
+_user_admin = [Depends(require_permission("auth:users:admin"))]
+
 
 def init_rbac_router(rbac_service: RbacService) -> None:
     global _rbac_service
@@ -40,7 +43,7 @@ def init_rbac_router(rbac_service: RbacService) -> None:
     "/permissions",
     response_model=PermissionDTO,
     status_code=201,
-    dependencies=[Depends(require_permission("rbac:manage"))],
+    dependencies=_manage,
 )
 def create_permission(dto: PermissionCreateDTO) -> PermissionDTO:
     permission = _rbac_service.create_permission(dto.code, dto.description)
@@ -50,7 +53,7 @@ def create_permission(dto: PermissionCreateDTO) -> PermissionDTO:
 @rbac_router.get(
     "/permissions",
     response_model=list[PermissionDTO],
-    dependencies=[Depends(require_permission("rbac:manage"))],
+    dependencies=_manage,
 )
 def list_permissions() -> list[PermissionDTO]:
     return [RbacApiMapper.permission_to_dto(p) for p in _rbac_service.list_permissions()]
@@ -59,7 +62,7 @@ def list_permissions() -> list[PermissionDTO]:
 @rbac_router.get(
     "/permissions/{permission_id}",
     response_model=PermissionDTO,
-    dependencies=[Depends(require_permission("rbac:manage"))],
+    dependencies=_manage,
 )
 def get_permission(permission_id: str) -> PermissionDTO:
     try:
@@ -72,7 +75,7 @@ def get_permission(permission_id: str) -> PermissionDTO:
 @rbac_router.put(
     "/permissions/{permission_id}",
     response_model=PermissionDTO,
-    dependencies=[Depends(require_permission("rbac:manage"))],
+    dependencies=_manage,
 )
 def update_permission(permission_id: str, dto: PermissionCreateDTO) -> PermissionDTO:
     try:
@@ -85,7 +88,7 @@ def update_permission(permission_id: str, dto: PermissionCreateDTO) -> Permissio
 @rbac_router.delete(
     "/permissions/{permission_id}",
     status_code=204,
-    dependencies=[Depends(require_permission("rbac:manage"))],
+    dependencies=_manage,
 )
 def delete_permission(permission_id: str) -> None:
     try:
@@ -103,7 +106,7 @@ def delete_permission(permission_id: str) -> None:
     "/roles",
     response_model=RoleDTO,
     status_code=201,
-    dependencies=[Depends(require_permission("rbac:manage"))],
+    dependencies=_manage,
 )
 def create_role(dto: RoleCreateDTO) -> RoleDTO:
     role = _rbac_service.create_role(dto.name, dto.description, dto.permission_ids)
@@ -113,7 +116,7 @@ def create_role(dto: RoleCreateDTO) -> RoleDTO:
 @rbac_router.get(
     "/roles",
     response_model=list[RoleDTO],
-    dependencies=[Depends(require_permission("rbac:manage"))],
+    dependencies=_manage,
 )
 def list_roles() -> list[RoleDTO]:
     return [RbacApiMapper.role_to_dto(r) for r in _rbac_service.list_roles()]
@@ -122,7 +125,7 @@ def list_roles() -> list[RoleDTO]:
 @rbac_router.get(
     "/roles/{role_id}",
     response_model=RoleDTO,
-    dependencies=[Depends(require_permission("rbac:manage"))],
+    dependencies=_manage,
 )
 def get_role(role_id: str) -> RoleDTO:
     try:
@@ -135,7 +138,7 @@ def get_role(role_id: str) -> RoleDTO:
 @rbac_router.put(
     "/roles/{role_id}",
     response_model=RoleDTO,
-    dependencies=[Depends(require_permission("rbac:manage"))],
+    dependencies=_manage,
 )
 def update_role(role_id: str, dto: RoleCreateDTO) -> RoleDTO:
     try:
@@ -148,7 +151,7 @@ def update_role(role_id: str, dto: RoleCreateDTO) -> RoleDTO:
 @rbac_router.delete(
     "/roles/{role_id}",
     status_code=204,
-    dependencies=[Depends(require_permission("rbac:manage"))],
+    dependencies=_manage,
 )
 def delete_role(role_id: str) -> None:
     try:
@@ -166,7 +169,7 @@ def delete_role(role_id: str) -> None:
     "/groups",
     response_model=GroupDTO,
     status_code=201,
-    dependencies=[Depends(require_permission("rbac:manage"))],
+    dependencies=_manage,
 )
 def create_group(dto: GroupCreateDTO) -> GroupDTO:
     group = _rbac_service.create_group(dto.name, dto.description, dto.role_ids, dto.auto_assign_apps)
@@ -176,7 +179,7 @@ def create_group(dto: GroupCreateDTO) -> GroupDTO:
 @rbac_router.get(
     "/groups",
     response_model=list[GroupDTO],
-    dependencies=[Depends(require_permission("rbac:manage"))],
+    dependencies=_manage,
 )
 def list_groups() -> list[GroupDTO]:
     return [RbacApiMapper.group_to_dto(g) for g in _rbac_service.list_groups()]
@@ -185,7 +188,7 @@ def list_groups() -> list[GroupDTO]:
 @rbac_router.get(
     "/groups/{group_id}",
     response_model=GroupDTO,
-    dependencies=[Depends(require_permission("rbac:manage"))],
+    dependencies=_manage,
 )
 def get_group(group_id: str) -> GroupDTO:
     try:
@@ -198,7 +201,7 @@ def get_group(group_id: str) -> GroupDTO:
 @rbac_router.put(
     "/groups/{group_id}",
     response_model=GroupDTO,
-    dependencies=[Depends(require_permission("rbac:manage"))],
+    dependencies=_manage,
 )
 def update_group(group_id: str, dto: GroupCreateDTO) -> GroupDTO:
     try:
@@ -211,7 +214,7 @@ def update_group(group_id: str, dto: GroupCreateDTO) -> GroupDTO:
 @rbac_router.delete(
     "/groups/{group_id}",
     status_code=204,
-    dependencies=[Depends(require_permission("rbac:manage"))],
+    dependencies=_manage,
 )
 def delete_group(group_id: str) -> None:
     try:
@@ -228,7 +231,7 @@ def delete_group(group_id: str) -> None:
 @rbac_router.post(
     "/users/{user_id}/groups",
     status_code=204,
-    dependencies=[Depends(require_permission("users:admin"))],
+    dependencies=_user_admin,
 )
 def assign_user_to_group(user_id: str, dto: UserGroupAssignDTO) -> None:
     try:
@@ -242,7 +245,7 @@ def assign_user_to_group(user_id: str, dto: UserGroupAssignDTO) -> None:
 @rbac_router.delete(
     "/users/{user_id}/groups/{group_id}",
     status_code=204,
-    dependencies=[Depends(require_permission("users:admin"))],
+    dependencies=_user_admin,
 )
 def remove_user_from_group(user_id: str, group_id: str) -> None:
     try:
@@ -264,8 +267,8 @@ def get_resolved_permissions(
     user_id: str,
     user_ctx: Annotated[UserContext, Depends(_stub_jwt_auth)],
 ) -> ResolvedPermissionsDTO:
-    if user_ctx.user_id != user_id and "users:read" not in user_ctx.permissions:
-        raise HTTPException(status_code=403, detail="Missing required permission: users:read")
+    if user_ctx.user_id != user_id and "auth:users:read" not in user_ctx.permissions:
+        raise HTTPException(status_code=403, detail="Missing required permission: auth:users:read")
     try:
         codes = _rbac_service.resolve_permissions(user_id)
     except UserNotFoundError as exc:

@@ -42,6 +42,9 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 _auth_service: AuthService | None = None
 
+_users_read = [Depends(require_permission("auth:users:read"))]
+_users_admin = [Depends(require_permission("auth:users:admin"))]
+
 
 def init_router(auth_service: AuthService) -> None:
     global _auth_service
@@ -100,8 +103,8 @@ def revoke_token(dto: RefreshTokenDTO) -> None:
 
 @router.get("/users/{user_id}", response_model=UserDTO)
 def get_user(user_id: str, user_ctx: Annotated[UserContext, Depends(_stub_jwt_auth)]) -> UserDTO:
-    if user_ctx.user_id != user_id and "users:read" not in user_ctx.permissions:
-        raise HTTPException(status_code=403, detail="Missing required permission: users:read")
+    if user_ctx.user_id != user_id and "auth:users:read" not in user_ctx.permissions:
+        raise HTTPException(status_code=403, detail="Missing required permission: auth:users:read")
     try:
         target_user = _auth_service.get_user(user_id)
     except UserNotFoundError as exc:
@@ -109,12 +112,12 @@ def get_user(user_id: str, user_ctx: Annotated[UserContext, Depends(_stub_jwt_au
     return AuthApiMapper.to_dto(target_user)
 
 
-@router.get("/users", response_model=list[UserDTO], dependencies=[Depends(require_permission("users:read"))])
+@router.get("/users", response_model=list[UserDTO], dependencies=_users_read)
 def list_users() -> list[UserDTO]:
     return [AuthApiMapper.to_dto(u) for u in _auth_service.list_users()]
 
 
-@router.delete("/users/{user_id}", status_code=204, dependencies=[Depends(require_permission("users:admin"))])
+@router.delete("/users/{user_id}", status_code=204, dependencies=_users_admin)
 def delete_user(user_id: str) -> None:
     try:
         _auth_service.delete_user(user_id)
@@ -128,8 +131,8 @@ def update_user(
     dto: UserUpdateDTO,
     user_ctx: Annotated[UserContext, Depends(_stub_jwt_auth)],
 ) -> UserDTO:
-    if user_ctx.user_id != user_id and "users:admin" not in user_ctx.permissions:
-        raise HTTPException(status_code=403, detail="Missing required permission: users:admin")
+    if user_ctx.user_id != user_id and "auth:users:admin" not in user_ctx.permissions:
+        raise HTTPException(status_code=403, detail="Missing required permission: auth:users:admin")
     updates = dto.model_dump(exclude_none=True)
     try:
         user = _auth_service.update_user(user_id, updates)
@@ -221,7 +224,7 @@ def change_password(
 @router.post(
     "/users/{user_id}/password-reset",
     status_code=204,
-    dependencies=[Depends(require_permission("users:admin"))],
+    dependencies=_users_admin,
 )
 def reset_password(user_id: str, dto: PasswordResetDTO) -> None:
     try:
