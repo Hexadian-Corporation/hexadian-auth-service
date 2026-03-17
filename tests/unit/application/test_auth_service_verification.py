@@ -85,7 +85,7 @@ class TestStartVerification:
         assert code.startswith(_VERIFICATION_PREFIX)
         words_part = code[len(_VERIFICATION_PREFIX) :]
         words = words_part.split("-")
-        assert len(words) == 6
+        assert len(words) == 4
         assert all(word in _WORD_LIST for word in words)
         assert user.rsi_handle == "ValidHandle"
         assert user.rsi_verification_code == code
@@ -135,7 +135,7 @@ class TestConfirmVerification:
     def test_confirm_verification_success(
         self, service: AuthServiceImpl, mock_repository: MagicMock, mock_rsi_fetcher: MagicMock
     ) -> None:
-        code = "Hexadian account validation code: alpha-brave-delta-ember-frost-ocean"
+        code = "hxn_alpha-brave-delta-ember"
         user = User(
             id="user-1",
             username="test",
@@ -154,7 +154,7 @@ class TestConfirmVerification:
     def test_confirm_verification_code_not_found(
         self, service: AuthServiceImpl, mock_repository: MagicMock, mock_rsi_fetcher: MagicMock
     ) -> None:
-        code = "Hexadian account validation code: alpha-brave-delta-ember-frost-ocean"
+        code = "hxn_alpha-brave-delta-ember"
         user = User(
             id="user-1",
             username="test",
@@ -173,7 +173,7 @@ class TestConfirmVerification:
     def test_confirm_verification_profile_not_found(
         self, service: AuthServiceImpl, mock_repository: MagicMock, mock_rsi_fetcher: MagicMock
     ) -> None:
-        code = "Hexadian account validation code: alpha-brave-delta-ember-frost-ocean"
+        code = "hxn_alpha-brave-delta-ember"
         user = User(
             id="user-1",
             username="test",
@@ -204,7 +204,7 @@ class TestConfirmVerification:
     def test_confirm_verification_persists_verified_to_db(
         self, service: AuthServiceImpl, mock_repository: MagicMock, mock_rsi_fetcher: MagicMock
     ) -> None:
-        code = "Hexadian account validation code: alpha-brave-delta-ember-frost-ocean"
+        code = "hxn_alpha-brave-delta-ember"
         user = User(
             id="user-1",
             username="test",
