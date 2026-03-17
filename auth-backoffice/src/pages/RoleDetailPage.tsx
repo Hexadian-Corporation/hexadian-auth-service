@@ -82,8 +82,8 @@ export default function RoleDetailPage() {
   if (loading) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold">{isNew ? "New Role" : "Edit Role"}</h1>
-        <p className="text-gray-500">Loading...</p>
+        <h1 className="text-2xl font-bold text-slate-100">{isNew ? "New Role" : "Edit Role"}</h1>
+        <p className="text-slate-400">Loading...</p>
       </div>
     );
   }
@@ -91,70 +91,70 @@ export default function RoleDetailPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Link to="/rbac/roles" className="rounded-md p-1 hover:bg-gray-100" aria-label="Back to roles">
+        <Link to="/rbac/roles" className="rounded-md p-1 text-slate-300 hover:bg-slate-800" aria-label="Back to roles">
           <ArrowLeft className="h-5 w-5" />
         </Link>
-        <h1 className="text-2xl font-bold">{isNew ? "New Role" : "Edit Role"}</h1>
+        <h1 className="text-2xl font-bold text-slate-100">{isNew ? "New Role" : "Edit Role"}</h1>
       </div>
 
       {error && (
-        <div role="alert" className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        <div role="alert" className="rounded-md border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-400">
           {error}
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="rounded-md border bg-white p-4 space-y-4">
+        <div className="rounded-md border border-slate-700 bg-slate-900/80 p-4 space-y-4">
           <div>
-            <label htmlFor="role-name" className="block text-sm font-medium text-gray-700">Name</label>
+            <label htmlFor="role-name" className="block text-sm font-medium text-slate-300">Name</label>
             <input
               id="role-name"
               type="text"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 focus:outline-none"
               required
             />
           </div>
           <div>
-            <label htmlFor="role-description" className="block text-sm font-medium text-gray-700">Description</label>
+            <label htmlFor="role-description" className="block text-sm font-medium text-slate-300">Description</label>
             <input
               id="role-description"
               type="text"
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 focus:outline-none"
               required
             />
           </div>
         </div>
 
-        <div className="rounded-md border bg-white p-4">
-          <h2 className="mb-4 text-lg font-semibold">Permissions</h2>
+        <div className="rounded-md border border-slate-700 bg-slate-900/80 p-4">
+          <h2 className="mb-4 text-lg font-semibold text-slate-100">Permissions</h2>
           <div className="space-y-4">
             {Object.entries(grouped)
               .sort(([a], [b]) => a.localeCompare(b))
               .map(([service, perms]) => (
                 <div key={service}>
-                  <h3 className="mb-2 text-sm font-medium capitalize text-gray-500">{service}</h3>
+                  <h3 className="mb-2 text-sm font-medium capitalize text-slate-400">{service}</h3>
                   <div className="space-y-1">
                     {perms.map((perm) => (
-                      <label key={perm._id} className="flex items-center gap-2 rounded px-2 py-1 hover:bg-gray-50">
+                      <label key={perm._id} className="flex items-center gap-2 rounded px-2 py-1 hover:bg-slate-800">
                         <input
                           type="checkbox"
                           checked={form.permission_ids.includes(perm._id)}
                           onChange={() => togglePermission(perm._id)}
                           className="rounded"
                         />
-                        <span className="text-sm font-mono">{perm.code}</span>
-                        <span className="text-xs text-gray-400">— {perm.description}</span>
+                        <span className="text-sm font-mono text-slate-200">{perm.code}</span>
+                        <span className="text-xs text-slate-500">— {perm.description}</span>
                       </label>
                     ))}
                   </div>
                 </div>
               ))}
             {permissions.length === 0 && (
-              <p className="text-sm text-gray-500">No permissions available.</p>
+              <p className="text-sm text-slate-400">No permissions available.</p>
             )}
           </div>
         </div>
@@ -163,14 +163,14 @@ export default function RoleDetailPage() {
           <button
             type="submit"
             disabled={saving || !form.name || !form.description}
-            className="inline-flex items-center gap-2 rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-md bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-500 disabled:opacity-50"
           >
             <Check className="h-4 w-4" />
             {saving ? "Saving..." : isNew ? "Create Role" : "Save Changes"}
           </button>
           <Link
             to="/rbac/roles"
-            className="inline-flex items-center rounded-md border px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="inline-flex items-center rounded-md border border-slate-600 px-4 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800"
           >
             Cancel
           </Link>

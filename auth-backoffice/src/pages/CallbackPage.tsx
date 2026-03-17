@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { exchangeCode } from "@/api/auth";
 import { storeTokens, redirectToPortal } from "@/lib/auth";
@@ -7,18 +7,19 @@ export default function CallbackPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const code = searchParams.get("code");
-  const state = searchParams.get("state");
-  const [error, setError] = useState(() =>
-    code ? "" : "Missing authorization code.",
-  );
-
+  const [error, setError] = useState(code ? "" : "Missing authorization code.");
+  const exchanged = useRef(false);
 
   useEffect(() => {
-    if (!code) {
+    if (error) {
       setTimeout(() => redirectToPortal(), 2000);
       return;
     }
 
+    if (exchanged.current || !code) return;
+    exchanged.current = true;
+
+    const state = searchParams.get("state");
     const redirectUri = `${window.location.origin}/callback`;
     exchangeCode(code, redirectUri)
       .then(({ access_token, refresh_token }) => {
@@ -30,31 +31,7 @@ export default function CallbackPage() {
         setError("Authentication failed. Please try again.");
         setTimeout(() => redirectToPortal(), 2000);
       });
-  }, [code, state, navigate]);
-
-  if (!code && !error) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0a0e17]">
-        <p className="text-sm text-red-400">Missing authorization code.</p>
-      </div>
-    );
-  }
-
-  if (!code && !error) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0a0e17]">
-        <p className="text-sm text-red-400">Missing authorization code.</p>
-      </div>
-    );
-  }
-
-  if (!code && !error) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0a0e17]">
-        <p className="text-sm text-red-400">Missing authorization code.</p>
-      </div>
-    );
-  }
+  }, [error, code, searchParams, navigate]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#0a0e17]">
@@ -66,3 +43,4 @@ export default function CallbackPage() {
     </div>
   );
 }
+
