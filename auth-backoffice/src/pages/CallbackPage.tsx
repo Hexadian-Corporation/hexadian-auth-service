@@ -6,10 +6,8 @@ import { storeTokens, redirectToPortal } from "@/lib/auth";
 export default function CallbackPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [error, setError] = useState(() => {
-    const code = new URLSearchParams(window.location.search).get("code");
-    return code ? "" : "Missing authorization code.";
-  });
+  const code = searchParams.get("code");
+  const [error, setError] = useState(code ? "" : "Missing authorization code.");
   const exchanged = useRef(false);
 
   useEffect(() => {
@@ -18,13 +16,12 @@ export default function CallbackPage() {
       return;
     }
 
-    if (exchanged.current) return;
+    if (exchanged.current || !code) return;
     exchanged.current = true;
 
-    const code = searchParams.get("code");
     const state = searchParams.get("state");
     const redirectUri = `${window.location.origin}/callback`;
-    exchangeCode(code!, redirectUri)
+    exchangeCode(code, redirectUri)
       .then(({ access_token, refresh_token }) => {
         storeTokens(access_token, refresh_token);
         const returnPath = state ? decodeURIComponent(state) : "/";
@@ -34,7 +31,7 @@ export default function CallbackPage() {
         setError("Authentication failed. Please try again.");
         setTimeout(() => redirectToPortal(), 2000);
       });
-  }, [error, searchParams, navigate]);
+  }, [error, code, searchParams, navigate]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#0a0e17]">
