@@ -65,6 +65,24 @@ describe("LoginPage", () => {
     expect(link).toHaveAttribute("href", "/register");
   });
 
+  it("renders forgot password link", () => {
+    renderPage();
+    const link = screen.getByRole("link", { name: "Forgot your password?" });
+    expect(link).toBeInTheDocument();
+    expect(link).toHaveAttribute("href", "/password/forgot");
+  });
+
+  it("preserves redirect_uri in forgot password link", () => {
+    renderPage([
+      "/login?redirect_uri=http://localhost:3000/callback&state=xyz",
+    ]);
+    const link = screen.getByRole("link", { name: "Forgot your password?" });
+    expect(link).toHaveAttribute(
+      "href",
+      "/password/forgot?redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fcallback&state=xyz",
+    );
+  });
+
   it("shows validation errors on empty submit", async () => {
     const user = userEvent.setup();
     renderPage();

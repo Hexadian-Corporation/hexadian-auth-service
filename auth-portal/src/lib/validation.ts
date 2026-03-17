@@ -117,3 +117,36 @@ export function validateChangePasswordForm(fields: {
 
   return errors;
 }
+
+export function validateForgotPasswordForm(fields: {
+  username: string;
+  rsiHandle: string;
+}): ValidationErrors {
+  const errors: ValidationErrors = {};
+
+  const usernameError = validateUsername(fields.username);
+  if (usernameError) errors.username = usernameError;
+
+  const rsiHandleError = validateRsiHandle(fields.rsiHandle);
+  if (rsiHandleError) errors.rsiHandle = rsiHandleError;
+
+  return errors;
+}
+
+export function validateForgotPasswordResetForm(fields: {
+  newPassword: string;
+  confirmPassword: string;
+}): ValidationErrors {
+  const errors: ValidationErrors = {};
+
+  const passwordError = validatePassword(fields.newPassword);
+  if (passwordError) errors.password = passwordError;
+
+  const confirmPasswordError = validateConfirmPassword(
+    fields.newPassword,
+    fields.confirmPassword,
+  );
+  if (confirmPasswordError) errors.confirmPassword = confirmPasswordError;
+
+  return errors;
+}
