@@ -27,10 +27,12 @@ export interface Group {
   name: string;
   description: string;
   role_ids: string[];
+  auto_assign_apps: string[];
 }
 
 export interface GroupCreate {
   name: string;
   description: string;
   role_ids: string[];
+  auto_assign_apps: string[];
 }

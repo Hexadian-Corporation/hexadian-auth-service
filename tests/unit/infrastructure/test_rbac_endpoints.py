@@ -256,6 +256,56 @@ class TestGroupEndpoints:
 
         assert response.status_code == 404
 
+    def test_create_group_with_auto_assign_apps(self, client: TestClient, mock_rbac_service: MagicMock) -> None:
+        mock_rbac_service.create_group.return_value = Group(
+            id="g-1", name="Users", description="Users", role_ids=["r-1"], auto_assign_apps=["hhh-frontend"]
+        )
+
+        response = client.post(
+            "/rbac/groups",
+            json={
+                "name": "Users",
+                "description": "Users",
+                "role_ids": ["r-1"],
+                "auto_assign_apps": ["hhh-frontend"],
+            },
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data["auto_assign_apps"] == ["hhh-frontend"]
+        mock_rbac_service.create_group.assert_called_once_with("Users", "Users", ["r-1"], ["hhh-frontend"])
+
+    def test_update_group_with_auto_assign_apps(self, client: TestClient, mock_rbac_service: MagicMock) -> None:
+        mock_rbac_service.update_group.return_value = Group(
+            id="g-1", name="Users", description="Users", role_ids=[], auto_assign_apps=["hhh-frontend"]
+        )
+
+        response = client.put(
+            "/rbac/groups/g-1",
+            json={
+                "name": "Users",
+                "description": "Users",
+                "role_ids": [],
+                "auto_assign_apps": ["hhh-frontend"],
+            },
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["auto_assign_apps"] == ["hhh-frontend"]
+
+    def test_get_group_includes_auto_assign_apps(self, client: TestClient, mock_rbac_service: MagicMock) -> None:
+        mock_rbac_service.get_group.return_value = Group(
+            id="g-1", name="Users", auto_assign_apps=["hhh-frontend", "hhh-backoffice"]
+        )
+
+        response = client.get("/rbac/groups/g-1")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["auto_assign_apps"] == ["hhh-frontend", "hhh-backoffice"]
+
 
 # ---------------------------------------------------------------------------
 # User-Group assignment

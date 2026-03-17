@@ -83,8 +83,10 @@ class RbacServiceImpl(RbacService):
 
     # -- Group CRUD --
 
-    def create_group(self, name: str, description: str, role_ids: list[str]) -> Group:
-        group = Group(name=name, description=description, role_ids=role_ids)
+    def create_group(
+        self, name: str, description: str, role_ids: list[str], auto_assign_apps: list[str] | None = None
+    ) -> Group:
+        group = Group(name=name, description=description, role_ids=role_ids, auto_assign_apps=auto_assign_apps or [])
         return self._group_repository.save(group)
 
     def get_group(self, group_id: str) -> Group:
@@ -96,13 +98,16 @@ class RbacServiceImpl(RbacService):
     def list_groups(self) -> list[Group]:
         return self._group_repository.find_all()
 
-    def update_group(self, group_id: str, name: str, description: str, role_ids: list[str]) -> Group:
+    def update_group(
+        self, group_id: str, name: str, description: str, role_ids: list[str], auto_assign_apps: list[str] | None = None
+    ) -> Group:
         group = self._group_repository.find_by_id(group_id)
         if group is None:
             raise GroupNotFoundError(group_id)
         group.name = name
         group.description = description
         group.role_ids = role_ids
+        group.auto_assign_apps = auto_assign_apps if auto_assign_apps is not None else group.auto_assign_apps
         return self._group_repository.save(group)
 
     def delete_group(self, group_id: str) -> None:

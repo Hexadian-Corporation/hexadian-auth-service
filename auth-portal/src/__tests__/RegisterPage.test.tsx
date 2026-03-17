@@ -10,20 +10,20 @@ vi.mock("@/api/auth", () => ({
   login: vi.fn(),
 }));
 
+vi.mock("@/lib/auth", async () => {
+  const actual = await vi.importActual("@/lib/auth");
+  return {
+    ...actual,
+    storeTokens: vi.fn(),
+  };
+});
+
 const mockNavigate = vi.fn();
 vi.mock("react-router", async () => {
   const actual = await vi.importActual("react-router");
   return {
     ...actual,
     useNavigate: () => mockNavigate,
-  };
-});
-
-vi.mock("@/lib/auth", async () => {
-  const actual = await vi.importActual("@/lib/auth");
-  return {
-    ...actual,
-    storeTokens: vi.fn(),
   };
 });
 

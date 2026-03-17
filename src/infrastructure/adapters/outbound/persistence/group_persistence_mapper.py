@@ -8,6 +8,7 @@ class GroupPersistenceMapper:
             "name": group.name,
             "description": group.description,
             "role_ids": group.role_ids,
+            "auto_assign_apps": group.auto_assign_apps,
         }
 
     @staticmethod
@@ -17,4 +18,5 @@ class GroupPersistenceMapper:
             name=doc.get("name", ""),
             description=doc.get("description", ""),
             role_ids=doc.get("role_ids", []),
+            auto_assign_apps=doc.get("auto_assign_apps", []),
         )
