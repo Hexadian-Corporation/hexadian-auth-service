@@ -12,6 +12,7 @@ from src.domain.exceptions.user_exceptions import (
     InvalidPasswordError,
     InvalidRedirectUriError,
     RefreshTokenNotFoundError,
+    RsiHandleMismatchError,
     UserAlreadyExistsError,
     UserNotFoundError,
 )
@@ -19,6 +20,9 @@ from src.infrastructure.adapters.inbound.api.auth_api_mapper import AuthApiMappe
 from src.infrastructure.adapters.inbound.api.auth_dto import (
     AuthorizeDTO,
     AuthorizeResponseDTO,
+    ForgotPasswordConfirmDTO,
+    ForgotPasswordDTO,
+    ForgotPasswordResultDTO,
     LoginDTO,
     PasswordChangeDTO,
     PasswordResetDTO,
@@ -225,6 +229,35 @@ def reset_password(user_id: str, dto: PasswordResetDTO) -> None:
     except UserNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except InvalidPasswordError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/password/forgot", response_model=ForgotPasswordResultDTO)
+def forgot_password(dto: ForgotPasswordDTO) -> ForgotPasswordResultDTO:
+    try:
+        code = _auth_service.forgot_password(dto.username, dto.rsi_handle)
+    except UserNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except RsiHandleMismatchError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return ForgotPasswordResultDTO(
+        verification_code=code,
+        message=(
+            "Add the verification code to your RSI profile bio at "
+            "https://robertsspaceindustries.com/account/profile and then call /auth/password/forgot-confirm"
+        ),
+    )
+
+
+@router.post("/password/forgot-confirm", status_code=204)
+def confirm_forgot_password(dto: ForgotPasswordConfirmDTO) -> None:
+    try:
+        _auth_service.confirm_forgot_password(dto.username, dto.rsi_handle, dto.new_password)
+    except UserNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except RsiHandleMismatchError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 

@@ -22,6 +22,7 @@ from src.domain.exceptions.user_exceptions import (
     InvalidPasswordError,
     InvalidRedirectUriError,
     RefreshTokenNotFoundError,
+    RsiHandleMismatchError,
     UserAlreadyExistsError,
     UserNotFoundError,
 )
@@ -343,6 +344,33 @@ class AuthServiceImpl(AuthService):
         user.hashed_password = self._hash_password(new_password)
         self._repository.save(user)
         self._refresh_token_repository.revoke_all_for_user(user_id)
+
+    def forgot_password(self, username: str, rsi_handle: str) -> str:
+        user = self._repository.find_by_username(username)
+        if user is None:
+            raise UserNotFoundError(username)
+        if user.rsi_handle != rsi_handle:
+            raise RsiHandleMismatchError(username)
+        code = _generate_verification_code()
+        user.rsi_verification_code = code
+        self._repository.save(user)
+        return code
+
+    def confirm_forgot_password(self, username: str, rsi_handle: str, new_password: str) -> None:
+        user = self._repository.find_by_username(username)
+        if user is None:
+            raise UserNotFoundError(username)
+        if user.rsi_handle != rsi_handle:
+            raise RsiHandleMismatchError(username)
+        if not user.rsi_verification_code:
+            raise ValueError("No verification code set. Call forgot_password first.")
+        bio = self._rsi_profile_fetcher.fetch_profile_bio(user.rsi_handle)
+        if bio is None or user.rsi_verification_code not in bio:
+            raise ValueError("Verification code not found in RSI profile bio.")
+        user.hashed_password = self._hash_password(new_password)
+        user.rsi_verification_code = None
+        self._repository.save(user)
+        self._refresh_token_repository.revoke_all_for_user(user.id)
 
     def introspect_token(self, token: str) -> IntrospectionResult:
         try:

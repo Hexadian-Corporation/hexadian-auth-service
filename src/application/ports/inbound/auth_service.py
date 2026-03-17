@@ -66,6 +66,16 @@ class AuthService(ABC):
         ...
 
     @abstractmethod
+    def forgot_password(self, username: str, rsi_handle: str) -> str:
+        """Generate a verification code for password reset via RSI bio. Returns the code."""
+        ...
+
+    @abstractmethod
+    def confirm_forgot_password(self, username: str, rsi_handle: str, new_password: str) -> None:
+        """Confirm forgot-password by checking RSI bio for verification code, then reset password."""
+        ...
+
+    @abstractmethod
     def introspect_token(self, token: str) -> IntrospectionResult:
         """Validate a JWT access token and return the user's active status plus resolved claims."""
         ...

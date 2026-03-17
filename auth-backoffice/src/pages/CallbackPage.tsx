@@ -12,6 +12,7 @@ export default function CallbackPage() {
     code ? "" : "Missing authorization code.",
   );
 
+
   useEffect(() => {
     if (!code) {
       setTimeout(() => redirectToPortal(), 2000);
@@ -30,6 +31,14 @@ export default function CallbackPage() {
         setTimeout(() => redirectToPortal(), 2000);
       });
   }, [code, state, navigate]);
+
+  if (!code && !error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#0a0e17]">
+        <p className="text-sm text-red-400">Missing authorization code.</p>
+      </div>
+    );
+  }
 
   if (!code && !error) {
     return (
