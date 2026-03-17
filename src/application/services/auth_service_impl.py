@@ -32,7 +32,7 @@ from src.infrastructure.config.settings import Settings
 
 _RSI_HANDLE_PATTERN = re.compile(r"^[A-Za-z0-9_-]{3,30}$")
 
-_VERIFICATION_PREFIX = "Hexadian account validation code: "
+_VERIFICATION_PREFIX = "hxn_"
 
 # fmt: off
 _WORD_LIST: list[str] = [
@@ -73,7 +73,7 @@ _WORD_LIST: list[str] = [
 ]
 # fmt: on
 
-_NUM_WORDS = 6
+_NUM_WORDS = 4
 
 
 def _generate_verification_code() -> str:
