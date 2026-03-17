@@ -7,6 +7,8 @@ import {
   validateRegistrationForm,
   validateLoginForm,
   validateChangePasswordForm,
+  validateForgotPasswordForm,
+  validateForgotPasswordResetForm,
   hasErrors,
 } from "@/lib/validation";
 
@@ -243,6 +245,80 @@ describe("validateChangePasswordForm", () => {
   it("returns mismatch error", () => {
     const errors = validateChangePasswordForm({
       currentPassword: "oldpass",
+      newPassword: "newpassword1",
+      confirmPassword: "newpassword2",
+    });
+    expect(errors.confirmPassword).toBe("Passwords do not match");
+  });
+});
+
+describe("validateForgotPasswordForm", () => {
+  it("returns no errors for valid form", () => {
+    const errors = validateForgotPasswordForm({
+      username: "testuser",
+      rsiHandle: "test-handle",
+    });
+    expect(errors).toEqual({});
+  });
+
+  it("returns all errors for empty form", () => {
+    const errors = validateForgotPasswordForm({
+      username: "",
+      rsiHandle: "",
+    });
+    expect(errors.username).toBe("Username is required");
+    expect(errors.rsiHandle).toBe("RSI handle is required");
+  });
+
+  it("returns username error only", () => {
+    const errors = validateForgotPasswordForm({
+      username: "  ",
+      rsiHandle: "test-handle",
+    });
+    expect(errors.username).toBe("Username is required");
+    expect(errors.rsiHandle).toBeUndefined();
+  });
+
+  it("returns RSI handle error only", () => {
+    const errors = validateForgotPasswordForm({
+      username: "testuser",
+      rsiHandle: "ab",
+    });
+    expect(errors.username).toBeUndefined();
+    expect(errors.rsiHandle).toBe(
+      "RSI handle must be 3–30 characters (letters, numbers, hyphens, underscores)",
+    );
+  });
+});
+
+describe("validateForgotPasswordResetForm", () => {
+  it("returns no errors for valid form", () => {
+    const errors = validateForgotPasswordResetForm({
+      newPassword: "newpassword1",
+      confirmPassword: "newpassword1",
+    });
+    expect(errors).toEqual({});
+  });
+
+  it("returns all errors for empty form", () => {
+    const errors = validateForgotPasswordResetForm({
+      newPassword: "",
+      confirmPassword: "",
+    });
+    expect(errors.password).toBe("Password is required");
+    expect(errors.confirmPassword).toBe("Please confirm your password");
+  });
+
+  it("returns min length error for short password", () => {
+    const errors = validateForgotPasswordResetForm({
+      newPassword: "short",
+      confirmPassword: "short",
+    });
+    expect(errors.password).toBe("Password must be at least 8 characters");
+  });
+
+  it("returns mismatch error", () => {
+    const errors = validateForgotPasswordResetForm({
       newPassword: "newpassword1",
       confirmPassword: "newpassword2",
     });
