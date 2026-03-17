@@ -44,28 +44,52 @@ class TestSaveDuplicateKeyHandling:
         self, repository: MongoUserRepository, mock_collection: MagicMock
     ) -> None:
         user = User(username="duplicate", hashed_password="hash", rsi_handle="Pilot1")
-        mock_collection.insert_one.side_effect = DuplicateKeyError("username_1 dup key")
+        error = DuplicateKeyError("username_1 dup key", details={"keyPattern": {"username": 1}})
+        mock_collection.insert_one.side_effect = error
 
-        with pytest.raises(UserAlreadyExistsError):
+        with pytest.raises(UserAlreadyExistsError) as exc_info:
             repository.save(user)
+
+        assert exc_info.value.field == "username"
+        assert exc_info.value.identifier == "duplicate"
 
     def test_insert_duplicate_rsi_handle_raises_user_already_exists(
         self, repository: MongoUserRepository, mock_collection: MagicMock
     ) -> None:
         user = User(username="user1", hashed_password="hash", rsi_handle="DupHandle")
-        mock_collection.insert_one.side_effect = DuplicateKeyError("rsi_handle_1 dup key")
+        error = DuplicateKeyError("rsi_handle_1 dup key", details={"keyPattern": {"rsi_handle": 1}})
+        mock_collection.insert_one.side_effect = error
 
-        with pytest.raises(UserAlreadyExistsError):
+        with pytest.raises(UserAlreadyExistsError) as exc_info:
             repository.save(user)
+
+        assert exc_info.value.field == "rsi_handle"
+        assert exc_info.value.identifier == "DupHandle"
 
     def test_replace_duplicate_raises_user_already_exists(
         self, repository: MongoUserRepository, mock_collection: MagicMock
     ) -> None:
         user = User(id="507f1f77bcf86cd799439011", username="existing", hashed_password="hash", rsi_handle="ExPilot")
-        mock_collection.replace_one.side_effect = DuplicateKeyError("username_1 dup key")
+        error = DuplicateKeyError("username_1 dup key", details={"keyPattern": {"username": 1}})
+        mock_collection.replace_one.side_effect = error
 
-        with pytest.raises(UserAlreadyExistsError):
+        with pytest.raises(UserAlreadyExistsError) as exc_info:
             repository.save(user)
+
+        assert exc_info.value.field == "username"
+
+    def test_replace_duplicate_rsi_handle_raises_with_correct_field(
+        self, repository: MongoUserRepository, mock_collection: MagicMock
+    ) -> None:
+        user = User(id="507f1f77bcf86cd799439011", username="existing", hashed_password="hash", rsi_handle="ExPilot")
+        error = DuplicateKeyError("rsi_handle_1 dup key", details={"keyPattern": {"rsi_handle": 1}})
+        mock_collection.replace_one.side_effect = error
+
+        with pytest.raises(UserAlreadyExistsError) as exc_info:
+            repository.save(user)
+
+        assert exc_info.value.field == "rsi_handle"
+        assert exc_info.value.identifier == "ExPilot"
 
     def test_duplicate_key_error_chains_original_exception(
         self, repository: MongoUserRepository, mock_collection: MagicMock
@@ -78,6 +102,18 @@ class TestSaveDuplicateKeyHandling:
             repository.save(user)
 
         assert exc_info.value.__cause__ is original
+
+    def test_duplicate_key_defaults_to_username_when_no_details(
+        self, repository: MongoUserRepository, mock_collection: MagicMock
+    ) -> None:
+        user = User(username="dup", hashed_password="hash", rsi_handle="DupPilot")
+        error = DuplicateKeyError("dup key")
+        mock_collection.insert_one.side_effect = error
+
+        with pytest.raises(UserAlreadyExistsError) as exc_info:
+            repository.save(user)
+
+        assert exc_info.value.field == "username"
 
 
 class TestUpdateUser:
@@ -115,7 +151,56 @@ class TestUpdateUser:
     def test_update_duplicate_key_raises_user_already_exists(
         self, repository: MongoUserRepository, mock_collection: MagicMock
     ) -> None:
-        mock_collection.find_one_and_update.side_effect = DuplicateKeyError("username_1 dup key")
+        error = DuplicateKeyError("username_1 dup key", details={"keyPattern": {"username": 1}})
+        mock_collection.find_one_and_update.side_effect = error
 
-        with pytest.raises(UserAlreadyExistsError):
+        with pytest.raises(UserAlreadyExistsError) as exc_info:
             repository.update("507f1f77bcf86cd799439011", {"username": "taken"})
+
+        assert exc_info.value.field == "username"
+
+    def test_update_duplicate_rsi_handle_raises_with_correct_field(
+        self, repository: MongoUserRepository, mock_collection: MagicMock
+    ) -> None:
+        error = DuplicateKeyError("rsi_handle_1 dup key", details={"keyPattern": {"rsi_handle": 1}})
+        mock_collection.find_one_and_update.side_effect = error
+
+        with pytest.raises(UserAlreadyExistsError) as exc_info:
+            repository.update("507f1f77bcf86cd799439011", {"rsi_handle": "TakenHandle"})
+
+        assert exc_info.value.field == "rsi_handle"
+        assert exc_info.value.identifier == "TakenHandle"
+
+
+class TestFindByRsiHandle:
+    def test_find_by_rsi_handle_returns_user(
+        self, repository: MongoUserRepository, mock_collection: MagicMock
+    ) -> None:
+        from bson import ObjectId
+
+        doc = {
+            "_id": ObjectId("507f1f77bcf86cd799439011"),
+            "username": "pilot",
+            "hashed_password": "hash",
+            "group_ids": [],
+            "is_active": True,
+            "rsi_handle": "TestPilot",
+            "rsi_verified": True,
+            "rsi_verification_code": None,
+        }
+        mock_collection.find_one.return_value = doc
+
+        result = repository.find_by_rsi_handle("TestPilot")
+
+        assert result is not None
+        assert result.rsi_handle == "TestPilot"
+        mock_collection.find_one.assert_called_once_with({"rsi_handle": "TestPilot"})
+
+    def test_find_by_rsi_handle_returns_none_when_not_found(
+        self, repository: MongoUserRepository, mock_collection: MagicMock
+    ) -> None:
+        mock_collection.find_one.return_value = None
+
+        result = repository.find_by_rsi_handle("NonExistent")
+
+        assert result is None
