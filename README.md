@@ -188,6 +188,7 @@ Handle validation: `^[A-Za-z0-9_-]{3,30}$`.
 | `POST` | `/auth/token/revoke` | None | Revoke a refresh token |
 | `POST` | `/auth/authorize` | None | Generate authorization code |
 | `POST` | `/auth/token/exchange` | None | Exchange auth code for tokens |
+| `POST` | `/auth/token/introspect` | None | Validate token and return claims |
 | `GET` | `/auth/users/{user_id}` | JWT (self or `users:read`) | Get user by ID |
 | `GET` | `/auth/users` | `users:read` | List all users |
 | `PUT` | `/auth/users/{user_id}` | JWT (self or `users:admin`) | Update user profile |
