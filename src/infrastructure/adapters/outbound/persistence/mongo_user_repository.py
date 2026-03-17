@@ -63,12 +63,8 @@ class MongoUserRepository(UserRepository):
         except DuplicateKeyError as exc:
             key_pattern = exc.details.get("keyPattern", {}) if exc.details else {}
             if "rsi_handle" in key_pattern:
-                raise UserAlreadyExistsError(
-                    fields.get("rsi_handle", user_id), field="rsi_handle"
-                ) from exc
-            raise UserAlreadyExistsError(
-                fields.get("username", user_id), field="username"
-            ) from exc
+                raise UserAlreadyExistsError(fields.get("rsi_handle", user_id), field="rsi_handle") from exc
+            raise UserAlreadyExistsError(fields.get("username", user_id), field="username") from exc
         if result is None:
             return None
         return UserPersistenceMapper.to_domain(result)

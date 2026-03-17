@@ -31,10 +31,10 @@ function renderPage(initialEntries: string[] = ["/login"]) {
 describe("LoginPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Reset window.location.href mock
+    // Reset window.location mock
     Object.defineProperty(window, "location", {
       writable: true,
-      value: { href: "http://localhost:3003/login" },
+      value: { href: "http://localhost:3003/login", search: "" },
     });
   });
 

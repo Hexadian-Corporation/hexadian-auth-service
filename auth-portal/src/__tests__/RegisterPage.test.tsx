@@ -7,6 +7,11 @@ import type { User } from "@/types/auth";
 
 vi.mock("@/api/auth", () => ({
   register: vi.fn(),
+  login: vi.fn(),
+}));
+
+vi.mock("@/lib/auth", () => ({
+  storeTokens: vi.fn(),
 }));
 
 const mockNavigate = vi.fn();
@@ -18,8 +23,11 @@ vi.mock("react-router", async () => {
   };
 });
 
-import { register } from "@/api/auth";
+import { register, login } from "@/api/auth";
+import { storeTokens } from "@/lib/auth";
 const mockRegister = vi.mocked(register);
+const mockLogin = vi.mocked(login);
+const mockStoreTokens = vi.mocked(storeTokens);
 
 function renderPage() {
   return render(
@@ -131,6 +139,12 @@ describe("RegisterPage", () => {
       rsi_handle: "test-handle",
       rsi_verified: false,
     });
+    mockLogin.mockResolvedValueOnce({
+      access_token: "mock-access",
+      refresh_token: "mock-refresh",
+      token_type: "bearer",
+      expires_in: 900,
+    });
 
     const user = userEvent.setup();
     renderPage();
@@ -149,9 +163,15 @@ describe("RegisterPage", () => {
       });
     });
 
-    expect(mockNavigate).toHaveBeenCalledWith("/login", {
-      state: { registered: true },
+    await waitFor(() => {
+      expect(mockLogin).toHaveBeenCalledWith({
+        username: "testuser",
+        password: "password123",
+      });
     });
+
+    expect(mockStoreTokens).toHaveBeenCalled();
+    expect(mockNavigate).toHaveBeenCalledWith("/verify?");
   });
 
   it("displays API error on failure", async () => {

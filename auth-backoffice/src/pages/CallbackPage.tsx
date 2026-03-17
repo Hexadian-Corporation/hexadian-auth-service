@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { exchangeCode } from "@/api/auth";
 import { storeTokens, redirectToPortal } from "@/lib/auth";
@@ -6,14 +6,14 @@ import { storeTokens, redirectToPortal } from "@/lib/auth";
 export default function CallbackPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [error, setError] = useState("");
+  const code = useMemo(() => searchParams.get("code"), [searchParams]);
+  const state = useMemo(() => searchParams.get("state"), [searchParams]);
+  const [error, setError] = useState(() =>
+    code ? "" : "Missing authorization code.",
+  );
 
   useEffect(() => {
-    const code = searchParams.get("code");
-    const state = searchParams.get("state");
-
     if (!code) {
-      setError("Missing authorization code.");
       setTimeout(() => redirectToPortal(), 2000);
       return;
     }
@@ -29,7 +29,7 @@ export default function CallbackPage() {
         setError("Authentication failed. Please try again.");
         setTimeout(() => redirectToPortal(), 2000);
       });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [code, state, navigate]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#0a0e17]">

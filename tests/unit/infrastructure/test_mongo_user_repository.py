@@ -173,9 +173,7 @@ class TestUpdateUser:
 
 
 class TestFindByRsiHandle:
-    def test_find_by_rsi_handle_returns_user(
-        self, repository: MongoUserRepository, mock_collection: MagicMock
-    ) -> None:
+    def test_find_by_rsi_handle_returns_user(self, repository: MongoUserRepository, mock_collection: MagicMock) -> None:
         from bson import ObjectId
 
         doc = {
