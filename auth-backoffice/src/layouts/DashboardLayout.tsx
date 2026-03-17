@@ -14,12 +14,12 @@ export default function DashboardLayout() {
   const location = useLocation();
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-[#0b0e17]">
       {/* Sidebar */}
-      <aside className="flex w-64 flex-col border-r bg-white">
-        <div className="border-b p-4">
-          <h2 className="text-lg font-bold text-gray-900">Hexadian</h2>
-          <p className="text-xs text-gray-500">Auth Backoffice</p>
+      <aside className="flex w-64 flex-col border-r border-slate-700 bg-slate-900">
+        <div className="border-b border-slate-700 p-4">
+          <h2 className="text-lg font-bold text-cyan-400">Hexadian</h2>
+          <p className="text-xs text-slate-400">Auth Backoffice</p>
         </div>
 
         <nav className="flex-1 space-y-1 p-2">
@@ -30,8 +30,8 @@ export default function DashboardLayout() {
               className={cn(
                 "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                 location.pathname.startsWith(to)
-                  ? "bg-gray-100 text-gray-900"
-                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+                  ? "bg-slate-800 text-cyan-400"
+                  : "text-slate-300 hover:bg-slate-800 hover:text-slate-100",
               )}
             >
               <Icon className="h-4 w-4" />
@@ -40,10 +40,10 @@ export default function DashboardLayout() {
           ))}
         </nav>
 
-        <div className="border-t p-2">
+        <div className="border-t border-slate-700 p-2">
           <button
             onClick={() => { clearTokens(); redirectToPortal(); }}
-            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
+            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-800 hover:text-slate-100"
           >
             <LogOut className="h-4 w-4" />
             Sign out

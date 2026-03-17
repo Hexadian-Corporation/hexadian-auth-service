@@ -95,8 +95,8 @@ export default function GroupDetailPage() {
   if (loading) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold">{isNew ? "New Group" : "Edit Group"}</h1>
-        <p className="text-gray-500">Loading...</p>
+        <h1 className="text-2xl font-bold text-slate-100">{isNew ? "New Group" : "Edit Group"}</h1>
+        <p className="text-slate-400">Loading...</p>
       </div>
     );
   }
@@ -104,51 +104,51 @@ export default function GroupDetailPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Link to="/rbac/groups" className="rounded-md p-1 hover:bg-gray-100" aria-label="Back to groups">
+        <Link to="/rbac/groups" className="rounded-md p-1 text-slate-300 hover:bg-slate-800" aria-label="Back to groups">
           <ArrowLeft className="h-5 w-5" />
         </Link>
-        <h1 className="text-2xl font-bold">{isNew ? "New Group" : "Edit Group"}</h1>
+        <h1 className="text-2xl font-bold text-slate-100">{isNew ? "New Group" : "Edit Group"}</h1>
       </div>
 
       {error && (
-        <div role="alert" className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        <div role="alert" className="rounded-md border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-400">
           {error}
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="rounded-md border bg-white p-4 space-y-4">
+        <div className="rounded-md border border-slate-700 bg-slate-900/80 p-4 space-y-4">
           <div>
-            <label htmlFor="group-name" className="block text-sm font-medium text-gray-700">Name</label>
+            <label htmlFor="group-name" className="block text-sm font-medium text-slate-300">Name</label>
             <input
               id="group-name"
               type="text"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 focus:outline-none"
               required
             />
           </div>
           <div>
-            <label htmlFor="group-description" className="block text-sm font-medium text-gray-700">Description</label>
+            <label htmlFor="group-description" className="block text-sm font-medium text-slate-300">Description</label>
             <input
               id="group-description"
               type="text"
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 focus:outline-none"
               required
             />
           </div>
         </div>
 
-        <div className="rounded-md border bg-white p-4">
-          <h2 className="mb-4 text-lg font-semibold">Roles</h2>
+        <div className="rounded-md border border-slate-700 bg-slate-900/80 p-4">
+          <h2 className="mb-4 text-lg font-semibold text-slate-100">Roles</h2>
           <div className="space-y-2">
             {roles.map((role) => {
               const roleCodes = getRolePermissions(role._id);
               return (
-                <label key={role._id} className="flex items-start gap-2 rounded px-2 py-1 hover:bg-gray-50">
+                <label key={role._id} className="flex items-start gap-2 rounded px-2 py-1 hover:bg-slate-800">
                   <input
                     type="checkbox"
                     checked={form.role_ids.includes(role._id)}
@@ -156,10 +156,10 @@ export default function GroupDetailPage() {
                     className="mt-0.5 rounded"
                   />
                   <div>
-                    <span className="text-sm font-medium">{role.name}</span>
-                    <span className="ml-2 text-xs text-gray-400">— {role.description}</span>
+                    <span className="text-sm font-medium text-slate-200">{role.name}</span>
+                    <span className="ml-2 text-xs text-slate-500">— {role.description}</span>
                     {roleCodes.length > 0 && (
-                      <div className="mt-0.5 text-xs text-gray-400">
+                      <div className="mt-0.5 text-xs text-slate-500">
                         Permissions: {roleCodes.join(", ")}
                       </div>
                     )}
@@ -168,37 +168,37 @@ export default function GroupDetailPage() {
               );
             })}
             {roles.length === 0 && (
-              <p className="text-sm text-gray-500">No roles available.</p>
+              <p className="text-sm text-slate-400">No roles available.</p>
             )}
           </div>
         </div>
 
         {!isNew && members.length > 0 && (
-          <div className="rounded-md border bg-white p-4">
-            <h2 className="mb-3 text-lg font-semibold">Members</h2>
+          <div className="rounded-md border border-slate-700 bg-slate-900/80 p-4">
+            <h2 className="mb-3 text-lg font-semibold text-slate-100">Members</h2>
             <ul className="space-y-1">
               {members.map((user) => (
-                <li key={user._id} className="text-sm text-gray-700">{user.username}</li>
+                <li key={user._id} className="text-sm text-slate-300">{user.username}</li>
               ))}
             </ul>
           </div>
         )}
 
-        <div className="rounded-md border bg-white p-4">
-          <h2 className="mb-3 text-lg font-semibold">Effective Permissions</h2>
+        <div className="rounded-md border border-slate-700 bg-slate-900/80 p-4">
+          <h2 className="mb-3 text-lg font-semibold text-slate-100">Effective Permissions</h2>
           {effectivePermissions.length > 0 ? (
             <div className="flex flex-wrap gap-2">
               {effectivePermissions.map((perm) => (
                 <span
                   key={perm._id}
-                  className="inline-block rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-mono text-gray-700"
+                  className="inline-block rounded-full bg-slate-700 px-2.5 py-0.5 text-xs font-mono text-slate-300"
                 >
                   {perm.code}
                 </span>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-500">No permissions resolved from selected roles.</p>
+            <p className="text-sm text-slate-400">No permissions resolved from selected roles.</p>
           )}
         </div>
 
@@ -206,14 +206,14 @@ export default function GroupDetailPage() {
           <button
             type="submit"
             disabled={saving || !form.name || !form.description}
-            className="inline-flex items-center gap-2 rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-md bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-500 disabled:opacity-50"
           >
             <Check className="h-4 w-4" />
             {saving ? "Saving..." : isNew ? "Create Group" : "Save Changes"}
           </button>
           <Link
             to="/rbac/groups"
-            className="inline-flex items-center rounded-md border px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="inline-flex items-center rounded-md border border-slate-600 px-4 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800"
           >
             Cancel
           </Link>
