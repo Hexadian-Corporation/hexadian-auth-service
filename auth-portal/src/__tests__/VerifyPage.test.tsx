@@ -37,9 +37,9 @@ const mockRefreshToken = vi.mocked(refreshToken);
 const mockParseAccessToken = vi.mocked(parseAccessToken);
 const mockGetAccessToken = vi.mocked(getAccessToken);
 
-function renderPage() {
+function renderPage(initialEntries?: string[]) {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={initialEntries ?? ["/"]}>
       <VerifyPage />
     </MemoryRouter>,
   );
@@ -148,6 +148,28 @@ describe("VerifyPage", () => {
       expect(
         screen.queryByRole("button", { name: "Start Verification" }),
       ).not.toBeInTheDocument();
+    });
+
+    it("shows Continue button when already verified", () => {
+      setupAuthenticatedUser({ rsi_verified: true });
+      renderPage();
+
+      expect(
+        screen.getByRole("button", { name: "Continue" }),
+      ).toBeInTheDocument();
+    });
+
+    it("Continue button navigates to /login preserving search params", async () => {
+      setupAuthenticatedUser({ rsi_verified: true });
+      const user = userEvent.setup();
+      renderPage(["/?redirect_uri=http%3A%2F%2Flocalhost%3A3000&state=abc"]);
+
+      await user.click(screen.getByRole("button", { name: "Continue" }));
+
+      expect(mockNavigate).toHaveBeenCalledWith(
+        expect.stringMatching(/^\/login\?/),
+        { replace: true },
+      );
     });
 
     it("does not show Start Verification when rsi_handle is null", () => {
