@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass
@@ -6,9 +6,9 @@ class IntrospectionResult:
     active: bool = False
     sub: str | None = None
     username: str | None = None
-    groups: list[str] = field(default_factory=list)
-    roles: list[str] = field(default_factory=list)
-    permissions: list[str] = field(default_factory=list)
+    groups: list[str] | None = None
+    roles: list[str] | None = None
+    permissions: list[str] | None = None
     rsi_handle: str | None = None
     rsi_verified: bool | None = None
     exp: int | None = None
