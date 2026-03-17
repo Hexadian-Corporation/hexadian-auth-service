@@ -37,9 +37,9 @@ const mockRegister = vi.mocked(register);
 const mockLogin = vi.mocked(login);
 const mockStoreTokens = vi.mocked(storeTokens);
 
-function renderPage() {
+function renderPage(initialEntries: string[] = ["/register"]) {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={initialEntries}>
       <RegisterPage />
     </MemoryRouter>,
   );
@@ -320,5 +320,117 @@ describe("RegisterPage", () => {
 
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it("forwards app_id and app_signature from URL params to register", async () => {
+    mockRegister.mockResolvedValueOnce({
+      _id: "456",
+      username: "appuser",
+      roles: ["user"],
+      is_active: true,
+      rsi_handle: "app-handle",
+      rsi_verified: false,
+    });
+    mockLogin.mockResolvedValueOnce({
+      access_token: "test-access",
+      refresh_token: "test-refresh",
+      token_type: "bearer",
+      expires_in: 3600,
+    });
+
+    const user = userEvent.setup();
+    renderPage([
+      "/register?redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fcallback&state=abc&app_id=hhh-frontend&app_sig=hmac123",
+    ]);
+
+    await user.type(screen.getByLabelText("Username"), "appuser");
+    await user.type(screen.getByLabelText("Password"), "password123");
+    await user.type(screen.getByLabelText("Confirm Password"), "password123");
+    await user.type(screen.getByLabelText("RSI Handle"), "app-handle");
+    await user.click(screen.getByRole("button", { name: "Create Account" }));
+
+    await waitFor(() => {
+      expect(mockRegister).toHaveBeenCalledWith({
+        username: "appuser",
+        password: "password123",
+        rsi_handle: "app-handle",
+        app_id: "hhh-frontend",
+        app_signature: "hmac123",
+      });
+    });
+  });
+
+  it("does not include app fields when only app_id is present", async () => {
+    mockRegister.mockResolvedValueOnce({
+      _id: "789",
+      username: "partialuser",
+      roles: ["user"],
+      is_active: true,
+      rsi_handle: "partial-handle",
+      rsi_verified: false,
+    });
+    mockLogin.mockResolvedValueOnce({
+      access_token: "test-access",
+      refresh_token: "test-refresh",
+      token_type: "bearer",
+      expires_in: 3600,
+    });
+
+    const user = userEvent.setup();
+    renderPage(["/register?app_id=hhh-frontend"]);
+
+    await user.type(screen.getByLabelText("Username"), "partialuser");
+    await user.type(screen.getByLabelText("Password"), "password123");
+    await user.type(screen.getByLabelText("Confirm Password"), "password123");
+    await user.type(screen.getByLabelText("RSI Handle"), "partial-handle");
+    await user.click(screen.getByRole("button", { name: "Create Account" }));
+
+    await waitFor(() => {
+      expect(mockRegister).toHaveBeenCalledWith({
+        username: "partialuser",
+        password: "password123",
+        rsi_handle: "partial-handle",
+      });
+    });
+  });
+
+  it("strips app_id and app_sig from verify navigation URL", async () => {
+    mockRegister.mockResolvedValueOnce({
+      _id: "456",
+      username: "appuser",
+      roles: ["user"],
+      is_active: true,
+      rsi_handle: "app-handle",
+      rsi_verified: false,
+    });
+    mockLogin.mockResolvedValueOnce({
+      access_token: "test-access",
+      refresh_token: "test-refresh",
+      token_type: "bearer",
+      expires_in: 3600,
+    });
+
+    const user = userEvent.setup();
+    renderPage([
+      "/register?redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fcallback&state=abc&app_id=hhh-frontend&app_sig=hmac123",
+    ]);
+
+    await user.type(screen.getByLabelText("Username"), "appuser");
+    await user.type(screen.getByLabelText("Password"), "password123");
+    await user.type(screen.getByLabelText("Confirm Password"), "password123");
+    await user.type(screen.getByLabelText("RSI Handle"), "app-handle");
+    await user.click(screen.getByRole("button", { name: "Create Account" }));
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith(
+        expect.stringContaining("/verify?"),
+      );
+    });
+
+    const navigatedUrl = mockNavigate.mock.calls[0][0] as string;
+    expect(navigatedUrl).toContain("redirect_uri=");
+    expect(navigatedUrl).toContain("state=abc");
+    expect(navigatedUrl).not.toContain("app_id");
+    expect(navigatedUrl).not.toContain("app_sig");
   });
 });

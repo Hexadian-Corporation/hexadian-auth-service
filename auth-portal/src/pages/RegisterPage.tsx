@@ -12,6 +12,8 @@ import {
 export default function RegisterPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const appId = searchParams.get("app_id");
+  const appSig = searchParams.get("app_sig");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -36,10 +38,18 @@ export default function RegisterPage() {
 
     setSubmitting(true);
     try {
-      await register({ username, password, rsi_handle: rsiHandle });
+      await register({
+        username,
+        password,
+        rsi_handle: rsiHandle,
+        ...(appId && appSig ? { app_id: appId, app_signature: appSig } : {}),
+      });
       const tokens = await login({ username, password });
       storeTokens(tokens);
-      navigate(`/verify?${searchParams.toString()}`);
+      const verifyParams = new URLSearchParams(searchParams);
+      verifyParams.delete("app_id");
+      verifyParams.delete("app_sig");
+      navigate(`/verify?${verifyParams.toString()}`);
     } catch (err) {
       if (err instanceof DuplicateFieldError) {
         if (err.field === "username") {
