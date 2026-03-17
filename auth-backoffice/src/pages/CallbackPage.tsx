@@ -8,12 +8,11 @@ export default function CallbackPage() {
   const navigate = useNavigate();
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    const code = searchParams.get("code");
-    const state = searchParams.get("state");
+  const code = searchParams.get("code");
+  const state = searchParams.get("state");
 
+  useEffect(() => {
     if (!code) {
-      setError("Missing authorization code.");
       setTimeout(() => redirectToPortal(), 2000);
       return;
     }
@@ -30,6 +29,14 @@ export default function CallbackPage() {
         setTimeout(() => redirectToPortal(), 2000);
       });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!code && !error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#0a0e17]">
+        <p className="text-sm text-red-400">Missing authorization code.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#0a0e17]">
