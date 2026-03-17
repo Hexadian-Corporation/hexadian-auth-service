@@ -27,7 +27,6 @@ vi.mock("react-router", async () => {
   };
 });
 
-
 import { register, login } from "@/api/auth";
 import { storeTokens } from "@/lib/auth";
 const mockRegister = vi.mocked(register);

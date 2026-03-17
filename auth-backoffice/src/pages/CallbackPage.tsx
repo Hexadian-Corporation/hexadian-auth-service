@@ -8,7 +8,9 @@ export default function CallbackPage() {
   const navigate = useNavigate();
   const code = searchParams.get("code");
   const state = searchParams.get("state");
-  const [error, setError] = useState(!code ? "Missing authorization code." : "");
+  const [error, setError] = useState(() =>
+    code ? "" : "Missing authorization code.",
+  );
 
   useEffect(() => {
     if (!code) {
