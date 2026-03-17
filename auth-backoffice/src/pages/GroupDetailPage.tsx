@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router";
-import { ArrowLeft, Check } from "lucide-react";
+import { ArrowLeft, Check, X } from "lucide-react";
 import type { Role, Permission, GroupCreate } from "@/types/rbac";
 import * as rbacApi from "@/api/rbac";
 
@@ -16,6 +16,28 @@ export default function GroupDetailPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [appInput, setAppInput] = useState("");
+  const [appInputError, setAppInputError] = useState<string | null>(null);
+
+  const addApp = () => {
+    const value = appInput.trim();
+    setAppInputError(null);
+    if (!value) return;
+    if (!/^[A-Za-z0-9-]+$/.test(value)) {
+      setAppInputError("Only alphanumeric characters and hyphens are allowed.");
+      return;
+    }
+    if (form.auto_assign_apps.includes(value)) {
+      setAppInputError("This app identifier is already added.");
+      return;
+    }
+    setForm((prev) => ({ ...prev, auto_assign_apps: [...prev.auto_assign_apps, value] }));
+    setAppInput("");
+  };
+
+  const removeApp = (app: string) => {
+    setForm((prev) => ({ ...prev, auto_assign_apps: prev.auto_assign_apps.filter((a) => a !== app) }));
+  };
 
   const loadData = useCallback(async () => {
     try {
@@ -141,16 +163,49 @@ export default function GroupDetailPage() {
             />
           </div>
           <div>
-            <label htmlFor="group-auto-assign-apps" className="block text-sm font-medium text-slate-300">Auto-Assign App IDs</label>
-            <input
-              id="group-auto-assign-apps"
-              type="text"
-              value={form.auto_assign_apps.join(", ")}
-              onChange={(e) => setForm({ ...form, auto_assign_apps: e.target.value.split(",").map((s) => s.trim()).filter(Boolean) })}
-              className="mt-1 w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 focus:outline-none"
-              placeholder="e.g. hhh-frontend, hhh-backoffice"
-            />
-            <p className="mt-1 text-xs text-slate-400">Comma-separated list of app IDs that auto-assign this group on registration.</p>
+            <label className="block text-sm font-medium text-slate-300">Application Auto-Assignment</label>
+            <div className="mt-1 flex gap-2">
+              <input
+                type="text"
+                value={appInput}
+                onChange={(e) => { setAppInput(e.target.value); setAppInputError(null); }}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addApp(); } }}
+                className="flex-1 rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 focus:outline-none"
+                placeholder="e.g. hhh-frontend"
+                aria-label="App identifier"
+              />
+              <button
+                type="button"
+                onClick={addApp}
+                className="rounded-md border border-slate-600 px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800"
+              >
+                Add
+              </button>
+            </div>
+            {appInputError && (
+              <p className="mt-1 text-xs text-red-400">{appInputError}</p>
+            )}
+            {form.auto_assign_apps.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {form.auto_assign_apps.map((app) => (
+                  <span
+                    key={app}
+                    className="inline-flex items-center gap-1 rounded-full bg-slate-700 px-3 py-1 text-sm text-cyan-400"
+                  >
+                    {app}
+                    <button
+                      type="button"
+                      onClick={() => removeApp(app)}
+                      className="rounded-full p-0.5 hover:bg-slate-600"
+                      aria-label={`Remove ${app}`}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <p className="mt-1 text-xs text-slate-400">App IDs that auto-assign this group on registration.</p>
           </div>
         </div>
 

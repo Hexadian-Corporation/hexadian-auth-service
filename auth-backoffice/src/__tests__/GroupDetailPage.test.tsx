@@ -298,4 +298,131 @@ describe("GroupDetailPage", () => {
       expect(screen.getByText("No roles available.")).toBeInTheDocument();
     });
   });
+
+  it("shows Application Auto-Assignment section", async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByDisplayValue("Admins")).toBeInTheDocument();
+    });
+    expect(screen.getByText("Application Auto-Assignment")).toBeInTheDocument();
+    expect(screen.getByLabelText("App identifier")).toBeInTheDocument();
+    expect(screen.getByText("Add")).toBeInTheDocument();
+  });
+
+  it("adds app tag via Enter key", async () => {
+    const user = userEvent.setup();
+    renderPage("new");
+    await waitFor(() => {
+      expect(screen.getByLabelText("App identifier")).toBeInTheDocument();
+    });
+    const input = screen.getByLabelText("App identifier");
+    await user.type(input, "hhh-frontend{Enter}");
+    expect(screen.getByText("hhh-frontend")).toBeInTheDocument();
+    expect(input).toHaveValue("");
+  });
+
+  it("adds app tag via Add button", async () => {
+    const user = userEvent.setup();
+    renderPage("new");
+    await waitFor(() => {
+      expect(screen.getByLabelText("App identifier")).toBeInTheDocument();
+    });
+    const input = screen.getByLabelText("App identifier");
+    await user.type(input, "hhh-backoffice");
+    await user.click(screen.getByText("Add"));
+    expect(screen.getByText("hhh-backoffice")).toBeInTheDocument();
+    expect(input).toHaveValue("");
+  });
+
+  it("removes app tag", async () => {
+    const user = userEvent.setup();
+    vi.mocked(rbacApi.getGroup).mockResolvedValue({
+      ...mockGroup,
+      auto_assign_apps: ["hhh-frontend", "hhh-backoffice"],
+    });
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText("hhh-frontend")).toBeInTheDocument();
+    });
+    expect(screen.getByText("hhh-backoffice")).toBeInTheDocument();
+    await user.click(screen.getByLabelText("Remove hhh-frontend"));
+    expect(screen.queryByText("hhh-frontend")).not.toBeInTheDocument();
+    expect(screen.getByText("hhh-backoffice")).toBeInTheDocument();
+  });
+
+  it("rejects duplicate app identifier", async () => {
+    const user = userEvent.setup();
+    renderPage("new");
+    await waitFor(() => {
+      expect(screen.getByLabelText("App identifier")).toBeInTheDocument();
+    });
+    const input = screen.getByLabelText("App identifier");
+    await user.type(input, "hhh-frontend{Enter}");
+    expect(screen.getByText("hhh-frontend")).toBeInTheDocument();
+    await user.type(input, "hhh-frontend{Enter}");
+    expect(screen.getByText("This app identifier is already added.")).toBeInTheDocument();
+  });
+
+  it("rejects invalid app identifier characters", async () => {
+    const user = userEvent.setup();
+    renderPage("new");
+    await waitFor(() => {
+      expect(screen.getByLabelText("App identifier")).toBeInTheDocument();
+    });
+    const input = screen.getByLabelText("App identifier");
+    await user.type(input, "invalid app!{Enter}");
+    expect(screen.getByText("Only alphanumeric characters and hyphens are allowed.")).toBeInTheDocument();
+  });
+
+  it("does not add empty app identifier", async () => {
+    const user = userEvent.setup();
+    renderPage("new");
+    await waitFor(() => {
+      expect(screen.getByLabelText("App identifier")).toBeInTheDocument();
+    });
+    await user.click(screen.getByText("Add"));
+    expect(screen.queryByText("Only alphanumeric characters and hyphens are allowed.")).not.toBeInTheDocument();
+    expect(screen.queryByText("This app identifier is already added.")).not.toBeInTheDocument();
+  });
+
+  it("sends auto_assign_apps when creating group", async () => {
+    const user = userEvent.setup();
+    vi.mocked(rbacApi.createGroup).mockResolvedValue({
+      _id: "g-new",
+      name: "Test",
+      description: "Test group",
+      role_ids: [],
+      auto_assign_apps: ["my-app"],
+    });
+    renderPage("new");
+    await waitFor(() => {
+      expect(screen.getByLabelText("Name")).toBeInTheDocument();
+    });
+    await user.type(screen.getByLabelText("Name"), "Test");
+    await user.type(screen.getByLabelText("Description"), "Test group");
+    await user.type(screen.getByLabelText("App identifier"), "my-app{Enter}");
+    await user.click(screen.getByText("Create Group"));
+    await waitFor(() => {
+      expect(rbacApi.createGroup).toHaveBeenCalledWith({
+        name: "Test",
+        description: "Test group",
+        role_ids: [],
+        auto_assign_apps: ["my-app"],
+      });
+    });
+  });
+
+  it("shows existing auto_assign_apps as chips", async () => {
+    vi.mocked(rbacApi.getGroup).mockResolvedValue({
+      ...mockGroup,
+      auto_assign_apps: ["app-one", "app-two"],
+    });
+    renderPage();
+    await waitFor(() => {
+      expect(screen.getByText("app-one")).toBeInTheDocument();
+    });
+    expect(screen.getByText("app-two")).toBeInTheDocument();
+    expect(screen.getByLabelText("Remove app-one")).toBeInTheDocument();
+    expect(screen.getByLabelText("Remove app-two")).toBeInTheDocument();
+  });
 });
