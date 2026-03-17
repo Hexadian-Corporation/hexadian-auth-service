@@ -26,6 +26,8 @@ from src.infrastructure.adapters.inbound.api.auth_dto import (
     StartVerificationDTO,
     TokenDTO,
     TokenExchangeDTO,
+    TokenIntrospectRequestDTO,
+    TokenIntrospectResponseDTO,
     UserDTO,
     UserUpdateDTO,
     VerificationResultDTO,
@@ -219,3 +221,22 @@ def reset_password(user_id: str, dto: PasswordResetDTO) -> None:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except InvalidPasswordError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/token/introspect", response_model=TokenIntrospectResponseDTO)
+def introspect_token(dto: TokenIntrospectRequestDTO) -> TokenIntrospectResponseDTO:
+    result = _auth_service.introspect_token(dto.token)
+    return TokenIntrospectResponseDTO(
+        active=result.active,
+        sub=result.sub,
+        username=result.username,
+        groups=result.groups if result.active else None,
+        roles=result.roles if result.active else None,
+        permissions=result.permissions if result.active else None,
+        rsi_handle=result.rsi_handle,
+        rsi_verified=result.rsi_verified,
+        exp=result.exp if result.active else None,
+        iat=result.iat if result.active else None,
+        is_user_active=result.is_user_active,
+        reason=result.reason,
+    )
