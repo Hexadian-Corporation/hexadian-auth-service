@@ -342,6 +342,7 @@ class AuthServiceImpl(AuthService):
                 active=False,
                 sub=user_id,
                 reason="user_deactivated",
+                is_user_active=False,
             )
 
         return IntrospectionResult(
