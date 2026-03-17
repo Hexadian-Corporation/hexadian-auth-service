@@ -141,16 +141,16 @@ export default function GroupDetailPage() {
             />
           </div>
           <div>
-            <label htmlFor="group-auto-assign-apps" className="block text-sm font-medium text-gray-700">Auto-Assign App IDs</label>
+            <label htmlFor="group-auto-assign-apps" className="block text-sm font-medium text-slate-300">Auto-Assign App IDs</label>
             <input
               id="group-auto-assign-apps"
               type="text"
               value={form.auto_assign_apps.join(", ")}
               onChange={(e) => setForm({ ...form, auto_assign_apps: e.target.value.split(",").map((s) => s.trim()).filter(Boolean) })}
-              className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 focus:outline-none"
               placeholder="e.g. hhh-frontend, hhh-backoffice"
             />
-            <p className="mt-1 text-xs text-gray-400">Comma-separated list of app IDs that auto-assign this group on registration.</p>
+            <p className="mt-1 text-xs text-slate-400">Comma-separated list of app IDs that auto-assign this group on registration.</p>
           </div>
         </div>
 
