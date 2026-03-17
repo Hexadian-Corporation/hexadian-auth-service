@@ -62,12 +62,15 @@ export default function ChangePasswordDialog({ open, onClose, onSubmit }: Change
     onClose();
   }
 
+  const inputClass =
+    "mt-1 w-full rounded-[10px] border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-sm text-[#e6eef6] placeholder-[#555555] focus:border-white/[0.15] focus:ring-1 focus:ring-white/[0.15] focus:outline-none";
+
   if (success) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-        <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
-          <h2 className="text-lg font-semibold">Change Password</h2>
-          <div className="mt-2 rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-700" role="status">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+        <div className="w-full max-w-sm rounded-[14px] border border-white/[0.04] bg-[#1c1c1c] p-6 shadow-[0_10px_30px_rgba(0,0,0,0.45)]">
+          <h2 className="text-lg font-semibold text-[#e6eef6]">Change Password</h2>
+          <div className="mt-2 rounded-md border border-green-500/30 bg-green-500/10 p-3 text-sm text-green-400" role="status">
             Password changed successfully. You will be redirected to login.
           </div>
         </div>
@@ -76,22 +79,22 @@ export default function ChangePasswordDialog({ open, onClose, onSubmit }: Change
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
-        <h2 className="text-lg font-semibold">Change Password</h2>
-        <p className="mt-2 text-sm text-gray-600">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+      <div className="w-full max-w-sm rounded-[14px] border border-white/[0.04] bg-[#1c1c1c] p-6 shadow-[0_10px_30px_rgba(0,0,0,0.45)]">
+        <h2 className="text-lg font-semibold text-[#e6eef6]">Change Password</h2>
+        <p className="mt-2 text-sm text-[#888888]">
           After changing your password, all sessions will be revoked and you will need to log in again.
         </p>
 
         {apiError && (
-          <div className="mt-2 rounded-md border border-red-200 bg-red-50 p-2 text-sm text-red-700" role="alert">
+          <div className="mt-2 rounded-md border border-red-500/30 bg-red-500/10 p-2 text-sm text-red-400" role="alert">
             {apiError}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="mt-3 space-y-3" noValidate>
           <div>
-            <label htmlFor="current-password" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="current-password" className="block text-sm font-medium text-[#e6eef6]">
               Current Password
             </label>
             <input
@@ -100,15 +103,15 @@ export default function ChangePasswordDialog({ open, onClose, onSubmit }: Change
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
               placeholder="Enter your current password"
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+              className={inputClass}
             />
             {errors.currentPassword && (
-              <p className="mt-1 text-xs text-red-600">{errors.currentPassword}</p>
+              <p className="mt-1 text-xs text-red-400">{errors.currentPassword}</p>
             )}
           </div>
 
           <div>
-            <label htmlFor="new-password" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="new-password" className="block text-sm font-medium text-[#e6eef6]">
               New Password
             </label>
             <input
@@ -117,15 +120,15 @@ export default function ChangePasswordDialog({ open, onClose, onSubmit }: Change
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="Minimum 8 characters"
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+              className={inputClass}
             />
             {errors.newPassword && (
-              <p className="mt-1 text-xs text-red-600">{errors.newPassword}</p>
+              <p className="mt-1 text-xs text-red-400">{errors.newPassword}</p>
             )}
           </div>
 
           <div>
-            <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="confirm-password" className="block text-sm font-medium text-[#e6eef6]">
               Confirm New Password
             </label>
             <input
@@ -134,10 +137,10 @@ export default function ChangePasswordDialog({ open, onClose, onSubmit }: Change
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Re-enter your new password"
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+              className={inputClass}
             />
             {errors.confirmPassword && (
-              <p className="mt-1 text-xs text-red-600">{errors.confirmPassword}</p>
+              <p className="mt-1 text-xs text-red-400">{errors.confirmPassword}</p>
             )}
           </div>
 
@@ -146,14 +149,14 @@ export default function ChangePasswordDialog({ open, onClose, onSubmit }: Change
               type="button"
               onClick={handleCancel}
               disabled={submitting}
-              className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              className="rounded-[10px] border border-white/[0.08] bg-[rgba(40,40,40,0.6)] px-3 py-1.5 text-sm font-semibold text-[#e6eef6] transition-colors hover:bg-[rgba(30,30,30,0.8)] disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              className="rounded-[10px] border border-white/[0.08] bg-[rgba(40,40,40,0.6)] px-3 py-1.5 text-sm font-semibold text-[#e6eef6] transition-colors hover:bg-[rgba(30,30,30,0.8)] disabled:opacity-50"
             >
               {submitting ? "Changing…" : "Change Password"}
             </button>

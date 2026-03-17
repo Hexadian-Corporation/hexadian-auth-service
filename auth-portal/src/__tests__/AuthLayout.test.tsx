@@ -12,7 +12,7 @@ describe("AuthLayout", () => {
 
   it("renders the Authentication Portal subtitle", () => {
     render(<AuthLayout>content</AuthLayout>);
-    expect(screen.getByText("Authentication Portal")).toBeInTheDocument();
+    expect(screen.getByText("Hexadian Authentication Portal")).toBeInTheDocument();
   });
 
   it("renders children inside the card", () => {

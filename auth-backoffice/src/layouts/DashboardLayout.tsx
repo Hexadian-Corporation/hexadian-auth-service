@@ -28,16 +28,23 @@ export default function DashboardLayout() {
   }
 
   return (
-    <div className="flex h-screen bg-[#0b0e17]">
+    <div className="flex h-screen bg-[#0f0f0f]">
       {/* Sidebar */}
-      <aside className="flex w-64 flex-col border-r border-slate-700 bg-slate-900">
-        <div className="border-b border-slate-700 p-4">
-          <img
-            src="/brand/HEXADIAN-Letters.svg"
-            alt="Hexadian"
-            className="h-7"
-          />
-          <p className="mt-1 text-xs text-slate-400">Auth Backoffice</p>
+      <aside className="flex w-64 flex-col border-r border-white/[0.04] bg-[#161616]">
+        <div className="border-b border-white/[0.04] p-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-xl bg-[#1a1a1a] shadow-[0_8px_24px_rgba(0,0,0,0.6)]">
+              <img
+                src="/brand/HEXADIAN-Background_Round.png"
+                alt="Hexadian"
+                className="h-9 w-9 rounded-lg"
+              />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-[#e6eef6]">Hexadian</p>
+              <p className="text-xs text-[#888888]">Auth Backoffice</p>
+            </div>
+          </div>
         </div>
 
         <nav className="flex-1 space-y-1 p-2">
@@ -48,8 +55,8 @@ export default function DashboardLayout() {
               className={cn(
                 "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                 location.pathname.startsWith(to)
-                  ? "bg-slate-800 text-cyan-400"
-                  : "text-slate-300 hover:bg-slate-800 hover:text-slate-100",
+                  ? "bg-[#242424] text-[#e6eef6]"
+                  : "text-[#888888] hover:bg-[#242424] hover:text-[#e6eef6]",
               )}
             >
               <Icon className="h-4 w-4" />
@@ -58,17 +65,17 @@ export default function DashboardLayout() {
           ))}
         </nav>
 
-        <div className="border-t border-slate-700 p-2">
+        <div className="border-t border-white/[0.04] p-2">
           <button
             onClick={() => setShowChangePassword(true)}
-            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-800 hover:text-slate-100"
+            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-[#888888] transition-colors hover:bg-[#242424] hover:text-[#e6eef6]"
           >
             <Lock className="h-4 w-4" />
             Change Password
           </button>
           <button
             onClick={() => { clearTokens(); redirectToPortal(); }}
-            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-800 hover:text-slate-100"
+            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-[#888888] transition-colors hover:bg-[#242424] hover:text-[#e6eef6]"
           >
             <LogOut className="h-4 w-4" />
             Sign out
