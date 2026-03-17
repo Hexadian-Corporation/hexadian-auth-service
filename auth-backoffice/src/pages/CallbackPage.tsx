@@ -6,11 +6,10 @@ import { storeTokens, redirectToPortal } from "@/lib/auth";
 export default function CallbackPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const [error, setError] = useState("");
+
   const code = searchParams.get("code");
   const state = searchParams.get("state");
-  const [error, setError] = useState(() =>
-    code ? "" : "Missing authorization code.",
-  );
 
   useEffect(() => {
     if (!code) {
@@ -30,6 +29,14 @@ export default function CallbackPage() {
         setTimeout(() => redirectToPortal(), 2000);
       });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!code && !error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#0a0e17]">
+        <p className="text-sm text-red-400">Missing authorization code.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#0a0e17]">

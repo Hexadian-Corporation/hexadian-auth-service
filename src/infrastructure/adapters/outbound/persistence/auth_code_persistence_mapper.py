@@ -17,13 +17,14 @@ class AuthCodePersistenceMapper:
 
     @staticmethod
     def to_domain(doc: dict) -> AuthCode:
-        expires = doc["expires_at"]
         return AuthCode(
             id=str(doc["_id"]),
             code=doc.get("code", ""),
             user_id=doc.get("user_id", ""),
             redirect_uri=doc.get("redirect_uri", ""),
             state=doc.get("state", ""),
-            expires_at=expires.replace(tzinfo=UTC) if expires.tzinfo is None else expires,
+            expires_at=(
+                doc["expires_at"].replace(tzinfo=UTC) if doc["expires_at"].tzinfo is None else doc["expires_at"]
+            ),
             used=doc.get("used", False),
         )
