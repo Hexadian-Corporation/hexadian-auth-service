@@ -61,3 +61,13 @@ class AuthService(ABC):
     def reset_password(self, user_id: str, new_password: str) -> None:
         """Admin reset of a user's password. Revokes all refresh tokens."""
         ...
+
+    @abstractmethod
+    def forgot_password(self, username: str, rsi_handle: str) -> str:
+        """Generate a verification code for password reset via RSI bio. Returns the code."""
+        ...
+
+    @abstractmethod
+    def confirm_forgot_password(self, username: str, rsi_handle: str, new_password: str) -> None:
+        """Confirm forgot-password by checking RSI bio for verification code, then reset password."""
+        ...

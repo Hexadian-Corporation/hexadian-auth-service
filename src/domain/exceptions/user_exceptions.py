@@ -35,3 +35,9 @@ class InvalidRedirectUriError(Exception):
 class InvalidPasswordError(Exception):
     def __init__(self, message: str) -> None:
         super().__init__(message)
+
+
+class RsiHandleMismatchError(Exception):
+    def __init__(self, username: str) -> None:
+        super().__init__(f"RSI handle does not match user: {username}")
+        self.username = username

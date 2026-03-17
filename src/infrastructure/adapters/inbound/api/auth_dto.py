@@ -74,3 +74,19 @@ class PasswordChangeDTO(BaseModel):
 
 class PasswordResetDTO(BaseModel):
     new_password: str = Field(min_length=8)
+
+
+class ForgotPasswordDTO(BaseModel):
+    username: str
+    rsi_handle: str = Field(pattern=r"^[A-Za-z0-9_-]{3,30}$")
+
+
+class ForgotPasswordConfirmDTO(BaseModel):
+    username: str
+    rsi_handle: str = Field(pattern=r"^[A-Za-z0-9_-]{3,30}$")
+    new_password: str = Field(min_length=8)
+
+
+class ForgotPasswordResultDTO(BaseModel):
+    verification_code: str
+    message: str
