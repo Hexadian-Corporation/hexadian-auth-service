@@ -231,9 +231,27 @@ export default function VerifyPage() {
       )}
 
       {verified && (
-        <div className="space-y-4">
-          <p className="text-sm text-slate-400">
-            Your RSI identity has been verified.
+        <div className="rounded-xl border border-emerald-500/40 bg-emerald-900/30 p-8 text-center">
+          <svg
+            className="mx-auto mb-4 h-12 w-12 text-emerald-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"
+            />
+          </svg>
+          <h3 className="mb-2 text-2xl font-bold text-emerald-400">
+            Verification Complete!
+          </h3>
+          <p className="mb-6 text-slate-300">
+            Your RSI identity has been successfully verified. You now have full
+            access to all Hexadian services.
           </p>
           <button
             type="button"

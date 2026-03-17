@@ -134,7 +134,10 @@ describe("VerifyPage", () => {
       renderPage();
 
       expect(
-        screen.getByText("Your RSI identity has been verified."),
+        screen.getByRole("heading", { name: "Verification Complete!" }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText(/Your RSI identity has been successfully verified/),
       ).toBeInTheDocument();
     });
 
@@ -436,7 +439,7 @@ describe("VerifyPage", () => {
       });
 
       expect(
-        screen.getByText("Your RSI identity has been verified."),
+        screen.getByRole("heading", { name: "Verification Complete!" }),
       ).toBeInTheDocument();
     });
 
