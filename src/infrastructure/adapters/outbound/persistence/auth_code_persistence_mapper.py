@@ -23,6 +23,8 @@ class AuthCodePersistenceMapper:
             user_id=doc.get("user_id", ""),
             redirect_uri=doc.get("redirect_uri", ""),
             state=doc.get("state", ""),
-            expires_at=doc["expires_at"].replace(tzinfo=UTC) if doc["expires_at"].tzinfo is None else doc["expires_at"],
+            expires_at=(
+                doc["expires_at"].replace(tzinfo=UTC) if doc["expires_at"].tzinfo is None else doc["expires_at"]
+            ),
             used=doc.get("used", False),
         )

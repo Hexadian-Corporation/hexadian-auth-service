@@ -1,4 +1,5 @@
 import type { LoginRequest, LoginResponse } from "@/types/auth";
+import { authFetch } from "@/lib/auth";
 
 const API_BASE = "/api/auth";
 
@@ -38,4 +39,16 @@ export async function refreshToken(): Promise<LoginResponse> {
     throw new Error(`Token refresh failed: ${response.statusText}`);
   }
   return response.json() as Promise<LoginResponse>;
+}
+
+export async function changePassword(oldPassword: string, newPassword: string): Promise<void> {
+  const response = await authFetch(`${API_BASE}/password/change`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ old_password: oldPassword, new_password: newPassword }),
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.detail ?? "Password change failed");
+  }
 }

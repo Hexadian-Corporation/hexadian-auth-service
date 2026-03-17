@@ -24,8 +24,10 @@ vi.mock("react-router", async () => {
 });
 
 import { register, login } from "@/api/auth";
+import { storeTokens } from "@/lib/auth";
 const mockRegister = vi.mocked(register);
 const mockLogin = vi.mocked(login);
+const mockStoreTokens = vi.mocked(storeTokens);
 
 function renderPage() {
   return render(
@@ -138,8 +140,8 @@ describe("RegisterPage", () => {
       rsi_verified: false,
     });
     mockLogin.mockResolvedValueOnce({
-      access_token: "at",
-      refresh_token: "rt",
+      access_token: "token",
+      refresh_token: "refresh",
       token_type: "bearer",
       expires_in: 900,
     });
@@ -161,7 +163,13 @@ describe("RegisterPage", () => {
       });
     });
 
-    expect(mockNavigate).toHaveBeenCalledWith("/verify?");
+    await waitFor(() => {
+      expect(mockStoreTokens).toHaveBeenCalled();
+    });
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith("/verify?");
+    });
   });
 
   it("displays API error on failure", async () => {
