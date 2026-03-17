@@ -192,6 +192,23 @@ The issue title and PR title must be **identical**. PR body must include `Fixes 
 - Type hints on all functions
 - Squash merge only — PR title becomes the commit message
 
+## CI & Branch Protection
+
+**Required status checks** (all with `app_id: 15368` — GitHub Actions):
+
+| Check | What it does |
+|-------|--------------|
+| `Lint & Format` | `ruff check .` + `ruff format --check .` |
+| `Tests & Coverage` | `pytest` + `diff-cover` (≥90 % on changed lines) |
+| `Auth Portal Lint & Type Check` | `npm run lint` + `npm run type-check` (auth-portal) |
+| `Auth Portal Tests` | `vitest` + `diff-cover` (≥90 % on changed lines, auth-portal) |
+| `Backoffice: Lint & Type Check` | `npm run lint` + `npm run type-check` (auth-backoffice) |
+| `Backoffice: Tests` | `vitest` + `diff-cover` (≥90 % on changed lines, auth-backoffice) |
+| `Validate PR Title` | Conventional-commit format |
+| `Secret Scan` | Gitleaks |
+
+> **Critical:** Required status checks must always use `app_id: 15368` (GitHub Actions). Using `app_id: null` causes checks to freeze as "Expected — Waiting for status" for any check name not previously reported on `main`. Never rename CI jobs via PR — push the rename directly to `main`, then update branch protection. See BUG-011.
+
 ## Tooling
 
 ### CLI (recommended)
