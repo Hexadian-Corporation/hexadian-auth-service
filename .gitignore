@@ -22,3 +22,4 @@ auth-backoffice/dist/
 # VS Code Copilot local instruction files (only track copilot.instructions.md)
 .github/instructions/*
 !.github/instructions/copilot.instructions.md
+!.github/instructions/hexadian-ui-style.md
