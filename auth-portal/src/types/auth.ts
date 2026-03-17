@@ -2,6 +2,8 @@ export interface RegisterRequest {
   username: string;
   password: string;
   rsi_handle: string;
+  app_id?: string;
+  app_signature?: string;
 }
 
 export interface LoginRequest {

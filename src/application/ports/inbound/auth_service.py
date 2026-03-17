@@ -8,7 +8,9 @@ from src.domain.models.user import User
 
 class AuthService(ABC):
     @abstractmethod
-    def register(self, username: str, password: str, rsi_handle: str) -> User: ...
+    def register(
+        self, username: str, password: str, rsi_handle: str, app_id: str | None = None, app_signature: str | None = None
+    ) -> User: ...
 
     @abstractmethod
     def authenticate(self, username: str, password: str) -> TokenResponse: ...

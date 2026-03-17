@@ -5,8 +5,8 @@ import { createMemoryRouter, RouterProvider } from "react-router";
 import GroupsPage from "@/pages/GroupsPage";
 
 const mockGroups = [
-  { _id: "g1", name: "Admins", description: "Administrator group", role_ids: ["r1", "r2"] },
-  { _id: "g2", name: "Users", description: "Default user group", role_ids: ["r3"] },
+  { _id: "g1", name: "Admins", description: "Administrator group", role_ids: ["r1", "r2"], auto_assign_apps: [] },
+  { _id: "g2", name: "Users", description: "Default user group", role_ids: ["r3"], auto_assign_apps: [] },
 ];
 
 const mockUsers = [

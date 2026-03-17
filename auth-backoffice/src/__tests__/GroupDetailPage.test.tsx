@@ -20,6 +20,7 @@ const mockGroup = {
   name: "Admins",
   description: "Administrator group",
   role_ids: ["r1"],
+  auto_assign_apps: [],
 };
 
 const mockUsers = [
@@ -230,6 +231,7 @@ describe("GroupDetailPage", () => {
         name: "Admins",
         description: "Updated description",
         role_ids: ["r1"],
+        auto_assign_apps: [],
       });
     });
   });
@@ -241,6 +243,7 @@ describe("GroupDetailPage", () => {
       name: "New Group",
       description: "A new group",
       role_ids: [],
+      auto_assign_apps: [],
     });
     renderPage("new");
     await waitFor(() => {
@@ -254,6 +257,7 @@ describe("GroupDetailPage", () => {
         name: "New Group",
         description: "A new group",
         role_ids: [],
+        auto_assign_apps: [],
       });
     });
   });

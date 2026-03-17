@@ -9,7 +9,7 @@ export default function GroupDetailPage() {
   const navigate = useNavigate();
   const isNew = id === "new";
 
-  const [form, setForm] = useState<GroupCreate>({ name: "", description: "", role_ids: [] });
+  const [form, setForm] = useState<GroupCreate>({ name: "", description: "", role_ids: [], auto_assign_apps: [] });
   const [roles, setRoles] = useState<Role[]>([]);
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [members, setMembers] = useState<{ _id: string; username: string }[]>([]);
@@ -31,7 +31,7 @@ export default function GroupDetailPage() {
 
       if (!isNew && id) {
         const group = await rbacApi.getGroup(id);
-        setForm({ name: group.name, description: group.description, role_ids: group.role_ids });
+        setForm({ name: group.name, description: group.description, role_ids: group.role_ids, auto_assign_apps: group.auto_assign_apps ?? [] });
         setMembers(users.filter((u) => u.group_ids.includes(id)));
       }
     } catch (err) {
@@ -139,6 +139,18 @@ export default function GroupDetailPage() {
               className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
               required
             />
+          </div>
+          <div>
+            <label htmlFor="group-auto-assign-apps" className="block text-sm font-medium text-gray-700">Auto-Assign App IDs</label>
+            <input
+              id="group-auto-assign-apps"
+              type="text"
+              value={form.auto_assign_apps.join(", ")}
+              onChange={(e) => setForm({ ...form, auto_assign_apps: e.target.value.split(",").map((s) => s.trim()).filter(Boolean) })}
+              className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+              placeholder="e.g. hhh-frontend, hhh-backoffice"
+            />
+            <p className="mt-1 text-xs text-gray-400">Comma-separated list of app IDs that auto-assign this group on registration.</p>
           </div>
         </div>
 
