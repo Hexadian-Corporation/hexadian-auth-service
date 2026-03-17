@@ -1,4 +1,4 @@
-<critical>Note: This is a living document and will be updated as we refine our processes. Always refer back to this for the latest guidelines. Update whenever necessary.</critical>
+﻿<critical>Note: This is a living document and will be updated as we refine our processes. Always refer back to this for the latest guidelines. Update whenever necessary.</critical>
 
 # Copilot Instructions — hexadian-auth-service
 
@@ -254,3 +254,4 @@ All project commands are available via `uv run auth <command>`:
 
 - **Keep the org profile README up to date.** When repositories, ports, architecture, workflows, security policy, or ownership change, update Hexadian-Corporation/.github/profile/README.md in the public .github repo.
 - **Treat the org profile as canonical org summary.** Ensure descriptions in this repo remain consistent with the organization profile README.
+Remember, before finishing: resolve any merge conflict and merge source (PR origin and destination) branch into current one.
