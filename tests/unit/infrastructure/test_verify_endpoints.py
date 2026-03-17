@@ -107,8 +107,10 @@ class TestVerifyConfirmEndpoint:
 
 
 class TestRegisterEndpoint:
-    def test_register_duplicate_returns_409(self, client: TestClient, mock_auth_service: MagicMock) -> None:
-        mock_auth_service.register.side_effect = UserAlreadyExistsError("taken")
+    def test_register_duplicate_username_returns_409_with_field(
+        self, client: TestClient, mock_auth_service: MagicMock
+    ) -> None:
+        mock_auth_service.register.side_effect = UserAlreadyExistsError("taken", field="username")
 
         response = client.post(
             "/auth/register",
@@ -116,6 +118,24 @@ class TestRegisterEndpoint:
         )
 
         assert response.status_code == 409
+        data = response.json()
+        assert data["detail"]["field"] == "username"
+        assert data["detail"]["message"] == "Username already taken"
+
+    def test_register_duplicate_rsi_handle_returns_409_with_field(
+        self, client: TestClient, mock_auth_service: MagicMock
+    ) -> None:
+        mock_auth_service.register.side_effect = UserAlreadyExistsError("TakenPilot", field="rsi_handle")
+
+        response = client.post(
+            "/auth/register",
+            json={"username": "newuser", "password": "pw", "rsi_handle": "TakenPilot"},
+        )
+
+        assert response.status_code == 409
+        data = response.json()
+        assert data["detail"]["field"] == "rsi_handle"
+        assert data["detail"]["message"] == "RSI handle already registered"
 
     def test_register_invalid_rsi_handle_returns_422(self, client: TestClient) -> None:
         response = client.post(
