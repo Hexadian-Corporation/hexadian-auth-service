@@ -168,6 +168,10 @@ describe("RegisterPage", () => {
     });
 
     await waitFor(() => {
+      expect(mockStoreTokens).toHaveBeenCalled();
+    });
+
+    await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith("/verify?");
     });
   });
