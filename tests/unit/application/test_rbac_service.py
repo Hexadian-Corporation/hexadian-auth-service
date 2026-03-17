@@ -229,6 +229,24 @@ class TestCreateGroup:
         assert result.name == "Admins"
         assert result.role_ids == ["r-1"]
 
+    def test_creates_group_with_auto_assign_apps(
+        self, service: RbacServiceImpl, mock_group_repository: MagicMock
+    ) -> None:
+        mock_group_repository.save.side_effect = lambda g: g
+
+        result = service.create_group("Users", "Users group", ["r-1"], auto_assign_apps=["hhh-frontend"])
+
+        assert result.auto_assign_apps == ["hhh-frontend"]
+
+    def test_creates_group_without_auto_assign_apps_defaults_to_empty(
+        self, service: RbacServiceImpl, mock_group_repository: MagicMock
+    ) -> None:
+        mock_group_repository.save.side_effect = lambda g: g
+
+        result = service.create_group("Admins", "Admin group", ["r-1"])
+
+        assert result.auto_assign_apps == []
+
 
 class TestGetGroup:
     def test_returns_group_when_found(self, service: RbacServiceImpl, mock_group_repository: MagicMock) -> None:
@@ -264,6 +282,30 @@ class TestUpdateGroup:
 
         assert result.name == "New"
         assert result.role_ids == ["r-2"]
+
+    def test_updates_group_with_auto_assign_apps(
+        self, service: RbacServiceImpl, mock_group_repository: MagicMock
+    ) -> None:
+        existing = Group(id="g-1", name="Users", description="Users", role_ids=["r-1"], auto_assign_apps=[])
+        mock_group_repository.find_by_id.return_value = existing
+        mock_group_repository.save.side_effect = lambda g: g
+
+        result = service.update_group("g-1", "Users", "Users", ["r-1"], auto_assign_apps=["hhh-frontend"])
+
+        assert result.auto_assign_apps == ["hhh-frontend"]
+
+    def test_updates_group_without_auto_assign_apps_preserves_existing(
+        self, service: RbacServiceImpl, mock_group_repository: MagicMock
+    ) -> None:
+        existing = Group(
+            id="g-1", name="Users", description="Users", role_ids=["r-1"], auto_assign_apps=["hhh-frontend"]
+        )
+        mock_group_repository.find_by_id.return_value = existing
+        mock_group_repository.save.side_effect = lambda g: g
+
+        result = service.update_group("g-1", "Users", "Updated desc", ["r-1"])
+
+        assert result.auto_assign_apps == ["hhh-frontend"]
 
     def test_raises_when_not_found(self, service: RbacServiceImpl, mock_group_repository: MagicMock) -> None:
         mock_group_repository.find_by_id.return_value = None

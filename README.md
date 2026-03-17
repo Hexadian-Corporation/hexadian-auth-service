@@ -320,6 +320,7 @@ All settings use `HEXADIAN_AUTH_` prefix via pydantic-settings.
 | `HEXADIAN_AUTH_ALLOWED_ORIGINS` | `["http://localhost:3000", ...]` | CORS allowed origins (JSON list) |
 | `HEXADIAN_AUTH_ALLOWED_REDIRECT_ORIGINS` | `["http://localhost:3000", ...]` | Valid redirect URIs for auth code flow |
 | `HEXADIAN_AUTH_ADMIN_PASSWORD` | `admin` | Initial admin user password (seed script) |
+| `HEXADIAN_AUTH_APP_SIGNING_SECRET` | `change-me-in-production` | HMAC-SHA256 secret for verifying `app_id` signatures during registration |
 
 ## Development
 

@@ -9,6 +9,7 @@ from src.application.ports.outbound.refresh_token_repository import RefreshToken
 from src.application.ports.outbound.rsi_profile_fetcher import RsiProfileFetcher
 from src.application.ports.outbound.user_repository import UserRepository
 from src.application.services.auth_service_impl import _VERIFICATION_PREFIX, _WORD_LIST, AuthServiceImpl
+from src.domain.exceptions.app_signature_exceptions import InvalidAppSignatureError
 from src.domain.exceptions.user_exceptions import UserAlreadyExistsError, UserNotFoundError
 from src.domain.models.group import Group
 from src.domain.models.rbac_claims import RbacClaims
@@ -273,3 +274,94 @@ class TestRegister:
         user = service.register("newuser", "pw", "ValidPilot")
 
         assert user.group_ids == []
+
+
+class TestRegisterWithAppId:
+    def test_valid_app_id_assigns_matching_groups(
+        self,
+        service: AuthServiceImpl,
+        mock_repository: MagicMock,
+        mock_group_repository: MagicMock,
+        settings: Settings,
+    ) -> None:
+        from src.application.services.app_signature import sign_app_id
+
+        mock_repository.find_by_username.return_value = None
+        mock_repository.save.side_effect = lambda u: setattr(u, "id", "new-id") or u
+        users_group = Group(id="g-users", name="Users")
+        hhh_group = Group(id="g-hhh", name="HHH Players", auto_assign_apps=["hhh-frontend"])
+        mock_group_repository.find_by_app_id.return_value = [users_group, hhh_group]
+        mock_group_repository.find_by_name.return_value = users_group
+
+        sig = sign_app_id("hhh-frontend", settings.app_signing_secret)
+        user = service.register("newuser", "pw", "ValidPilot", app_id="hhh-frontend", app_signature=sig)
+
+        assert "g-users" in user.group_ids
+        assert "g-hhh" in user.group_ids
+        assert len(user.group_ids) == 2
+
+    def test_valid_app_id_deduplicates_users_group(
+        self,
+        service: AuthServiceImpl,
+        mock_repository: MagicMock,
+        mock_group_repository: MagicMock,
+        settings: Settings,
+    ) -> None:
+        from src.application.services.app_signature import sign_app_id
+
+        mock_repository.find_by_username.return_value = None
+        mock_repository.save.side_effect = lambda u: setattr(u, "id", "new-id") or u
+        users_group = Group(id="g-users", name="Users", auto_assign_apps=["hhh-frontend"])
+        mock_group_repository.find_by_app_id.return_value = [users_group]
+        mock_group_repository.find_by_name.return_value = users_group
+
+        sig = sign_app_id("hhh-frontend", settings.app_signing_secret)
+        user = service.register("newuser", "pw", "ValidPilot", app_id="hhh-frontend", app_signature=sig)
+
+        assert user.group_ids == ["g-users"]
+
+    def test_invalid_signature_raises_403(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
+        mock_repository.find_by_username.return_value = None
+
+        with pytest.raises(InvalidAppSignatureError):
+            service.register("newuser", "pw", "ValidPilot", app_id="hhh-frontend", app_signature="bad-sig")
+
+    def test_app_id_without_signature_raises_403(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
+        mock_repository.find_by_username.return_value = None
+
+        with pytest.raises(InvalidAppSignatureError):
+            service.register("newuser", "pw", "ValidPilot", app_id="hhh-frontend", app_signature=None)
+
+    def test_app_id_no_matching_groups_still_gets_users(
+        self,
+        service: AuthServiceImpl,
+        mock_repository: MagicMock,
+        mock_group_repository: MagicMock,
+        settings: Settings,
+    ) -> None:
+        from src.application.services.app_signature import sign_app_id
+
+        mock_repository.find_by_username.return_value = None
+        mock_repository.save.side_effect = lambda u: setattr(u, "id", "new-id") or u
+        mock_group_repository.find_by_app_id.return_value = []
+        mock_group_repository.find_by_name.return_value = Group(id="g-users", name="Users")
+
+        sig = sign_app_id("unknown-app", settings.app_signing_secret)
+        user = service.register("newuser", "pw", "ValidPilot", app_id="unknown-app", app_signature=sig)
+
+        assert user.group_ids == ["g-users"]
+
+    def test_no_app_id_backward_compatible(
+        self,
+        service: AuthServiceImpl,
+        mock_repository: MagicMock,
+        mock_group_repository: MagicMock,
+    ) -> None:
+        mock_repository.find_by_username.return_value = None
+        mock_repository.save.side_effect = lambda u: setattr(u, "id", "new-id") or u
+        mock_group_repository.find_by_name.return_value = Group(id="g-users", name="Users")
+
+        user = service.register("newuser", "pw", "ValidPilot")
+
+        mock_group_repository.find_by_app_id.assert_not_called()
+        assert user.group_ids == ["g-users"]

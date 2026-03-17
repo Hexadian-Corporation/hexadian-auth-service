@@ -20,6 +20,30 @@ class TestGroupPersistenceMapper:
         assert group.role_ids == ["r1"]
         assert group.auto_assign_apps == []
 
+    def test_to_document_with_auto_assign_apps(self) -> None:
+        group = Group(
+            id="grp-1",
+            name="Users",
+            description="Users group",
+            role_ids=["r1"],
+            auto_assign_apps=["hhh-frontend", "hhh-backoffice"],
+        )
+        doc = GroupPersistenceMapper.to_document(group)
+
+        assert doc["auto_assign_apps"] == ["hhh-frontend", "hhh-backoffice"]
+
+    def test_to_domain_with_auto_assign_apps(self) -> None:
+        doc = {
+            "_id": "abc123",
+            "name": "Users",
+            "description": "Users group",
+            "role_ids": ["r1"],
+            "auto_assign_apps": ["hhh-frontend"],
+        }
+        group = GroupPersistenceMapper.to_domain(doc)
+
+        assert group.auto_assign_apps == ["hhh-frontend"]
+
     def test_to_domain_missing_fields_defaults(self) -> None:
         doc = {"_id": "abc123"}
         group = GroupPersistenceMapper.to_domain(doc)

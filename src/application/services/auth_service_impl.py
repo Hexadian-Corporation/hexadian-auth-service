@@ -106,11 +106,10 @@ class AuthServiceImpl(AuthService):
     ) -> User:
         if not _RSI_HANDLE_PATTERN.match(rsi_handle):
             raise ValueError(f"Invalid RSI handle format: {rsi_handle}")
-        if app_id is not None:
-            if app_signature is None or not verify_app_signature(
-                app_id, app_signature, self._settings.app_signing_secret
-            ):
-                raise InvalidAppSignatureError()
+        if app_id is not None and (
+            app_signature is None or not verify_app_signature(app_id, app_signature, self._settings.app_signing_secret)
+        ):
+            raise InvalidAppSignatureError()
         if self._repository.find_by_username(username) is not None:
             raise UserAlreadyExistsError(username)
         hashed = self._hash_password(password)
