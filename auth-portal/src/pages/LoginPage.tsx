@@ -114,7 +114,16 @@ export default function LoginPage() {
         </button>
       </form>
 
-      <p className="mt-4 text-center text-sm text-slate-400">
+      <p className="mt-3 text-center text-sm">
+        <Link
+          to={`/password/forgot${searchParams.toString() ? `?${searchParams.toString()}` : ""}`}
+          className="text-cyan-400 hover:underline"
+        >
+          Forgot your password?
+        </Link>
+      </p>
+
+      <p className="mt-3 text-center text-sm text-slate-400">
         Don&apos;t have an account?{" "}
         <Link
           to={`/register${searchParams.toString() ? `?${searchParams.toString()}` : ""}`}

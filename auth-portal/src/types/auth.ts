@@ -63,3 +63,19 @@ export interface ChangePasswordRequest {
   old_password: string;
   new_password: string;
 }
+
+export interface ForgotPasswordRequest {
+  username: string;
+  rsi_handle: string;
+}
+
+export interface ForgotPasswordResponse {
+  verification_code: string;
+  message: string;
+}
+
+export interface ConfirmForgotPasswordRequest {
+  username: string;
+  rsi_handle: string;
+  new_password: string;
+}

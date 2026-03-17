@@ -9,6 +9,9 @@ import type {
   VerificationStartRequest,
   VerificationStartResponse,
   ChangePasswordRequest,
+  ForgotPasswordRequest,
+  ForgotPasswordResponse,
+  ConfirmForgotPasswordRequest,
 } from "@/types/auth";
 
 const AUTH_API_URL =
@@ -120,5 +123,23 @@ export function changePassword(
 export function getUser(userId: string, token: string): Promise<User> {
   return request<User>(`/auth/users/${userId}`, {
     headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export function forgotPassword(
+  data: ForgotPasswordRequest,
+): Promise<ForgotPasswordResponse> {
+  return request<ForgotPasswordResponse>("/auth/password/forgot", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function confirmForgotPassword(
+  data: ConfirmForgotPasswordRequest,
+): Promise<void> {
+  return request<void>("/auth/password/forgot-confirm", {
+    method: "POST",
+    body: JSON.stringify(data),
   });
 }

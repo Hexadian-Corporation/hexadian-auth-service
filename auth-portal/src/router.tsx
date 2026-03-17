@@ -4,6 +4,7 @@ import RegisterPage from "@/pages/RegisterPage";
 import CallbackPage from "@/pages/CallbackPage";
 import VerifyPage from "@/pages/VerifyPage";
 import ChangePasswordPage from "@/pages/ChangePasswordPage";
+import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 
 export default function AppRouter() {
   return (
@@ -14,6 +15,7 @@ export default function AppRouter() {
         <Route path="/callback" element={<CallbackPage />} />
         <Route path="/verify" element={<VerifyPage />} />
         <Route path="/password/change" element={<ChangePasswordPage />} />
+        <Route path="/password/forgot" element={<ForgotPasswordPage />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
