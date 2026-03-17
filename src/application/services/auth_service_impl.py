@@ -25,6 +25,7 @@ from src.domain.exceptions.user_exceptions import (
     UserNotFoundError,
 )
 from src.domain.models.auth_code import AuthCode
+from src.domain.models.introspection_result import IntrospectionResult
 from src.domain.models.refresh_token import RefreshToken
 from src.domain.models.token_response import TokenResponse
 from src.domain.models.user import User
@@ -348,3 +349,40 @@ class AuthServiceImpl(AuthService):
         user.rsi_verification_code = None
         self._repository.save(user)
         self._refresh_token_repository.revoke_all_for_user(user.id)
+
+    def introspect_token(self, token: str) -> IntrospectionResult:
+        try:
+            claims = jwt.decode(
+                token,
+                self._settings.jwt_secret,
+                algorithms=[self._settings.jwt_algorithm],
+            )
+        except jwt.PyJWTError:
+            return IntrospectionResult(active=False)
+
+        user_id = claims.get("sub")
+        if user_id is None:
+            return IntrospectionResult(active=False)
+
+        user = self._repository.find_by_id(user_id)
+        if user is None or not user.is_active:
+            return IntrospectionResult(
+                active=False,
+                sub=user_id,
+                reason="user_deactivated",
+                is_user_active=False,
+            )
+
+        return IntrospectionResult(
+            active=True,
+            sub=user_id,
+            username=claims.get("username"),
+            groups=claims.get("groups", []),
+            roles=claims.get("roles", []),
+            permissions=claims.get("permissions", []),
+            rsi_handle=claims.get("rsi_handle"),
+            rsi_verified=claims.get("rsi_verified", False),
+            exp=claims.get("exp"),
+            iat=claims.get("iat"),
+            is_user_active=True,
+        )

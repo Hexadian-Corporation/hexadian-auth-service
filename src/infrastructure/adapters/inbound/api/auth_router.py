@@ -30,6 +30,8 @@ from src.infrastructure.adapters.inbound.api.auth_dto import (
     StartVerificationDTO,
     TokenDTO,
     TokenExchangeDTO,
+    TokenIntrospectRequestDTO,
+    TokenIntrospectResponseDTO,
     UserDTO,
     UserUpdateDTO,
     VerificationResultDTO,
@@ -252,3 +254,22 @@ def confirm_forgot_password(dto: ForgotPasswordConfirmDTO) -> None:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/token/introspect", response_model=TokenIntrospectResponseDTO)
+def introspect_token(dto: TokenIntrospectRequestDTO) -> TokenIntrospectResponseDTO:
+    result = _auth_service.introspect_token(dto.token)
+    return TokenIntrospectResponseDTO(
+        active=result.active,
+        sub=result.sub,
+        username=result.username,
+        groups=result.groups,
+        roles=result.roles,
+        permissions=result.permissions,
+        rsi_handle=result.rsi_handle,
+        rsi_verified=result.rsi_verified,
+        exp=result.exp,
+        iat=result.iat,
+        is_user_active=result.is_user_active,
+        reason=result.reason,
+    )

@@ -6,10 +6,12 @@ import { storeTokens, redirectToPortal } from "@/lib/auth";
 export default function CallbackPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [error, setError] = useState("");
-
   const code = searchParams.get("code");
   const state = searchParams.get("state");
+  const [error, setError] = useState(() =>
+    code ? "" : "Missing authorization code.",
+  );
+
 
   useEffect(() => {
     if (!code) {
