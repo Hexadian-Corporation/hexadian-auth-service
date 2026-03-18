@@ -8,7 +8,7 @@ from src.infrastructure.adapters.inbound.api.settings_dto import (
     PortalSettingsUpdateDTO,
 )
 
-settings_router = APIRouter(prefix="/settings", tags=["settings"])
+settings_router = APIRouter(prefix="/auth/settings", tags=["settings"])
 
 _settings_service: PortalSettingsService | None = None
 

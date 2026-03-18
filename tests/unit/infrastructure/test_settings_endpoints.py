@@ -44,7 +44,7 @@ class TestGetPortalRedirect:
             id="s-1", default_redirect_url="https://www.hexadian.com"
         )
 
-        response = client.get("/settings/portal")
+        response = client.get("/auth/settings/portal")
 
         assert response.status_code == 200
         data = response.json()
@@ -56,7 +56,7 @@ class TestGetPortalRedirect:
             id="s-1", default_redirect_url="https://custom.example.com"
         )
 
-        response = client.get("/settings/portal")
+        response = client.get("/auth/settings/portal")
 
         assert response.status_code == 200
         assert response.json()["default_redirect_url"] == "https://custom.example.com"
@@ -73,7 +73,7 @@ class TestGetSettings:
             id="s-1", default_redirect_url="https://www.hexadian.com"
         )
 
-        response = client.get("/settings")
+        response = client.get("/auth/settings")
 
         assert response.status_code == 200
         data = response.json()
@@ -91,7 +91,7 @@ class TestGetSettings:
         app.dependency_overrides[_stub_jwt_auth] = _mock_jwt_auth_no_perms
         no_perms_client = TestClient(app)
 
-        response = no_perms_client.get("/settings")
+        response = no_perms_client.get("/auth/settings")
 
         assert response.status_code == 403
 
@@ -107,7 +107,7 @@ class TestUpdateSettings:
             id="s-1", default_redirect_url="https://new.example.com"
         )
 
-        response = client.put("/settings", json={"default_redirect_url": "https://new.example.com"})
+        response = client.put("/auth/settings", json={"default_redirect_url": "https://new.example.com"})
 
         assert response.status_code == 200
         data = response.json()
@@ -126,6 +126,6 @@ class TestUpdateSettings:
         app.dependency_overrides[_stub_jwt_auth] = _mock_jwt_auth_no_perms
         no_perms_client = TestClient(app)
 
-        response = no_perms_client.put("/settings", json={"default_redirect_url": "https://x.com"})
+        response = no_perms_client.put("/auth/settings", json={"default_redirect_url": "https://x.com"})
 
         assert response.status_code == 403
