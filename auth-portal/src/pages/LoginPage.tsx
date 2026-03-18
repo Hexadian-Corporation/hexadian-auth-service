@@ -2,6 +2,7 @@ import { type FormEvent, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import AuthLayout from "@/layouts/AuthLayout";
 import { login, authorize } from "@/api/auth";
+import { getPortalRedirect } from "@/api/settings";
 import { validateLoginForm, hasErrors, type ValidationErrors } from "@/lib/validation";
 import { storeTokens } from "@/lib/auth";
 
@@ -40,7 +41,8 @@ export default function LoginPage() {
       } else {
         const tokens = await login({ username, password });
         storeTokens(tokens);
-        window.location.href = "/";
+        const settings = await getPortalRedirect();
+        window.location.href = settings.default_redirect_url;
       }
     } catch (err) {
       setApiError(err instanceof Error ? err.message : "Login failed");

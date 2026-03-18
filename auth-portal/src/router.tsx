@@ -1,10 +1,11 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router";
+import { BrowserRouter, Routes, Route } from "react-router";
 import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
 import CallbackPage from "@/pages/CallbackPage";
 import VerifyPage from "@/pages/VerifyPage";
 import ChangePasswordPage from "@/pages/ChangePasswordPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
+import RedirectGateway from "@/pages/RedirectGateway";
 
 export default function AppRouter() {
   return (
@@ -16,7 +17,7 @@ export default function AppRouter() {
         <Route path="/verify" element={<VerifyPage />} />
         <Route path="/password/change" element={<ChangePasswordPage />} />
         <Route path="/password/forgot" element={<ForgotPasswordPage />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<RedirectGateway />} />
       </Routes>
     </BrowserRouter>
   );

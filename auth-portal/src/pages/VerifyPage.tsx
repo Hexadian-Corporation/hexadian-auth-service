@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import AuthLayout from "@/layouts/AuthLayout";
 import { startVerification, confirmVerification } from "@/api/auth";
+import { getPortalRedirect } from "@/api/settings";
 import {
   getAccessToken,
   parseAccessToken,
@@ -54,6 +55,7 @@ export default function VerifyPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const tokenPayload = parseAccessToken();
+  const redirectUri = searchParams.get("redirect_uri");
 
   const [verificationCode, setVerificationCode] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -127,6 +129,11 @@ export default function VerifyPage() {
         setVerified(true);
         setVerificationCode(null);
         await refreshUserState();
+        if (!redirectUri) {
+          const settings = await getPortalRedirect();
+          window.location.href = settings.default_redirect_url;
+          return;
+        }
         navigate(`/login?${searchParams.toString()}`, { replace: true });
         return;
       } else {
@@ -255,7 +262,15 @@ export default function VerifyPage() {
           </p>
           <button
             type="button"
-            onClick={() => navigate(`/login?${searchParams.toString()}`, { replace: true })}
+            onClick={() => {
+              if (!redirectUri) {
+                void getPortalRedirect().then(({ default_redirect_url }) => {
+                  window.location.href = default_redirect_url;
+                });
+                return;
+              }
+              navigate(`/login?${searchParams.toString()}`, { replace: true });
+            }}
             className={buttonClass}
           >
             Continue

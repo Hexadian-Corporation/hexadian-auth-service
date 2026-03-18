@@ -14,11 +14,17 @@ vi.mock("@/lib/auth", () => ({
   storeTokens: vi.fn(),
 }));
 
+vi.mock("@/api/settings", () => ({
+  getPortalRedirect: vi.fn(),
+}));
+
 import { login, authorize } from "@/api/auth";
 import { storeTokens } from "@/lib/auth";
+import { getPortalRedirect } from "@/api/settings";
 const mockLogin = vi.mocked(login);
 const mockAuthorize = vi.mocked(authorize);
 const mockStoreTokens = vi.mocked(storeTokens);
+const mockGetPortalRedirect = vi.mocked(getPortalRedirect);
 
 function renderPage(initialEntries: string[] = ["/login"]) {
   return render(
@@ -104,7 +110,7 @@ describe("LoginPage", () => {
   });
 
   describe("direct login (no redirect_uri)", () => {
-    it("calls login API and stores tokens on success", async () => {
+    it("calls login API, stores tokens, and redirects to portal URL on success", async () => {
       const tokens: TokenResponse = {
         access_token: "access-123",
         refresh_token: "refresh-456",
@@ -112,6 +118,9 @@ describe("LoginPage", () => {
         expires_in: 3600,
       };
       mockLogin.mockResolvedValueOnce(tokens);
+      mockGetPortalRedirect.mockResolvedValueOnce({
+        default_redirect_url: "https://portal.hexadian.com",
+      });
 
       const user = userEvent.setup();
       renderPage();
@@ -128,7 +137,8 @@ describe("LoginPage", () => {
       });
 
       expect(mockStoreTokens).toHaveBeenCalledWith(tokens);
-      expect(window.location.href).toBe("/");
+      expect(mockGetPortalRedirect).toHaveBeenCalled();
+      expect(window.location.href).toBe("https://portal.hexadian.com");
     });
 
     it("displays API error on login failure", async () => {

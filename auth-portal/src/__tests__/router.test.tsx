@@ -3,9 +3,22 @@ import { MemoryRouter } from "react-router";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import AppRouter from "@/router";
 
+vi.mock("@/pages/RedirectGateway", () => ({
+  default: () => <div data-testid="redirect-gateway" />,
+}));
+
+vi.mock("@/api/settings", () => ({
+  getPortalRedirect: vi.fn(),
+}));
+
 describe("AppRouter", () => {
   it("renders without crashing", () => {
     render(<AppRouter />);
+  });
+
+  it("catch-all route renders RedirectGateway", () => {
+    render(<AppRouter />);
+    expect(screen.getByTestId("redirect-gateway")).toBeInTheDocument();
   });
 });
 
