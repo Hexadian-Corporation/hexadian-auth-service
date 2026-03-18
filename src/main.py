@@ -14,9 +14,11 @@ from pymongo import MongoClient
 from starlette.middleware.cors import CORSMiddleware
 
 from src.application.ports.inbound.auth_service import AuthService
+from src.application.ports.inbound.portal_settings_service import PortalSettingsService
 from src.application.ports.inbound.rbac_service import RbacService
 from src.infrastructure.adapters.inbound.api.auth_router import init_router, router
 from src.infrastructure.adapters.inbound.api.rbac_router import init_rbac_router, rbac_router
+from src.infrastructure.adapters.inbound.api.settings_router import init_settings_router, settings_router
 from src.infrastructure.config.dependencies import AppModule
 from src.infrastructure.config.settings import Settings
 from src.infrastructure.seed import seed_rbac
@@ -58,6 +60,9 @@ def create_app() -> FastAPI:
     rbac_service = injector.inject(RbacService)
     init_rbac_router(rbac_service)
 
+    portal_settings_service = injector.inject(PortalSettingsService)
+    init_settings_router(portal_settings_service)
+
     jwt_auth = JWTAuthDependency(secret=settings.jwt_secret, algorithm=settings.jwt_algorithm)
 
     app = FastAPI(title=settings.app_name, lifespan=lifespan)
@@ -73,6 +78,7 @@ def create_app() -> FastAPI:
     )
     app.include_router(router)
     app.include_router(rbac_router)
+    app.include_router(settings_router)
 
     @app.get("/health")
     def health() -> dict:

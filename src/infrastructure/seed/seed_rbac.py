@@ -28,6 +28,7 @@ PERMISSIONS: list[dict[str, str]] = [
     {"code": "auth:users:write", "description": "Create and update users"},
     {"code": "auth:users:admin", "description": "Administer users"},
     {"code": "auth:rbac:manage", "description": "Manage RBAC configuration"},
+    {"code": "auth:settings:manage", "description": "Manage portal settings"},
 ]
 
 ROLES: list[dict[str, object]] = [
@@ -40,6 +41,7 @@ ROLES: list[dict[str, object]] = [
             "auth:users:write",
             "auth:users:admin",
             "auth:rbac:manage",
+            "auth:settings:manage",
         ],
     },
     {
