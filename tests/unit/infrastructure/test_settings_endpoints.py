@@ -91,7 +91,7 @@ class TestGetSettings:
         app.dependency_overrides[_stub_jwt_auth] = _mock_jwt_auth_no_perms
         no_perms_client = TestClient(app)
 
-        response = no_perms_client.get("/settings")
+        response = no_perms_client.get("/auth/settings")
 
         assert response.status_code == 403
 
@@ -126,6 +126,6 @@ class TestUpdateSettings:
         app.dependency_overrides[_stub_jwt_auth] = _mock_jwt_auth_no_perms
         no_perms_client = TestClient(app)
 
-        response = no_perms_client.put("/settings", json={"default_redirect_url": "https://x.com"})
+        response = no_perms_client.put("/auth/settings", json={"default_redirect_url": "https://x.com"})
 
         assert response.status_code == 403
