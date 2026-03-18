@@ -49,6 +49,8 @@ src/
         └── seed_rbac.py             # RBAC seed script (permissions, roles, groups, admin)
 ```
 
+**UI styling:** See `hexadian-ui-style.instructions.md` for the canonical Hexadian corporate style guide (color palette, layout, typography, components, Tailwind classes).
+
 **Auth frontends (subdirectories in this repo):**
 
 ```
