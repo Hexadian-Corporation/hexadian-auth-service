@@ -18,9 +18,7 @@ def service(mock_repository: MagicMock) -> PortalSettingsServiceImpl:
 
 
 class TestGetSettings:
-    def test_returns_existing_settings(
-        self, service: PortalSettingsServiceImpl, mock_repository: MagicMock
-    ) -> None:
+    def test_returns_existing_settings(self, service: PortalSettingsServiceImpl, mock_repository: MagicMock) -> None:
         existing = PortalSettings(id="s-1", default_redirect_url="https://example.com")
         mock_repository.get.return_value = existing
 
@@ -46,9 +44,7 @@ class TestGetSettings:
 
 
 class TestUpdateSettings:
-    def test_updates_existing_settings(
-        self, service: PortalSettingsServiceImpl, mock_repository: MagicMock
-    ) -> None:
+    def test_updates_existing_settings(self, service: PortalSettingsServiceImpl, mock_repository: MagicMock) -> None:
         existing = PortalSettings(id="s-1", default_redirect_url="https://old.com")
         mock_repository.get.return_value = existing
         mock_repository.save.side_effect = lambda s: s
