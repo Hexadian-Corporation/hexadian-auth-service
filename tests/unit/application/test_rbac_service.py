@@ -77,7 +77,9 @@ class TestGetPermission:
     def test_returns_permission_when_found(
         self, service: RbacServiceImpl, mock_permission_repository: MagicMock
     ) -> None:
-        mock_permission_repository.find_by_id.return_value = Permission(id="p-1", code="auth:users:read", description="Read")
+        mock_permission_repository.find_by_id.return_value = Permission(
+            id="p-1", code="auth:users:read", description="Read"
+        )
 
         result = service.get_permission("p-1")
 

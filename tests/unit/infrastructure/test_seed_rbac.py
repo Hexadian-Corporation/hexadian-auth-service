@@ -54,7 +54,7 @@ class TestSeedPermissions:
 
         seed(settings)
 
-        assert mock_collections["permissions"].insert_one.call_count == 22
+        assert mock_collections["permissions"].insert_one.call_count == 23
 
     @patch("src.infrastructure.seed.seed_rbac.MongoClient")
     def test_permission_codes_match_spec(
@@ -181,7 +181,7 @@ class TestSeedRoles:
         auth_admin_call = mock_collections["roles"].insert_one.call_args_list[0]
         auth_admin_doc = auth_admin_call[0][0]
         assert auth_admin_doc["name"] == "Auth Admin"
-        assert len(auth_admin_doc["permission_ids"]) == 4
+        assert len(auth_admin_doc["permission_ids"]) == 5
 
     @patch("src.infrastructure.seed.seed_rbac.MongoClient")
     def test_auth_user_manager_has_2_permission_ids(
@@ -438,7 +438,7 @@ class TestSeedDefaults:
 
 class TestSeedDataDefinitions:
     def test_permissions_count(self) -> None:
-        assert len(PERMISSIONS) == 22
+        assert len(PERMISSIONS) == 23
 
     def test_roles_count(self) -> None:
         assert len(ROLES) == 9
