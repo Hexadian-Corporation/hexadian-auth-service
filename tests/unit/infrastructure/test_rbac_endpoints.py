@@ -85,7 +85,9 @@ class TestPermissionEndpoints:
         assert response.status_code == 404
 
     def test_update_permission(self, client: TestClient, mock_rbac_service: MagicMock) -> None:
-        mock_rbac_service.update_permission.return_value = Permission(id="p-1", code="auth:users:write", description="Write")
+        mock_rbac_service.update_permission.return_value = Permission(
+            id="p-1", code="auth:users:write", description="Write"
+        )
 
         response = client.put("/rbac/permissions/p-1", json={"code": "auth:users:write", "description": "Write"})
 
