@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, Outlet, useLocation } from "react-router";
-import { Users, Shield, KeyRound, Layers, LogOut, Lock } from "lucide-react";
+import { Users, Shield, KeyRound, Layers, LogOut, Lock, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { clearTokens, redirectToPortal, hasAnyPermission } from "@/lib/auth";
 import { changePassword } from "@/api/auth";
@@ -11,6 +11,7 @@ const navItems = [
   { to: "/rbac/permissions", label: "Permissions", icon: KeyRound, permissions: ["auth:rbac:manage"] },
   { to: "/rbac/roles", label: "Roles", icon: Shield, permissions: ["auth:rbac:manage"] },
   { to: "/rbac/groups", label: "Groups", icon: Layers, permissions: ["auth:rbac:manage"] },
+  { to: "/settings", label: "Settings", icon: Settings, permissions: ["auth:settings:manage"] },
 ];
 
 const PORTAL_URL = import.meta.env.VITE_AUTH_PORTAL_URL ?? "http://localhost:3003";

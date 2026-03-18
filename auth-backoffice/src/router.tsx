@@ -9,6 +9,7 @@ import RolesPage from "@/pages/RolesPage";
 import RoleDetailPage from "@/pages/RoleDetailPage";
 import GroupsPage from "@/pages/GroupsPage";
 import GroupDetailPage from "@/pages/GroupDetailPage";
+import SettingsPage from "@/pages/SettingsPage";
 
 export const router = createBrowserRouter([
   {
@@ -30,6 +31,7 @@ export const router = createBrowserRouter([
           { path: "rbac/roles/:id", element: <RoleDetailPage /> },
           { path: "rbac/groups", element: <GroupsPage /> },
           { path: "rbac/groups/:id", element: <GroupDetailPage /> },
+          { path: "settings", element: <SettingsPage /> },
         ],
       },
     ],
