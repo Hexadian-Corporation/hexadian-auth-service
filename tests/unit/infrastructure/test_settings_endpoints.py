@@ -44,7 +44,7 @@ class TestGetPortalRedirect:
             id="s-1", default_redirect_url="https://www.hexadian.com"
         )
 
-        response = client.get("/settings/portal")
+        response = client.get("/auth/settings/portal")
 
         assert response.status_code == 200
         data = response.json()
@@ -56,7 +56,7 @@ class TestGetPortalRedirect:
             id="s-1", default_redirect_url="https://custom.example.com"
         )
 
-        response = client.get("/settings/portal")
+        response = client.get("/auth/settings/portal")
 
         assert response.status_code == 200
         assert response.json()["default_redirect_url"] == "https://custom.example.com"
@@ -73,7 +73,7 @@ class TestGetSettings:
             id="s-1", default_redirect_url="https://www.hexadian.com"
         )
 
-        response = client.get("/settings")
+        response = client.get("/auth/settings")
 
         assert response.status_code == 200
         data = response.json()
@@ -107,7 +107,7 @@ class TestUpdateSettings:
             id="s-1", default_redirect_url="https://new.example.com"
         )
 
-        response = client.put("/settings", json={"default_redirect_url": "https://new.example.com"})
+        response = client.put("/auth/settings", json={"default_redirect_url": "https://new.example.com"})
 
         assert response.status_code == 200
         data = response.json()
