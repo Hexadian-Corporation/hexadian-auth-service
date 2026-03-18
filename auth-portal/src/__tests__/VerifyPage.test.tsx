@@ -11,6 +11,10 @@ vi.mock("@/api/auth", () => ({
   refreshToken: vi.fn(),
 }));
 
+vi.mock("@/api/settings", () => ({
+  getPortalRedirect: vi.fn(),
+}));
+
 vi.mock("@/lib/auth", async () => {
   const actual = await vi.importActual("@/lib/auth");
   return {
@@ -31,11 +35,13 @@ vi.mock("react-router", async () => {
 
 import { startVerification, confirmVerification, refreshToken } from "@/api/auth";
 import { parseAccessToken, getAccessToken } from "@/lib/auth";
+import { getPortalRedirect } from "@/api/settings";
 const mockStartVerification = vi.mocked(startVerification);
 const mockConfirmVerification = vi.mocked(confirmVerification);
 const mockRefreshToken = vi.mocked(refreshToken);
 const mockParseAccessToken = vi.mocked(parseAccessToken);
 const mockGetAccessToken = vi.mocked(getAccessToken);
+const mockGetPortalRedirect = vi.mocked(getPortalRedirect);
 
 function renderPage(initialEntries?: string[]) {
   return render(
@@ -65,6 +71,10 @@ describe("VerifyPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    Object.defineProperty(window, "location", {
+      writable: true,
+      value: { href: "http://localhost:3003/verify" },
+    });
   });
 
   describe("authentication", () => {
@@ -159,7 +169,7 @@ describe("VerifyPage", () => {
       ).toBeInTheDocument();
     });
 
-    it("Continue button navigates to /login preserving search params", async () => {
+    it("Continue button navigates to /login preserving search params when redirect_uri present", async () => {
       setupAuthenticatedUser({ rsi_verified: true });
       const user = userEvent.setup();
       renderPage(["/?redirect_uri=http%3A%2F%2Flocalhost%3A3000&state=abc"]);
@@ -170,6 +180,24 @@ describe("VerifyPage", () => {
         expect.stringMatching(/^\/login\?/),
         { replace: true },
       );
+      expect(mockGetPortalRedirect).not.toHaveBeenCalled();
+    });
+
+    it("Continue button redirects to portal URL when no redirect_uri", async () => {
+      setupAuthenticatedUser({ rsi_verified: true });
+      mockGetPortalRedirect.mockResolvedValueOnce({
+        default_redirect_url: "https://portal.hexadian.com",
+      });
+      const user = userEvent.setup();
+      renderPage();
+
+      await user.click(screen.getByRole("button", { name: "Continue" }));
+
+      await waitFor(() => {
+        expect(mockGetPortalRedirect).toHaveBeenCalled();
+        expect(window.location.href).toBe("https://portal.hexadian.com");
+      });
+      expect(mockNavigate).not.toHaveBeenCalled();
     });
 
     it("does not show Start Verification when rsi_handle is null", () => {
@@ -422,7 +450,7 @@ describe("VerifyPage", () => {
       return user;
     }
 
-    it("calls confirmVerification and shows verified on success", async () => {
+    it("calls confirmVerification and redirects to portal URL when no redirect_uri", async () => {
       const user = await renderWithCodeAndConfirm();
 
       mockConfirmVerification.mockResolvedValueOnce({
@@ -436,12 +464,14 @@ describe("VerifyPage", () => {
         token_type: "bearer",
         expires_in: 3600,
       });
-      // After refreshing, parseAccessToken returns updated payload
       mockParseAccessToken.mockReturnValue({
         sub: "user-1",
         username: "testuser",
         rsi_handle: "test-handle",
         rsi_verified: true,
+      });
+      mockGetPortalRedirect.mockResolvedValueOnce({
+        default_redirect_url: "https://portal.hexadian.com",
       });
 
       localStorage.setItem("refresh_token", "test-refresh");
@@ -464,6 +494,56 @@ describe("VerifyPage", () => {
       expect(
         screen.getByRole("heading", { name: "Verification Complete!" }),
       ).toBeInTheDocument();
+
+      await waitFor(() => {
+        expect(mockGetPortalRedirect).toHaveBeenCalled();
+        expect(window.location.href).toBe("https://portal.hexadian.com");
+      });
+    });
+
+    it("navigates to /login preserving search params when redirect_uri present after confirm", async () => {
+      setupAuthenticatedUser();
+      mockStartVerification.mockResolvedValueOnce({
+        verification_code: "test-code",
+        verified: false,
+        message: "ok",
+      });
+
+      const user = userEvent.setup();
+      renderPage(["/verify?redirect_uri=http%3A%2F%2Flocalhost%3A3000&state=abc"]);
+
+      await user.click(screen.getByRole("button", { name: "Start Verification" }));
+      await waitFor(() => expect(screen.getByText("test-code")).toBeInTheDocument());
+
+      mockConfirmVerification.mockResolvedValueOnce({
+        verification_code: null,
+        verified: true,
+        message: "Verified",
+      });
+      mockRefreshToken.mockResolvedValueOnce({
+        access_token: "new-access",
+        refresh_token: "new-refresh",
+        token_type: "bearer",
+        expires_in: 3600,
+      });
+      mockParseAccessToken.mockReturnValue({
+        sub: "user-1",
+        username: "testuser",
+        rsi_handle: "test-handle",
+        rsi_verified: true,
+      });
+      localStorage.setItem("refresh_token", "test-refresh");
+
+      await user.click(screen.getByRole("button", { name: "Confirm Verification" }));
+
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith(
+          expect.stringMatching(/^\/login\?/),
+          { replace: true },
+        );
+      });
+
+      expect(mockGetPortalRedirect).not.toHaveBeenCalled();
     });
 
     it("shows error when verification fails (not verified)", async () => {
