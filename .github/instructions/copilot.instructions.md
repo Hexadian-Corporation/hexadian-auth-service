@@ -18,8 +18,7 @@ This service handles **user authentication**, **JWT token management**, **RBAC (
 
 | Repo | Purpose |
 |------|---------|
-| [`hexadian-auth-common`](https://github.com/Hexadian-Corporation/hexadian-auth-common) | Shared Python library for JWT validation + FastAPI auth dependencies. Installed in all H³ Python backend services. |
-
+| [`hexadian-auth-common`](https://github.com/Hexadian-Corporation/hexadian-auth-common) | Shared Python library for JWT validation + FastAPI auth dependencies. Installed in all H³ Python backend services. || [`hexadian-auth-client`](https://github.com/Hexadian-Corporation/hexadian-auth-client) | TypeScript auth client SDK (npm monorepo). Packages: `@hexadian-corporation/auth-core` (OAuth client, token storage, JWT decode) + `@hexadian-corporation/auth-react` (React integration). Used by all React frontends. Published to GitHub Packages. |
 `hexadian-auth-common` conforms to `JWT_CONTRACT.md` (hosted in hexadian-auth-common) and validates the tokens this service issues.
 
 ## Architecture — Hexagonal (Ports & Adapters)
