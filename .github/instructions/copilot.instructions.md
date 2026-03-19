@@ -19,9 +19,8 @@ This service handles **user authentication**, **JWT token management**, **RBAC (
 | Repo | Purpose |
 |------|---------|
 | [`hexadian-auth-common`](https://github.com/Hexadian-Corporation/hexadian-auth-common) | Shared Python library for JWT validation + FastAPI auth dependencies. Installed in all H³ Python backend services. |
-| [`hexadian-auth-common-php`](https://github.com/Hexadian-Corporation/hexadian-auth-common-php) | PHP counterpart of auth-common — same JWT contract, PSR-15 middleware. For PHP consumers. |
 
-Both auth-common packages conform to `JWT_CONTRACT.md` (hosted in hexadian-auth-common) and validate the tokens this service issues.
+`hexadian-auth-common` conforms to `JWT_CONTRACT.md` (hosted in hexadian-auth-common) and validates the tokens this service issues.
 
 ## Architecture — Hexagonal (Ports & Adapters)
 
