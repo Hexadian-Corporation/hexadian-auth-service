@@ -24,3 +24,4 @@ auth-backoffice/dist/
 !.github/instructions/copilot.instructions.md
 !.github/instructions/hexadian-ui-style.instructions.md
 !.github/instructions/development-workflow.instructions.md
+!.github/instructions/bug-history.instructions.md
