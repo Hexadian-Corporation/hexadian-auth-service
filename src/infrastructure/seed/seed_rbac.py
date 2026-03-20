@@ -131,8 +131,11 @@ ROLES: list[dict[str, object]] = [
     # --- Algorithm roles ---
     {
         "name": "HHH Algorithm User",
-        "description": "Basic algorithm access: Dijkstra only",
-        "permission_codes": ["hhh:algorithm:dijkstra"],
+        "description": "Basic algorithm access: Dijkstra + route creation",
+        "permission_codes": [
+            "hhh:algorithm:dijkstra",
+            "hhh:routes:write",
+        ],
     },
     {
         "name": "HHH Algorithm Premium",
@@ -174,28 +177,27 @@ GROUPS: list[dict[str, object]] = [
             "HHH Ships Manager",
             "HHH Graphs Manager",
             "HHH Routes Manager",
+            "HHH Algorithm Premium",
+            "HHH Feature Premium",
         ],
         "auto_assign_apps": [],
     },
     {
         "name": "Users",
-        "description": "Default group for new registered users. Read access + can create contracts.",
+        "description": "Default group for new registered users. Read access + basic algorithm.",
         "role_names": [
             "HHH Viewer",
-            "HHH Contracts Manager",
+            "HHH Algorithm User",
         ],
         "auto_assign_apps": ["hhh-frontend"],
     },
     {
-        "name": "Content Managers",
-        "description": "Full content management across all HHH modules + user management.",
+        "name": "Hexadian Members",
+        "description": "Premium users with full algorithm and feature access.",
         "role_names": [
-            "HHH Contracts Manager",
-            "HHH Maps Manager",
-            "HHH Commodities Manager",
-            "HHH Ships Manager",
-            "HHH Graphs Manager",
-            "HHH Routes Manager",
+            "HHH Viewer",
+            "HHH Algorithm Premium",
+            "HHH Feature Premium",
         ],
         "auto_assign_apps": [],
     },
@@ -301,6 +303,18 @@ def seed(settings: Settings | None = None) -> None:
         result = permissions_col.delete_many({"code": {"$nin": list(current_codes)}})
         if result.deleted_count:
             print(f"Cleaned up {result.deleted_count} stale permission(s)")
+
+        # --- Cleanup: remove deprecated roles no longer in the spec ---
+        current_role_names = {str(r["name"]) for r in ROLES}
+        result = roles_col.delete_many({"name": {"$nin": list(current_role_names)}})
+        if result.deleted_count:
+            print(f"Cleaned up {result.deleted_count} stale role(s)")
+
+        # --- Cleanup: remove deprecated groups no longer in the spec ---
+        current_group_names = {str(g["name"]) for g in GROUPS}
+        result = groups_col.delete_many({"name": {"$nin": list(current_group_names)}})
+        if result.deleted_count:
+            print(f"Cleaned up {result.deleted_count} stale group(s)")
 
         print("Seed complete")
     finally:
