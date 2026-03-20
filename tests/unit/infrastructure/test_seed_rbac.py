@@ -277,7 +277,7 @@ class TestSeedGroups:
         seed(settings)
 
         inserted_names = [c[0][0]["name"] for c in mock_collections["groups"].insert_one.call_args_list]
-        assert inserted_names == ["Admins", "Users", "Content Managers"]
+        assert inserted_names == ["Admins", "Users", "Hexadian Members"]
 
     @patch("src.infrastructure.seed.seed_rbac.MongoClient")
     def test_skips_existing_groups(
@@ -459,6 +459,35 @@ class TestSeedDataDefinitions:
         admins_group = next(g for g in GROUPS if g["name"] == "Admins")
         assert admins_group["auto_assign_apps"] == []
 
+    def test_algorithm_user_role_includes_routes_write(self) -> None:
+        algo_user = next(r for r in ROLES if r["name"] == "HHH Algorithm User")
+        assert "hhh:algorithm:dijkstra" in algo_user["permission_codes"]
+        assert "hhh:routes:write" in algo_user["permission_codes"]
+
+    def test_admins_group_includes_algorithm_and_feature_premium(self) -> None:
+        admins = next(g for g in GROUPS if g["name"] == "Admins")
+        assert "HHH Algorithm Premium" in admins["role_names"]
+        assert "HHH Feature Premium" in admins["role_names"]
+
+    def test_admins_group_has_9_roles(self) -> None:
+        admins = next(g for g in GROUPS if g["name"] == "Admins")
+        assert len(admins["role_names"]) == 9
+
+    def test_users_group_has_algorithm_user_not_contracts_manager(self) -> None:
+        users = next(g for g in GROUPS if g["name"] == "Users")
+        assert "HHH Algorithm User" in users["role_names"]
+        assert "HHH Contracts Manager" not in users["role_names"]
+
+    def test_hexadian_members_group_exists_not_content_managers(self) -> None:
+        group_names = [g["name"] for g in GROUPS]
+        assert "Hexadian Members" in group_names
+        assert "Content Managers" not in group_names
+
+    def test_hexadian_members_group_roles(self) -> None:
+        members = next(g for g in GROUPS if g["name"] == "Hexadian Members")
+        assert members["role_names"] == ["HHH Viewer", "HHH Algorithm Premium", "HHH Feature Premium"]
+        assert members["auto_assign_apps"] == []
+
 
 class TestSeedCleanup:
     @patch("src.infrastructure.seed.seed_rbac.MongoClient")
@@ -508,3 +537,59 @@ class TestSeedCleanup:
         seed(settings)
 
         mock_collections["permissions"].delete_many.assert_called_once()
+
+    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
+    def test_cleanup_deletes_stale_roles(
+        self,
+        mock_mongo_client: MagicMock,
+        mock_db: MagicMock,
+        mock_collections: dict[str, MagicMock],
+        settings: Settings,
+    ) -> None:
+        """Cleanup step removes roles not in the current ROLES list (e.g. Auth User Manager)."""
+        mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
+        mock_collections["permissions"].find_one.return_value = None
+        mock_collections["permissions"].insert_one.return_value = MagicMock(inserted_id="perm-id")
+        mock_collections["roles"].find_one.return_value = None
+        mock_collections["roles"].insert_one.return_value = MagicMock(inserted_id="role-id")
+        mock_collections["groups"].find_one.return_value = None
+        mock_collections["groups"].insert_one.return_value = MagicMock(inserted_id="group-id")
+        mock_collections["users"].find_one.return_value = None
+        mock_collections["users"].insert_one.return_value = MagicMock(inserted_id="user-id")
+        mock_collections["roles"].delete_many.return_value = MagicMock(deleted_count=2)
+
+        seed(settings)
+
+        mock_collections["roles"].delete_many.assert_called_once()
+        call_filter = mock_collections["roles"].delete_many.call_args[0][0]
+        assert "$nin" in call_filter["name"]
+        current_names = {r["name"] for r in ROLES}
+        assert set(call_filter["name"]["$nin"]) == current_names
+
+    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
+    def test_cleanup_deletes_stale_groups(
+        self,
+        mock_mongo_client: MagicMock,
+        mock_db: MagicMock,
+        mock_collections: dict[str, MagicMock],
+        settings: Settings,
+    ) -> None:
+        """Cleanup step removes groups not in the current GROUPS list (e.g. Content Managers)."""
+        mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
+        mock_collections["permissions"].find_one.return_value = None
+        mock_collections["permissions"].insert_one.return_value = MagicMock(inserted_id="perm-id")
+        mock_collections["roles"].find_one.return_value = None
+        mock_collections["roles"].insert_one.return_value = MagicMock(inserted_id="role-id")
+        mock_collections["groups"].find_one.return_value = None
+        mock_collections["groups"].insert_one.return_value = MagicMock(inserted_id="group-id")
+        mock_collections["users"].find_one.return_value = None
+        mock_collections["users"].insert_one.return_value = MagicMock(inserted_id="user-id")
+        mock_collections["groups"].delete_many.return_value = MagicMock(deleted_count=1)
+
+        seed(settings)
+
+        mock_collections["groups"].delete_many.assert_called_once()
+        call_filter = mock_collections["groups"].delete_many.call_args[0][0]
+        assert "$nin" in call_filter["name"]
+        current_names = {g["name"] for g in GROUPS}
+        assert set(call_filter["name"]["$nin"]) == current_names
