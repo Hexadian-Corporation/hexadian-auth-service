@@ -1,51 +1,37 @@
-import type { TokenResponse } from "@/types/auth";
+import {
+  createLocalStorage,
+  extractUserContext,
+  type TokenStorage,
+  type UserContext,
+  type TokenResponse,
+} from "@hexadian-corporation/auth-core";
 import { refreshToken as refreshTokenApi } from "@/api/auth";
 
-const ACCESS_TOKEN_KEY = "access_token";
-const REFRESH_TOKEN_KEY = "refresh_token";
+export type { UserContext, TokenResponse };
 
-export interface AccessTokenPayload {
-  sub: string;
-  username: string;
-  rsi_handle: string | null;
-  rsi_verified: boolean;
-}
-
-export function parseAccessToken(): AccessTokenPayload | null {
-  const token = getAccessToken();
-  if (!token) return null;
-
-  try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return null;
-    const payload = JSON.parse(atob(parts[1])) as Record<string, unknown>;
-    return {
-      sub: payload.sub as string,
-      username: payload.username as string,
-      rsi_handle: (payload.rsi_handle as string | undefined) ?? null,
-      rsi_verified: (payload.rsi_verified as boolean | undefined) ?? false,
-    };
-  } catch {
-    return null;
-  }
-}
+// Use empty prefix for backward compatibility with existing localStorage keys
+const storage: TokenStorage = createLocalStorage("");
 
 export function storeTokens(tokens: TokenResponse): void {
-  localStorage.setItem(ACCESS_TOKEN_KEY, tokens.access_token);
-  localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refresh_token);
+  storage.storeTokens(tokens.access_token, tokens.refresh_token);
 }
 
 export function getAccessToken(): string | null {
-  return localStorage.getItem(ACCESS_TOKEN_KEY);
+  return storage.getAccessToken();
 }
 
 export function getRefreshToken(): string | null {
-  return localStorage.getItem(REFRESH_TOKEN_KEY);
+  return storage.getRefreshToken();
 }
 
 export function clearTokens(): void {
-  localStorage.removeItem(ACCESS_TOKEN_KEY);
-  localStorage.removeItem(REFRESH_TOKEN_KEY);
+  storage.clearTokens();
+}
+
+export function parseAccessToken(): UserContext | null {
+  const token = getAccessToken();
+  if (!token) return null;
+  return extractUserContext(token);
 }
 
 export async function authFetch(

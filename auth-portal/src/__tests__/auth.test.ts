@@ -185,14 +185,17 @@ describe("parseAccessToken", () => {
 
     const result = parseAccessToken();
     expect(result).toEqual({
-      sub: "user-123",
+      userId: "user-123",
       username: "testuser",
-      rsi_handle: "my-handle",
-      rsi_verified: true,
+      groups: [],
+      roles: [],
+      permissions: [],
+      rsiHandle: "my-handle",
+      rsiVerified: true,
     });
   });
 
-  it("defaults rsi_handle to null when missing", () => {
+  it("defaults rsiHandle to null when missing", () => {
     const token = makeJwt({
       sub: "user-123",
       username: "testuser",
@@ -200,10 +203,10 @@ describe("parseAccessToken", () => {
     localStorage.setItem("access_token", token);
 
     const result = parseAccessToken();
-    expect(result?.rsi_handle).toBeNull();
+    expect(result?.rsiHandle).toBeNull();
   });
 
-  it("defaults rsi_verified to false when missing", () => {
+  it("defaults rsiVerified to false when missing", () => {
     const token = makeJwt({
       sub: "user-123",
       username: "testuser",
@@ -211,7 +214,7 @@ describe("parseAccessToken", () => {
     localStorage.setItem("access_token", token);
 
     const result = parseAccessToken();
-    expect(result?.rsi_verified).toBe(false);
+    expect(result?.rsiVerified).toBe(false);
   });
 
   it("returns null for malformed token (not 3 parts)", () => {
