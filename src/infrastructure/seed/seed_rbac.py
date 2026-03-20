@@ -30,6 +30,11 @@ PERMISSIONS: list[dict[str, str]] = [
     {"code": "auth:permissions:manage", "description": "Manage permissions"},
     {"code": "auth:rbac:manage", "description": "Manage RBAC configuration"},
     {"code": "auth:settings:manage", "description": "Manage portal settings"},
+    # --- Algorithm permissions ---
+    {"code": "hhh:algorithm:dijkstra", "description": "Use Dijkstra shortest path algorithm"},
+    {"code": "hhh:algorithm:astar", "description": "Use A* heuristic pathfinding algorithm"},
+    {"code": "hhh:algorithm:aco", "description": "Use Ant Colony Optimization algorithm"},
+    {"code": "hhh:algorithm:ford_fulkerson", "description": "Use Ford-Fulkerson max flow algorithm"},
 ]
 
 ROLES: list[dict[str, object]] = [
@@ -111,6 +116,22 @@ ROLES: list[dict[str, object]] = [
             "hhh:ships:read",
             "hhh:graphs:read",
             "hhh:routes:read",
+        ],
+    },
+    # --- Algorithm roles ---
+    {
+        "name": "HHH Algorithm User",
+        "description": "Basic algorithm access: Dijkstra only",
+        "permission_codes": ["hhh:algorithm:dijkstra"],
+    },
+    {
+        "name": "HHH Algorithm Premium",
+        "description": "Premium algorithm access: all optimization algorithms",
+        "permission_codes": [
+            "hhh:algorithm:dijkstra",
+            "hhh:algorithm:astar",
+            "hhh:algorithm:aco",
+            "hhh:algorithm:ford_fulkerson",
         ],
     },
 ]
