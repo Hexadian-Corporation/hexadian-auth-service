@@ -9,9 +9,9 @@ PERMISSIONS: list[dict[str, str]] = [
     {"code": "hhh:contracts:read", "description": "Read contracts"},
     {"code": "hhh:contracts:write", "description": "Create and update contracts"},
     {"code": "hhh:contracts:delete", "description": "Delete contracts"},
-    {"code": "hhh:locations:read", "description": "Read locations"},
-    {"code": "hhh:locations:write", "description": "Create and update locations"},
-    {"code": "hhh:locations:delete", "description": "Delete locations"},
+    {"code": "hhh:maps:read", "description": "Read locations"},
+    {"code": "hhh:maps:write", "description": "Create and update locations"},
+    {"code": "hhh:maps:delete", "description": "Delete locations"},
     {"code": "hhh:commodities:read", "description": "Read commodities"},
     {"code": "hhh:commodities:write", "description": "Create and update commodities"},
     {"code": "hhh:commodities:delete", "description": "Delete commodities"},
@@ -24,9 +24,10 @@ PERMISSIONS: list[dict[str, str]] = [
     {"code": "hhh:routes:read", "description": "Read routes"},
     {"code": "hhh:routes:write", "description": "Create and update routes"},
     {"code": "hhh:routes:delete", "description": "Delete routes"},
-    {"code": "auth:users:read", "description": "Read users"},
-    {"code": "auth:users:write", "description": "Create and update users"},
-    {"code": "auth:users:admin", "description": "Administer users"},
+    {"code": "auth:users:manage", "description": "Manage users"},
+    {"code": "auth:groups:manage", "description": "Manage groups"},
+    {"code": "auth:roles:manage", "description": "Manage roles"},
+    {"code": "auth:permissions:manage", "description": "Manage permissions"},
     {"code": "auth:rbac:manage", "description": "Manage RBAC configuration"},
     {"code": "auth:settings:manage", "description": "Manage portal settings"},
 ]
@@ -37,19 +38,12 @@ ROLES: list[dict[str, object]] = [
         "name": "Auth Admin",
         "description": "Full auth administration: user CRUD, RBAC management",
         "permission_codes": [
-            "auth:users:read",
-            "auth:users:write",
-            "auth:users:admin",
+            "auth:users:manage",
+            "auth:groups:manage",
+            "auth:roles:manage",
+            "auth:permissions:manage",
             "auth:rbac:manage",
             "auth:settings:manage",
-        ],
-    },
-    {
-        "name": "Auth User Manager",
-        "description": "Read and write access to user accounts",
-        "permission_codes": [
-            "auth:users:read",
-            "auth:users:write",
         ],
     },
     # --- HHH roles (per sub-module) ---
@@ -63,12 +57,12 @@ ROLES: list[dict[str, object]] = [
         ],
     },
     {
-        "name": "HHH Locations Manager",
-        "description": "Full access to locations",
+        "name": "HHH Maps Manager",
+        "description": "Full access to locations and distances",
         "permission_codes": [
-            "hhh:locations:read",
-            "hhh:locations:write",
-            "hhh:locations:delete",
+            "hhh:maps:read",
+            "hhh:maps:write",
+            "hhh:maps:delete",
         ],
     },
     {
@@ -112,7 +106,7 @@ ROLES: list[dict[str, object]] = [
         "description": "Read-only access to all HHH resources",
         "permission_codes": [
             "hhh:contracts:read",
-            "hhh:locations:read",
+            "hhh:maps:read",
             "hhh:commodities:read",
             "hhh:ships:read",
             "hhh:graphs:read",
@@ -128,7 +122,7 @@ GROUPS: list[dict[str, object]] = [
         "role_names": [
             "Auth Admin",
             "HHH Contracts Manager",
-            "HHH Locations Manager",
+            "HHH Maps Manager",
             "HHH Commodities Manager",
             "HHH Ships Manager",
             "HHH Graphs Manager",
@@ -149,9 +143,8 @@ GROUPS: list[dict[str, object]] = [
         "name": "Content Managers",
         "description": "Full content management across all HHH modules + user management.",
         "role_names": [
-            "Auth User Manager",
             "HHH Contracts Manager",
-            "HHH Locations Manager",
+            "HHH Maps Manager",
             "HHH Commodities Manager",
             "HHH Ships Manager",
             "HHH Graphs Manager",
@@ -255,6 +248,12 @@ def seed(settings: Settings | None = None) -> None:
             print("Admin user created")
         else:
             print("Admin user already exists")
+
+        # --- Cleanup: remove stale permissions no longer in the spec ---
+        current_codes = {p["code"] for p in PERMISSIONS}
+        result = permissions_col.delete_many({"code": {"$nin": list(current_codes)}})
+        if result.deleted_count:
+            print(f"Cleaned up {result.deleted_count} stale permission(s)")
 
         print("Seed complete")
     finally:
