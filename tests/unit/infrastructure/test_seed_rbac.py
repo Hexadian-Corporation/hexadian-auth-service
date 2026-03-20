@@ -51,10 +51,11 @@ class TestSeedPermissions:
         mock_collections["groups"].insert_one.return_value = MagicMock(inserted_id="group-id")
         mock_collections["users"].find_one.return_value = None
         mock_collections["users"].insert_one.return_value = MagicMock(inserted_id="user-id")
+        mock_collections["permissions"].delete_many.return_value = MagicMock(deleted_count=0)
 
         seed(settings)
 
-        assert mock_collections["permissions"].insert_one.call_count == 23
+        assert mock_collections["permissions"].insert_one.call_count == 24
 
     @patch("src.infrastructure.seed.seed_rbac.MongoClient")
     def test_permission_codes_match_spec(
@@ -120,7 +121,7 @@ class TestSeedRoles:
 
         seed(settings)
 
-        assert mock_collections["roles"].insert_one.call_count == 9
+        assert mock_collections["roles"].insert_one.call_count == 8
 
     @patch("src.infrastructure.seed.seed_rbac.MongoClient")
     def test_role_names_match_spec(
@@ -145,9 +146,8 @@ class TestSeedRoles:
         inserted_names = [c[0][0]["name"] for c in mock_collections["roles"].insert_one.call_args_list]
         assert inserted_names == [
             "Auth Admin",
-            "Auth User Manager",
             "HHH Contracts Manager",
-            "HHH Locations Manager",
+            "HHH Maps Manager",
             "HHH Commodities Manager",
             "HHH Ships Manager",
             "HHH Graphs Manager",
@@ -181,35 +181,7 @@ class TestSeedRoles:
         auth_admin_call = mock_collections["roles"].insert_one.call_args_list[0]
         auth_admin_doc = auth_admin_call[0][0]
         assert auth_admin_doc["name"] == "Auth Admin"
-        assert len(auth_admin_doc["permission_ids"]) == 5
-
-    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
-    def test_auth_user_manager_has_2_permission_ids(
-        self,
-        mock_mongo_client: MagicMock,
-        mock_db: MagicMock,
-        mock_collections: dict[str, MagicMock],
-        settings: Settings,
-    ) -> None:
-        perm_counter = iter(range(1, 100))
-        mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
-        mock_collections["permissions"].find_one.return_value = None
-        mock_collections["permissions"].insert_one.side_effect = lambda _: MagicMock(
-            inserted_id=f"perm-{next(perm_counter)}"
-        )
-        mock_collections["roles"].find_one.return_value = None
-        mock_collections["roles"].insert_one.return_value = MagicMock(inserted_id="role-id")
-        mock_collections["groups"].find_one.return_value = None
-        mock_collections["groups"].insert_one.return_value = MagicMock(inserted_id="group-id")
-        mock_collections["users"].find_one.return_value = None
-        mock_collections["users"].insert_one.return_value = MagicMock(inserted_id="user-id")
-
-        seed(settings)
-
-        user_mgr_call = mock_collections["roles"].insert_one.call_args_list[1]
-        user_mgr_doc = user_mgr_call[0][0]
-        assert user_mgr_doc["name"] == "Auth User Manager"
-        assert len(user_mgr_doc["permission_ids"]) == 2
+        assert len(auth_admin_doc["permission_ids"]) == 6
 
     @patch("src.infrastructure.seed.seed_rbac.MongoClient")
     def test_hhh_contracts_manager_has_3_permission_ids(
@@ -234,7 +206,7 @@ class TestSeedRoles:
 
         seed(settings)
 
-        contracts_mgr_call = mock_collections["roles"].insert_one.call_args_list[2]
+        contracts_mgr_call = mock_collections["roles"].insert_one.call_args_list[1]
         contracts_mgr_doc = contracts_mgr_call[0][0]
         assert contracts_mgr_doc["name"] == "HHH Contracts Manager"
         assert len(contracts_mgr_doc["permission_ids"]) == 3
@@ -438,10 +410,10 @@ class TestSeedDefaults:
 
 class TestSeedDataDefinitions:
     def test_permissions_count(self) -> None:
-        assert len(PERMISSIONS) == 23
+        assert len(PERMISSIONS) == 24
 
     def test_roles_count(self) -> None:
-        assert len(ROLES) == 9
+        assert len(ROLES) == 8
 
     def test_groups_count(self) -> None:
         assert len(GROUPS) == 3
@@ -483,3 +455,53 @@ class TestSeedDataDefinitions:
     def test_admins_group_has_empty_auto_assign_apps(self) -> None:
         admins_group = next(g for g in GROUPS if g["name"] == "Admins")
         assert admins_group["auto_assign_apps"] == []
+
+
+class TestSeedCleanup:
+    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
+    def test_cleanup_deletes_stale_permissions(
+        self,
+        mock_mongo_client: MagicMock,
+        mock_db: MagicMock,
+        mock_collections: dict[str, MagicMock],
+        settings: Settings,
+    ) -> None:
+        """Cleanup step removes permissions not in the current PERMISSIONS list."""
+        mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
+        mock_collections["permissions"].find_one.return_value = None
+        mock_collections["permissions"].insert_one.return_value = MagicMock(inserted_id="perm-id")
+        mock_collections["roles"].find_one.return_value = None
+        mock_collections["roles"].insert_one.return_value = MagicMock(inserted_id="role-id")
+        mock_collections["groups"].find_one.return_value = None
+        mock_collections["groups"].insert_one.return_value = MagicMock(inserted_id="group-id")
+        mock_collections["users"].find_one.return_value = None
+        mock_collections["users"].insert_one.return_value = MagicMock(inserted_id="user-id")
+        mock_collections["permissions"].delete_many.return_value = MagicMock(deleted_count=3)
+
+        seed(settings)
+
+        mock_collections["permissions"].delete_many.assert_called_once()
+        call_filter = mock_collections["permissions"].delete_many.call_args[0][0]
+        assert "$nin" in call_filter["code"]
+        current_codes = {p["code"] for p in PERMISSIONS}
+        assert set(call_filter["code"]["$nin"]) == current_codes
+
+    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
+    def test_cleanup_called_even_when_no_stale_permissions(
+        self,
+        mock_mongo_client: MagicMock,
+        mock_db: MagicMock,
+        mock_collections: dict[str, MagicMock],
+        settings: Settings,
+    ) -> None:
+        """Cleanup step is always called, even if nothing needs to be deleted."""
+        mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
+        mock_collections["permissions"].find_one.return_value = {"_id": "x", "code": "x"}
+        mock_collections["roles"].find_one.return_value = {"_id": "x", "name": "x"}
+        mock_collections["groups"].find_one.return_value = {"_id": "x", "name": "x"}
+        mock_collections["users"].find_one.return_value = {"_id": "x", "username": "admin"}
+        mock_collections["permissions"].delete_many.return_value = MagicMock(deleted_count=0)
+
+        seed(settings)
+
+        mock_collections["permissions"].delete_many.assert_called_once()
