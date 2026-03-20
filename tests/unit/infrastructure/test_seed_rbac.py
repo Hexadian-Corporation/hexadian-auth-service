@@ -35,7 +35,7 @@ def settings() -> Settings:
 
 class TestSeedPermissions:
     @patch("src.infrastructure.seed.seed_rbac.MongoClient")
-    def test_creates_all_22_permissions(
+    def test_creates_all_37_permissions(
         self,
         mock_mongo_client: MagicMock,
         mock_db: MagicMock,
@@ -102,7 +102,7 @@ class TestSeedPermissions:
 
 class TestSeedRoles:
     @patch("src.infrastructure.seed.seed_rbac.MongoClient")
-    def test_creates_9_roles(
+    def test_creates_11_roles(
         self,
         mock_mongo_client: MagicMock,
         mock_db: MagicMock,
@@ -159,7 +159,7 @@ class TestSeedRoles:
         ]
 
     @patch("src.infrastructure.seed.seed_rbac.MongoClient")
-    def test_auth_admin_has_4_permission_ids(
+    def test_auth_admin_has_6_permission_ids(
         self,
         mock_mongo_client: MagicMock,
         mock_db: MagicMock,
@@ -213,6 +213,90 @@ class TestSeedRoles:
         contracts_mgr_doc = contracts_mgr_call[0][0]
         assert contracts_mgr_doc["name"] == "HHH Contracts Manager"
         assert len(contracts_mgr_doc["permission_ids"]) == 3
+
+    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
+    def test_hhh_algorithm_user_has_2_permission_ids(
+        self,
+        mock_mongo_client: MagicMock,
+        mock_db: MagicMock,
+        mock_collections: dict[str, MagicMock],
+        settings: Settings,
+    ) -> None:
+        perm_counter = iter(range(1, 100))
+        mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
+        mock_collections["permissions"].find_one.return_value = None
+        mock_collections["permissions"].insert_one.side_effect = lambda _: MagicMock(
+            inserted_id=f"perm-{next(perm_counter)}"
+        )
+        mock_collections["roles"].find_one.return_value = None
+        mock_collections["roles"].insert_one.return_value = MagicMock(inserted_id="role-id")
+        mock_collections["groups"].find_one.return_value = None
+        mock_collections["groups"].insert_one.return_value = MagicMock(inserted_id="group-id")
+        mock_collections["users"].find_one.return_value = None
+        mock_collections["users"].insert_one.return_value = MagicMock(inserted_id="user-id")
+
+        seed(settings)
+
+        algo_user_call = mock_collections["roles"].insert_one.call_args_list[8]
+        algo_user_doc = algo_user_call[0][0]
+        assert algo_user_doc["name"] == "HHH Algorithm User"
+        assert len(algo_user_doc["permission_ids"]) == 2
+
+    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
+    def test_hhh_algorithm_premium_has_4_permission_ids(
+        self,
+        mock_mongo_client: MagicMock,
+        mock_db: MagicMock,
+        mock_collections: dict[str, MagicMock],
+        settings: Settings,
+    ) -> None:
+        perm_counter = iter(range(1, 100))
+        mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
+        mock_collections["permissions"].find_one.return_value = None
+        mock_collections["permissions"].insert_one.side_effect = lambda _: MagicMock(
+            inserted_id=f"perm-{next(perm_counter)}"
+        )
+        mock_collections["roles"].find_one.return_value = None
+        mock_collections["roles"].insert_one.return_value = MagicMock(inserted_id="role-id")
+        mock_collections["groups"].find_one.return_value = None
+        mock_collections["groups"].insert_one.return_value = MagicMock(inserted_id="group-id")
+        mock_collections["users"].find_one.return_value = None
+        mock_collections["users"].insert_one.return_value = MagicMock(inserted_id="user-id")
+
+        seed(settings)
+
+        algo_premium_call = mock_collections["roles"].insert_one.call_args_list[9]
+        algo_premium_doc = algo_premium_call[0][0]
+        assert algo_premium_doc["name"] == "HHH Algorithm Premium"
+        assert len(algo_premium_doc["permission_ids"]) == 4
+
+    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
+    def test_hhh_feature_premium_has_9_permission_ids(
+        self,
+        mock_mongo_client: MagicMock,
+        mock_db: MagicMock,
+        mock_collections: dict[str, MagicMock],
+        settings: Settings,
+    ) -> None:
+        perm_counter = iter(range(1, 100))
+        mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
+        mock_collections["permissions"].find_one.return_value = None
+        mock_collections["permissions"].insert_one.side_effect = lambda _: MagicMock(
+            inserted_id=f"perm-{next(perm_counter)}"
+        )
+        mock_collections["roles"].find_one.return_value = None
+        mock_collections["roles"].insert_one.return_value = MagicMock(inserted_id="role-id")
+        mock_collections["groups"].find_one.return_value = None
+        mock_collections["groups"].insert_one.return_value = MagicMock(inserted_id="group-id")
+        mock_collections["users"].find_one.return_value = None
+        mock_collections["users"].insert_one.return_value = MagicMock(inserted_id="user-id")
+
+        seed(settings)
+
+        feature_premium_call = mock_collections["roles"].insert_one.call_args_list[10]
+        feature_premium_doc = feature_premium_call[0][0]
+        assert feature_premium_doc["name"] == "HHH Feature Premium"
+        assert len(feature_premium_doc["permission_ids"]) == 9
 
     @patch("src.infrastructure.seed.seed_rbac.MongoClient")
     def test_skips_existing_roles(
@@ -487,6 +571,61 @@ class TestSeedDataDefinitions:
         members = next(g for g in GROUPS if g["name"] == "Hexadian Members")
         assert members["role_names"] == ["HHH Viewer", "HHH Algorithm Premium", "HHH Feature Premium"]
         assert members["auto_assign_apps"] == []
+
+    def test_algorithm_permissions_exist(self) -> None:
+        codes = {p["code"] for p in PERMISSIONS}
+        assert "hhh:algorithm:dijkstra" in codes
+        assert "hhh:algorithm:astar" in codes
+        assert "hhh:algorithm:aco" in codes
+        assert "hhh:algorithm:ford_fulkerson" in codes
+
+    def test_feature_permissions_exist(self) -> None:
+        codes = {p["code"] for p in PERMISSIONS}
+        expected = [
+            "hhh:feature:gpu",
+            "hhh:feature:step_by_step",
+            "hhh:feature:multi_system",
+            "hhh:feature:export",
+            "hhh:feature:risk_analysis",
+            "hhh:feature:route_comparison",
+            "hhh:feature:history_unlimited",
+            "hhh:feature:simultaneous_plans",
+            "hhh:feature:cargo_limit",
+        ]
+        for code in expected:
+            assert code in codes
+
+    def test_no_deprecated_permission_codes(self) -> None:
+        codes = {p["code"] for p in PERMISSIONS}
+        deprecated = [
+            "hhh:locations:read",
+            "hhh:locations:write",
+            "hhh:locations:delete",
+            "auth:users:read",
+            "auth:users:write",
+            "auth:users:admin",
+        ]
+        for code in deprecated:
+            assert code not in codes
+
+    def test_hexadian_members_group_exists(self) -> None:
+        names = {g["name"] for g in GROUPS}
+        assert "Hexadian Members" in names
+        assert "Content Managers" not in names
+
+    def test_hexadian_members_has_premium_roles(self) -> None:
+        hm = next(g for g in GROUPS if g["name"] == "Hexadian Members")
+        assert "HHH Algorithm Premium" in hm["role_names"]
+        assert "HHH Feature Premium" in hm["role_names"]
+
+    def test_admins_has_premium_roles(self) -> None:
+        admins = next(g for g in GROUPS if g["name"] == "Admins")
+        assert "HHH Algorithm Premium" in admins["role_names"]
+        assert "HHH Feature Premium" in admins["role_names"]
+
+    def test_users_has_basic_algorithm(self) -> None:
+        users = next(g for g in GROUPS if g["name"] == "Users")
+        assert "HHH Algorithm User" in users["role_names"]
 
 
 class TestSeedCleanup:
