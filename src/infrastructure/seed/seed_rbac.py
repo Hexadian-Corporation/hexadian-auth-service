@@ -35,6 +35,16 @@ PERMISSIONS: list[dict[str, str]] = [
     {"code": "hhh:algorithm:astar", "description": "Use A* heuristic pathfinding algorithm"},
     {"code": "hhh:algorithm:aco", "description": "Use Ant Colony Optimization algorithm"},
     {"code": "hhh:algorithm:ford_fulkerson", "description": "Use Ford-Fulkerson max flow algorithm"},
+    # --- Feature permissions (premium) ---
+    {"code": "hhh:feature:gpu", "description": "GPU processing via WebGPU compute shaders"},
+    {"code": "hhh:feature:step_by_step", "description": "Step-by-step route navigation screen"},
+    {"code": "hhh:feature:multi_system", "description": "Multi-system routes across gateways"},
+    {"code": "hhh:feature:export", "description": "Export route to image/PDF"},
+    {"code": "hhh:feature:risk_analysis", "description": "Risk/benefit analysis (reward/collateral ratio)"},
+    {"code": "hhh:feature:route_comparison", "description": "Compare distance vs time routes side by side"},
+    {"code": "hhh:feature:history_unlimited", "description": "Unlimited flight plan history"},
+    {"code": "hhh:feature:simultaneous_plans", "description": "Multiple simultaneous flight plans"},
+    {"code": "hhh:feature:cargo_limit", "description": "Custom cargo limit below ship capacity"},
 ]
 
 ROLES: list[dict[str, object]] = [
@@ -132,6 +142,22 @@ ROLES: list[dict[str, object]] = [
             "hhh:algorithm:astar",
             "hhh:algorithm:aco",
             "hhh:algorithm:ford_fulkerson",
+        ],
+    },
+    # --- Feature roles (premium) ---
+    {
+        "name": "HHH Feature Premium",
+        "description": "All premium frontend features for Hexadian Members+",
+        "permission_codes": [
+            "hhh:feature:gpu",
+            "hhh:feature:step_by_step",
+            "hhh:feature:multi_system",
+            "hhh:feature:export",
+            "hhh:feature:risk_analysis",
+            "hhh:feature:route_comparison",
+            "hhh:feature:history_unlimited",
+            "hhh:feature:simultaneous_plans",
+            "hhh:feature:cargo_limit",
         ],
     },
 ]

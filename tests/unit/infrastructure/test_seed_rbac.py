@@ -55,7 +55,7 @@ class TestSeedPermissions:
 
         seed(settings)
 
-        assert mock_collections["permissions"].insert_one.call_count == 28
+        assert mock_collections["permissions"].insert_one.call_count == 37
 
     @patch("src.infrastructure.seed.seed_rbac.MongoClient")
     def test_permission_codes_match_spec(
@@ -121,7 +121,7 @@ class TestSeedRoles:
 
         seed(settings)
 
-        assert mock_collections["roles"].insert_one.call_count == 10
+        assert mock_collections["roles"].insert_one.call_count == 11
 
     @patch("src.infrastructure.seed.seed_rbac.MongoClient")
     def test_role_names_match_spec(
@@ -155,6 +155,7 @@ class TestSeedRoles:
             "HHH Viewer",
             "HHH Algorithm User",
             "HHH Algorithm Premium",
+            "HHH Feature Premium",
         ]
 
     @patch("src.infrastructure.seed.seed_rbac.MongoClient")
@@ -412,10 +413,10 @@ class TestSeedDefaults:
 
 class TestSeedDataDefinitions:
     def test_permissions_count(self) -> None:
-        assert len(PERMISSIONS) == 28
+        assert len(PERMISSIONS) == 37
 
     def test_roles_count(self) -> None:
-        assert len(ROLES) == 10
+        assert len(ROLES) == 11
 
     def test_groups_count(self) -> None:
         assert len(GROUPS) == 3
