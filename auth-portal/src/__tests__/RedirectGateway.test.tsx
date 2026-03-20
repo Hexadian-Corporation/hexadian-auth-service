@@ -47,10 +47,13 @@ describe("RedirectGateway", () => {
 
   it("redirects to /verify when authenticated but not verified", () => {
     mockParseAccessToken.mockReturnValue({
-      sub: "user-1",
+      userId: "user-1",
       username: "testuser",
-      rsi_handle: "test-handle",
-      rsi_verified: false,
+      groups: [],
+      roles: [],
+      permissions: [],
+      rsiHandle: "test-handle",
+      rsiVerified: false,
     });
     renderGateway();
 
@@ -60,10 +63,13 @@ describe("RedirectGateway", () => {
 
   it("fetches portal settings and redirects when authenticated and verified", async () => {
     mockParseAccessToken.mockReturnValue({
-      sub: "user-1",
+      userId: "user-1",
       username: "testuser",
-      rsi_handle: "test-handle",
-      rsi_verified: true,
+      groups: [],
+      roles: [],
+      permissions: [],
+      rsiHandle: "test-handle",
+      rsiVerified: true,
     });
     mockGetPortalRedirect.mockResolvedValueOnce({
       default_redirect_url: "https://portal.hexadian.com",

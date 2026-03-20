@@ -45,10 +45,13 @@ function renderPage() {
 
 function setupAuthenticatedUser() {
   mockParseAccessToken.mockReturnValue({
-    sub: "user-1",
+    userId: "user-1",
     username: "testuser",
-    rsi_handle: "test-handle",
-    rsi_verified: false,
+    groups: [],
+    roles: [],
+    permissions: [],
+    rsiHandle: "test-handle",
+    rsiVerified: false,
   });
   mockGetAccessToken.mockReturnValue("mock-access-token");
 }

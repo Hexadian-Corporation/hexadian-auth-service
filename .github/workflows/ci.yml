@@ -7,6 +7,7 @@ on:
 permissions:
   actions: read
   contents: read
+  packages: read
   pull-requests: write
 
 jobs:
@@ -47,9 +48,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          registry-url: https://npm.pkg.github.com
           cache: npm
           cache-dependency-path: auth-portal/package-lock.json
       - run: npm ci --legacy-peer-deps
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Lint
         run: npm run lint
       - name: Type check
@@ -68,9 +72,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          registry-url: https://npm.pkg.github.com
           cache: npm
           cache-dependency-path: auth-portal/package-lock.json
       - run: npm ci --legacy-peer-deps
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Install coverage reporter
         run: npm install --save-dev @vitest/coverage-v8@^4.1.0
       - name: Run tests with coverage

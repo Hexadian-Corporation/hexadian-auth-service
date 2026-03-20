@@ -1,3 +1,7 @@
+import type { TokenResponse } from "@hexadian-corporation/auth-core";
+
+export type { TokenResponse };
+
 export interface RegisterRequest {
   username: string;
   password: string;
@@ -27,13 +31,6 @@ export interface AuthorizeResponse {
 export interface TokenExchangeRequest {
   code: string;
   redirect_uri: string;
-}
-
-export interface TokenResponse {
-  access_token: string;
-  refresh_token: string;
-  token_type: string;
-  expires_in: number;
 }
 
 export interface User {

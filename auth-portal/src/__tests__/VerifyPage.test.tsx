@@ -52,17 +52,20 @@ function renderPage(initialEntries?: string[]) {
 }
 
 function setupAuthenticatedUser(overrides?: {
-  rsi_handle?: string | null;
-  rsi_verified?: boolean;
+  rsiHandle?: string | null;
+  rsiVerified?: boolean;
 }) {
   mockParseAccessToken.mockReturnValue({
-    sub: "user-1",
+    userId: "user-1",
     username: "testuser",
-    rsi_handle:
-      overrides && "rsi_handle" in overrides
-        ? (overrides.rsi_handle as string | null)
+    groups: [],
+    roles: [],
+    permissions: [],
+    rsiHandle:
+      overrides && "rsiHandle" in overrides
+        ? (overrides.rsiHandle as string | null)
         : "test-handle",
-    rsi_verified: overrides?.rsi_verified ?? false,
+    rsiVerified: overrides?.rsiVerified ?? false,
   });
   mockGetAccessToken.mockReturnValue("mock-access-token");
 }
@@ -107,7 +110,7 @@ describe("VerifyPage", () => {
     });
 
     it("shows RSI handle as link", () => {
-      setupAuthenticatedUser({ rsi_handle: "my-handle" });
+      setupAuthenticatedUser({ rsiHandle: "my-handle" });
       renderPage();
 
       const link = screen.getByRole("link", { name: "my-handle" });
@@ -118,29 +121,29 @@ describe("VerifyPage", () => {
       expect(link).toHaveAttribute("target", "_blank");
     });
 
-    it("shows 'Not set' when rsi_handle is null", () => {
-      setupAuthenticatedUser({ rsi_handle: null });
+    it("shows 'Not set' when rsiHandle is null", () => {
+      setupAuthenticatedUser({ rsiHandle: null });
       renderPage();
 
       expect(screen.getByText("Not set")).toBeInTheDocument();
     });
 
     it("shows 'Not Verified' badge when not verified", () => {
-      setupAuthenticatedUser({ rsi_verified: false });
+      setupAuthenticatedUser({ rsiVerified: false });
       renderPage();
 
       expect(screen.getByText("Not Verified")).toBeInTheDocument();
     });
 
     it("shows 'Verified' badge when verified", () => {
-      setupAuthenticatedUser({ rsi_verified: true });
+      setupAuthenticatedUser({ rsiVerified: true });
       renderPage();
 
       expect(screen.getByText("Verified")).toBeInTheDocument();
     });
 
     it("shows verified message when already verified", () => {
-      setupAuthenticatedUser({ rsi_verified: true });
+      setupAuthenticatedUser({ rsiVerified: true });
       renderPage();
 
       expect(
@@ -152,7 +155,7 @@ describe("VerifyPage", () => {
     });
 
     it("does not show Start Verification button when already verified", () => {
-      setupAuthenticatedUser({ rsi_verified: true });
+      setupAuthenticatedUser({ rsiVerified: true });
       renderPage();
 
       expect(
@@ -161,7 +164,7 @@ describe("VerifyPage", () => {
     });
 
     it("shows Continue button when already verified", () => {
-      setupAuthenticatedUser({ rsi_verified: true });
+      setupAuthenticatedUser({ rsiVerified: true });
       renderPage();
 
       expect(
@@ -170,7 +173,7 @@ describe("VerifyPage", () => {
     });
 
     it("Continue button navigates to /login preserving search params when redirect_uri present", async () => {
-      setupAuthenticatedUser({ rsi_verified: true });
+      setupAuthenticatedUser({ rsiVerified: true });
       const user = userEvent.setup();
       renderPage(["/?redirect_uri=http%3A%2F%2Flocalhost%3A3000&state=abc"]);
 
@@ -184,7 +187,7 @@ describe("VerifyPage", () => {
     });
 
     it("Continue button redirects to portal URL when no redirect_uri", async () => {
-      setupAuthenticatedUser({ rsi_verified: true });
+      setupAuthenticatedUser({ rsiVerified: true });
       mockGetPortalRedirect.mockResolvedValueOnce({
         default_redirect_url: "https://portal.hexadian.com",
       });
@@ -200,8 +203,8 @@ describe("VerifyPage", () => {
       expect(mockNavigate).not.toHaveBeenCalled();
     });
 
-    it("does not show Start Verification when rsi_handle is null", () => {
-      setupAuthenticatedUser({ rsi_handle: null, rsi_verified: false });
+    it("does not show Start Verification when rsiHandle is null", () => {
+      setupAuthenticatedUser({ rsiHandle: null, rsiVerified: false });
       renderPage();
 
       expect(
@@ -465,10 +468,13 @@ describe("VerifyPage", () => {
         expires_in: 3600,
       });
       mockParseAccessToken.mockReturnValue({
-        sub: "user-1",
+        userId: "user-1",
         username: "testuser",
-        rsi_handle: "test-handle",
-        rsi_verified: true,
+        groups: [],
+        roles: [],
+        permissions: [],
+        rsiHandle: "test-handle",
+        rsiVerified: true,
       });
       mockGetPortalRedirect.mockResolvedValueOnce({
         default_redirect_url: "https://portal.hexadian.com",
@@ -527,10 +533,13 @@ describe("VerifyPage", () => {
         expires_in: 3600,
       });
       mockParseAccessToken.mockReturnValue({
-        sub: "user-1",
+        userId: "user-1",
         username: "testuser",
-        rsi_handle: "test-handle",
-        rsi_verified: true,
+        groups: [],
+        roles: [],
+        permissions: [],
+        rsiHandle: "test-handle",
+        rsiVerified: true,
       });
       localStorage.setItem("refresh_token", "test-refresh");
 

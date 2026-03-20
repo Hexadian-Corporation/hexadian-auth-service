@@ -74,10 +74,13 @@ describe("VerifyPage", () => {
 
   it("renders the RSI verification heading", async () => {
     mockParseAccessToken.mockReturnValue({
-      sub: "user-1",
+      userId: "user-1",
       username: "testuser",
-      rsi_handle: "test-handle",
-      rsi_verified: false,
+      groups: [],
+      roles: [],
+      permissions: [],
+      rsiHandle: "test-handle",
+      rsiVerified: false,
     });
 
     const { default: VerifyPage } = await import("@/pages/VerifyPage");
@@ -93,10 +96,13 @@ describe("VerifyPage", () => {
 describe("ChangePasswordPage", () => {
   it("renders the change password heading", async () => {
     mockParseAccessToken.mockReturnValue({
-      sub: "user-1",
+      userId: "user-1",
       username: "testuser",
-      rsi_handle: "test-handle",
-      rsi_verified: false,
+      groups: [],
+      roles: [],
+      permissions: [],
+      rsiHandle: "test-handle",
+      rsiVerified: false,
     });
 
     const { default: ChangePasswordPage } = await import(

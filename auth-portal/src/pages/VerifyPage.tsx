@@ -7,7 +7,7 @@ import {
   getAccessToken,
   parseAccessToken,
   storeTokens,
-  type AccessTokenPayload,
+  type UserContext,
 } from "@/lib/auth";
 import { refreshToken as refreshTokenApi } from "@/api/auth";
 
@@ -62,10 +62,10 @@ export default function VerifyPage() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [verified, setVerified] = useState(
-    () => tokenPayload?.rsi_verified ?? false,
+    () => tokenPayload?.rsiVerified ?? false,
   );
 
-  const rsiHandle = tokenPayload?.rsi_handle ?? null;
+  const rsiHandle = tokenPayload?.rsiHandle ?? null;
 
   const handleCopy = useCallback(() => {
     if (!verificationCode) return;
@@ -85,7 +85,7 @@ export default function VerifyPage() {
     return null;
   }
 
-  async function refreshUserState(): Promise<AccessTokenPayload | null> {
+  async function refreshUserState(): Promise<UserContext | null> {
     const refreshTokenValue = localStorage.getItem("refresh_token");
     if (!refreshTokenValue) return null;
     try {
@@ -103,7 +103,7 @@ export default function VerifyPage() {
     setSubmitting(true);
     try {
       const token = getAccessToken()!;
-      const res = await startVerification(tokenPayload!.sub, { rsi_handle: rsiHandle }, token);
+      const res = await startVerification(tokenPayload!.userId, { rsi_handle: rsiHandle }, token);
       if (res.verified) {
         setVerified(true);
       } else if (res.verification_code) {
@@ -124,7 +124,7 @@ export default function VerifyPage() {
     setSubmitting(true);
     try {
       const token = getAccessToken()!;
-      const res = await confirmVerification(tokenPayload!.sub, token);
+      const res = await confirmVerification(tokenPayload!.userId, token);
       if (res.verified) {
         setVerified(true);
         setVerificationCode(null);

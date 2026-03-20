@@ -7,7 +7,7 @@ export default function RedirectGateway() {
   const tokenPayload = parseAccessToken();
 
   useEffect(() => {
-    if (!tokenPayload?.rsi_verified) return;
+    if (!tokenPayload?.rsiVerified) return;
 
     getPortalRedirect().then(({ default_redirect_url }) => {
       window.location.href = default_redirect_url;
@@ -18,7 +18,7 @@ export default function RedirectGateway() {
     return <Navigate to="/login" replace />;
   }
 
-  if (!tokenPayload.rsi_verified) {
+  if (!tokenPayload.rsiVerified) {
     return <Navigate to="/verify" replace />;
   }
 
