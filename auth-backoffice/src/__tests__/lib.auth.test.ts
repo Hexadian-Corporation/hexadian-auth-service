@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { UserContext, TokenResponse } from "@hexadian-corporation/auth-core";
 
-const mockStorage = {
+const mockStorage = vi.hoisted(() => ({
   getAccessToken: vi.fn(),
   getRefreshToken: vi.fn(),
   storeTokens: vi.fn(),
   clearTokens: vi.fn(),
-};
+}));
 
 vi.mock("@hexadian-corporation/auth-core", () => ({
   createLocalStorage: vi.fn(() => mockStorage),
