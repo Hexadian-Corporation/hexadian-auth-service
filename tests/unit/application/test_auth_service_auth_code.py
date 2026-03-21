@@ -93,7 +93,7 @@ def _make_user(**overrides: object) -> User:
 
 
 class TestAuthorize:
-    def test_authorize_returns_auth_code(
+    async def test_authorize_returns_auth_code(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -103,7 +103,7 @@ class TestAuthorize:
         mock_repository.find_by_username.return_value = user
         mock_auth_code_repository.save.side_effect = lambda ac: ac
 
-        result = service.authorize("testuser", "secret", "http://localhost:3000/callback", "state123")
+        result = await service.authorize("testuser", "secret", "http://localhost:3000/callback", "state123")
 
         assert result.code != ""
         assert result.user_id == "user-1"
@@ -111,7 +111,7 @@ class TestAuthorize:
         assert result.state == "state123"
         assert result.used is False
 
-    def test_authorize_generates_cryptographic_code(
+    async def test_authorize_generates_cryptographic_code(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -121,12 +121,12 @@ class TestAuthorize:
         mock_repository.find_by_username.return_value = user
         mock_auth_code_repository.save.side_effect = lambda ac: ac
 
-        result = service.authorize("testuser", "secret", "http://localhost:3000/callback", "")
+        result = await service.authorize("testuser", "secret", "http://localhost:3000/callback", "")
 
         # secrets.token_urlsafe(32) produces ~43 characters
         assert len(result.code) >= 40
 
-    def test_authorize_saves_auth_code(
+    async def test_authorize_saves_auth_code(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -136,11 +136,11 @@ class TestAuthorize:
         mock_repository.find_by_username.return_value = user
         mock_auth_code_repository.save.side_effect = lambda ac: ac
 
-        service.authorize("testuser", "secret", "http://localhost:3000/callback", "state123")
+        await service.authorize("testuser", "secret", "http://localhost:3000/callback", "state123")
 
         mock_auth_code_repository.save.assert_called_once()
 
-    def test_authorize_invalid_credentials_raises(
+    async def test_authorize_invalid_credentials_raises(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -148,9 +148,9 @@ class TestAuthorize:
         mock_repository.find_by_username.return_value = None
 
         with pytest.raises(InvalidCredentialsError):
-            service.authorize("testuser", "wrong", "http://localhost:3000/callback", "")
+            await service.authorize("testuser", "wrong", "http://localhost:3000/callback", "")
 
-    def test_authorize_wrong_password_raises(
+    async def test_authorize_wrong_password_raises(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -159,9 +159,9 @@ class TestAuthorize:
         mock_repository.find_by_username.return_value = user
 
         with pytest.raises(InvalidCredentialsError):
-            service.authorize("testuser", "wrong", "http://localhost:3000/callback", "")
+            await service.authorize("testuser", "wrong", "http://localhost:3000/callback", "")
 
-    def test_authorize_invalid_redirect_uri_raises(
+    async def test_authorize_invalid_redirect_uri_raises(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -170,9 +170,9 @@ class TestAuthorize:
         mock_repository.find_by_username.return_value = user
 
         with pytest.raises(InvalidRedirectUriError):
-            service.authorize("testuser", "secret", "http://evil.com/callback", "")
+            await service.authorize("testuser", "secret", "http://evil.com/callback", "")
 
-    def test_authorize_redirect_uri_with_path_allowed(
+    async def test_authorize_redirect_uri_with_path_allowed(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -182,11 +182,11 @@ class TestAuthorize:
         mock_repository.find_by_username.return_value = user
         mock_auth_code_repository.save.side_effect = lambda ac: ac
 
-        result = service.authorize("testuser", "secret", "http://localhost:3000/some/path", "")
+        result = await service.authorize("testuser", "secret", "http://localhost:3000/some/path", "")
 
         assert result.redirect_uri == "http://localhost:3000/some/path"
 
-    def test_authorize_empty_state_allowed(
+    async def test_authorize_empty_state_allowed(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -196,13 +196,13 @@ class TestAuthorize:
         mock_repository.find_by_username.return_value = user
         mock_auth_code_repository.save.side_effect = lambda ac: ac
 
-        result = service.authorize("testuser", "secret", "http://localhost:3000/callback", "")
+        result = await service.authorize("testuser", "secret", "http://localhost:3000/callback", "")
 
         assert result.state == ""
 
 
 class TestExchangeCode:
-    def test_exchange_code_returns_token_response(
+    async def test_exchange_code_returns_token_response(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -223,14 +223,14 @@ class TestExchangeCode:
         mock_repository.find_by_id.return_value = user
         mock_refresh_token_repository.save.side_effect = lambda t: t
 
-        result = service.exchange_code("valid-code", "http://localhost:3000/callback")
+        result = await service.exchange_code("valid-code", "http://localhost:3000/callback")
 
         assert result.token_type == "bearer"
         assert result.expires_in == 900
         assert isinstance(result.access_token, str)
         assert isinstance(result.refresh_token, str)
 
-    def test_exchange_code_marks_code_as_used(
+    async def test_exchange_code_marks_code_as_used(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -250,11 +250,11 @@ class TestExchangeCode:
         mock_repository.find_by_id.return_value = user
         mock_refresh_token_repository.save.side_effect = lambda t: t
 
-        service.exchange_code("valid-code", "http://localhost:3000/callback")
+        await service.exchange_code("valid-code", "http://localhost:3000/callback")
 
         mock_auth_code_repository.mark_used.assert_called_once_with("valid-code")
 
-    def test_exchange_code_not_found_raises(
+    async def test_exchange_code_not_found_raises(
         self,
         service: AuthServiceImpl,
         mock_auth_code_repository: MagicMock,
@@ -262,9 +262,9 @@ class TestExchangeCode:
         mock_auth_code_repository.find_by_code.return_value = None
 
         with pytest.raises(InvalidAuthCodeError):
-            service.exchange_code("nonexistent", "http://localhost:3000/callback")
+            await service.exchange_code("nonexistent", "http://localhost:3000/callback")
 
-    def test_exchange_code_already_used_raises(
+    async def test_exchange_code_already_used_raises(
         self,
         service: AuthServiceImpl,
         mock_auth_code_repository: MagicMock,
@@ -280,9 +280,9 @@ class TestExchangeCode:
         mock_auth_code_repository.find_by_code.return_value = auth_code
 
         with pytest.raises(InvalidAuthCodeError, match="already been used"):
-            service.exchange_code("used-code", "http://localhost:3000/callback")
+            await service.exchange_code("used-code", "http://localhost:3000/callback")
 
-    def test_exchange_code_expired_raises(
+    async def test_exchange_code_expired_raises(
         self,
         service: AuthServiceImpl,
         mock_auth_code_repository: MagicMock,
@@ -298,9 +298,9 @@ class TestExchangeCode:
         mock_auth_code_repository.find_by_code.return_value = auth_code
 
         with pytest.raises(InvalidAuthCodeError, match="expired"):
-            service.exchange_code("expired-code", "http://localhost:3000/callback")
+            await service.exchange_code("expired-code", "http://localhost:3000/callback")
 
-    def test_exchange_code_redirect_uri_mismatch_raises(
+    async def test_exchange_code_redirect_uri_mismatch_raises(
         self,
         service: AuthServiceImpl,
         mock_auth_code_repository: MagicMock,
@@ -316,9 +316,9 @@ class TestExchangeCode:
         mock_auth_code_repository.find_by_code.return_value = auth_code
 
         with pytest.raises(InvalidAuthCodeError, match="mismatch"):
-            service.exchange_code("valid-code", "http://localhost:3001/callback")
+            await service.exchange_code("valid-code", "http://localhost:3001/callback")
 
-    def test_exchange_code_user_not_found_raises(
+    async def test_exchange_code_user_not_found_raises(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -336,4 +336,4 @@ class TestExchangeCode:
         mock_repository.find_by_id.return_value = None
 
         with pytest.raises(UserNotFoundError):
-            service.exchange_code("valid-code", "http://localhost:3000/callback")
+            await service.exchange_code("valid-code", "http://localhost:3000/callback")

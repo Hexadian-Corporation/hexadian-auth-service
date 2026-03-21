@@ -18,17 +18,21 @@ def service(mock_repository: MagicMock) -> PortalSettingsServiceImpl:
 
 
 class TestGetSettings:
-    def test_returns_existing_settings(self, service: PortalSettingsServiceImpl, mock_repository: MagicMock) -> None:
+    async def test_returns_existing_settings(
+        self,
+        service: PortalSettingsServiceImpl,
+        mock_repository: MagicMock,
+    ) -> None:
         existing = PortalSettings(id="s-1", default_redirect_url="https://example.com")
         mock_repository.get.return_value = existing
 
-        result = service.get_settings()
+        result = await service.get_settings()
 
         assert result.id == "s-1"
         assert result.default_redirect_url == "https://example.com"
         mock_repository.save.assert_not_called()
 
-    def test_creates_default_when_none_exists(
+    async def test_creates_default_when_none_exists(
         self, service: PortalSettingsServiceImpl, mock_repository: MagicMock
     ) -> None:
         mock_repository.get.return_value = None
@@ -36,7 +40,7 @@ class TestGetSettings:
             id="s-new", default_redirect_url=s.default_redirect_url
         )
 
-        result = service.get_settings()
+        result = await service.get_settings()
 
         assert result.id == "s-new"
         assert result.default_redirect_url == "https://www.hexadian.com"
@@ -44,18 +48,22 @@ class TestGetSettings:
 
 
 class TestUpdateSettings:
-    def test_updates_existing_settings(self, service: PortalSettingsServiceImpl, mock_repository: MagicMock) -> None:
+    async def test_updates_existing_settings(
+        self,
+        service: PortalSettingsServiceImpl,
+        mock_repository: MagicMock,
+    ) -> None:
         existing = PortalSettings(id="s-1", default_redirect_url="https://old.com")
         mock_repository.get.return_value = existing
         mock_repository.save.side_effect = lambda s: s
 
-        result = service.update_settings("https://new.com")
+        result = await service.update_settings("https://new.com")
 
         assert result.default_redirect_url == "https://new.com"
         assert result.id == "s-1"
         mock_repository.save.assert_called_once()
 
-    def test_creates_and_updates_when_none_exists(
+    async def test_creates_and_updates_when_none_exists(
         self, service: PortalSettingsServiceImpl, mock_repository: MagicMock
     ) -> None:
         mock_repository.get.return_value = None
@@ -63,7 +71,7 @@ class TestUpdateSettings:
             id="s-new", default_redirect_url=s.default_redirect_url
         )
 
-        result = service.update_settings("https://new.com")
+        result = await service.update_settings("https://new.com")
 
         assert result.default_redirect_url == "https://new.com"
         mock_repository.save.assert_called_once()

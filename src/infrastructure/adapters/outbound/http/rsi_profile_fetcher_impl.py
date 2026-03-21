@@ -14,13 +14,16 @@ _BIO_PATTERN = re.compile(
 class RsiProfileFetcherImpl(RsiProfileFetcher):
     _ALLOWED_HOST = "robertsspaceindustries.com"
 
-    def fetch_profile_bio(self, rsi_handle: str) -> str | None:
+    def __init__(self, http_client: httpx.AsyncClient) -> None:
+        self._client = http_client
+
+    async def fetch_profile_bio(self, rsi_handle: str) -> str | None:
         if not _RSI_HANDLE_PATTERN.match(rsi_handle):
             return None
 
         url = f"https://robertsspaceindustries.com/citizens/{rsi_handle}"
         try:
-            response = httpx.get(url, timeout=10.0, follow_redirects=True)
+            response = await self._client.get(url, timeout=10.0, follow_redirects=True)
         except httpx.HTTPError:
             return None
 

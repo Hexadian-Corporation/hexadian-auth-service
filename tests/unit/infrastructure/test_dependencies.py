@@ -1,136 +1,122 @@
 from unittest.mock import MagicMock, patch
 
+import httpx
 import pytest
+from opyoid import Injector
 
+from src.application.ports.inbound.auth_service import AuthService
+from src.application.ports.inbound.portal_settings_service import PortalSettingsService
+from src.application.ports.inbound.rbac_service import RbacService
+from src.application.ports.outbound.group_repository import GroupRepository
+from src.application.ports.outbound.permission_repository import PermissionRepository
+from src.application.ports.outbound.role_repository import RoleRepository
+from src.application.ports.outbound.user_repository import UserRepository
 from src.infrastructure.config.dependencies import AppModule
 from src.infrastructure.config.settings import Settings
 
 
 @pytest.fixture()
-def mock_mongo_collections() -> tuple[MagicMock, dict[str, MagicMock]]:
-    collections: dict[str, MagicMock] = {}
-    mock_db = MagicMock()
-    mock_db.__getitem__ = MagicMock(side_effect=lambda name: collections.setdefault(name, MagicMock()))
-    mock_client_instance = MagicMock()
-    mock_client_instance.__getitem__ = MagicMock(return_value=mock_db)
-    mock_mongo_client = MagicMock(return_value=mock_client_instance)
-    return mock_mongo_client, collections
+def settings() -> Settings:
+    return Settings(jwt_secret="test-secret")
 
 
-class TestAppModuleIndexes:
-    @patch("src.infrastructure.config.dependencies.MongoClient")
-    def test_configure_creates_unique_username_index(
-        self, mock_mongo_client: MagicMock, mock_mongo_collections: tuple[MagicMock, dict[str, MagicMock]]
+@pytest.fixture()
+def http_client() -> httpx.AsyncClient:
+    return MagicMock(spec=httpx.AsyncClient)
+
+
+class TestAppModuleBindings:
+    @patch("src.infrastructure.config.dependencies.AsyncIOMotorClient")
+    def test_configure_binds_auth_service(
+        self, mock_motor_cls: MagicMock, settings: Settings, http_client: MagicMock
     ) -> None:
-        mock_client, collections = mock_mongo_collections
-        mock_mongo_client.return_value = mock_client.return_value
+        module = AppModule(settings, http_client)
+        injector = Injector([module])
 
-        settings = Settings(jwt_secret="test-secret")
-        module = AppModule(settings)
+        service = injector.inject(AuthService)
+
+        assert service is not None
+
+    @patch("src.infrastructure.config.dependencies.AsyncIOMotorClient")
+    def test_configure_binds_rbac_service(
+        self, mock_motor_cls: MagicMock, settings: Settings, http_client: MagicMock
+    ) -> None:
+        module = AppModule(settings, http_client)
+        injector = Injector([module])
+
+        service = injector.inject(RbacService)
+
+        assert service is not None
+
+    @patch("src.infrastructure.config.dependencies.AsyncIOMotorClient")
+    def test_configure_binds_portal_settings_service(
+        self, mock_motor_cls: MagicMock, settings: Settings, http_client: MagicMock
+    ) -> None:
+        module = AppModule(settings, http_client)
+        injector = Injector([module])
+
+        service = injector.inject(PortalSettingsService)
+
+        assert service is not None
+
+    @patch("src.infrastructure.config.dependencies.AsyncIOMotorClient")
+    def test_configure_binds_user_repository(
+        self, mock_motor_cls: MagicMock, settings: Settings, http_client: MagicMock
+    ) -> None:
+        module = AppModule(settings, http_client)
+        injector = Injector([module])
+
+        repo = injector.inject(UserRepository)
+
+        assert repo is not None
+
+    @patch("src.infrastructure.config.dependencies.AsyncIOMotorClient")
+    def test_configure_binds_group_repository(
+        self, mock_motor_cls: MagicMock, settings: Settings, http_client: MagicMock
+    ) -> None:
+        module = AppModule(settings, http_client)
+        injector = Injector([module])
+
+        repo = injector.inject(GroupRepository)
+
+        assert repo is not None
+
+    @patch("src.infrastructure.config.dependencies.AsyncIOMotorClient")
+    def test_configure_binds_permission_repository(
+        self, mock_motor_cls: MagicMock, settings: Settings, http_client: MagicMock
+    ) -> None:
+        module = AppModule(settings, http_client)
+        injector = Injector([module])
+
+        repo = injector.inject(PermissionRepository)
+
+        assert repo is not None
+
+    @patch("src.infrastructure.config.dependencies.AsyncIOMotorClient")
+    def test_configure_binds_role_repository(
+        self, mock_motor_cls: MagicMock, settings: Settings, http_client: MagicMock
+    ) -> None:
+        module = AppModule(settings, http_client)
+        injector = Injector([module])
+
+        repo = injector.inject(RoleRepository)
+
+        assert repo is not None
+
+    @patch("src.infrastructure.config.dependencies.AsyncIOMotorClient")
+    def test_motor_client_is_created_with_mongo_uri(
+        self, mock_motor_cls: MagicMock, settings: Settings, http_client: MagicMock
+    ) -> None:
+        module = AppModule(settings, http_client)
         module.configure()
 
-        collections["users"].create_index.assert_any_call("username", unique=True)
+        mock_motor_cls.assert_called_once_with(settings.mongo_uri)
 
-    @patch("src.infrastructure.config.dependencies.MongoClient")
-    def test_configure_creates_unique_rsi_handle_index(
-        self, mock_mongo_client: MagicMock, mock_mongo_collections: tuple[MagicMock, dict[str, MagicMock]]
+    @patch("src.infrastructure.config.dependencies.AsyncIOMotorClient")
+    def test_motor_client_stored_on_module(
+        self, mock_motor_cls: MagicMock, settings: Settings, http_client: MagicMock
     ) -> None:
-        mock_client, collections = mock_mongo_collections
-        mock_mongo_client.return_value = mock_client.return_value
-
-        settings = Settings(jwt_secret="test-secret")
-        module = AppModule(settings)
+        module = AppModule(settings, http_client)
         module.configure()
 
-        collections["users"].create_index.assert_any_call("rsi_handle", unique=True)
-
-    @patch("src.infrastructure.config.dependencies.MongoClient")
-    def test_configure_creates_unique_token_index(
-        self, mock_mongo_client: MagicMock, mock_mongo_collections: tuple[MagicMock, dict[str, MagicMock]]
-    ) -> None:
-        mock_client, collections = mock_mongo_collections
-        mock_mongo_client.return_value = mock_client.return_value
-
-        settings = Settings(jwt_secret="test-secret")
-        module = AppModule(settings)
-        module.configure()
-
-        collections["refresh_tokens"].create_index.assert_any_call("token", unique=True)
-
-    @patch("src.infrastructure.config.dependencies.MongoClient")
-    def test_configure_creates_ttl_index_on_expires_at(
-        self, mock_mongo_client: MagicMock, mock_mongo_collections: tuple[MagicMock, dict[str, MagicMock]]
-    ) -> None:
-        mock_client, collections = mock_mongo_collections
-        mock_mongo_client.return_value = mock_client.return_value
-
-        settings = Settings(jwt_secret="test-secret")
-        module = AppModule(settings)
-        module.configure()
-
-        collections["refresh_tokens"].create_index.assert_any_call("expires_at", expireAfterSeconds=0)
-
-    @patch("src.infrastructure.config.dependencies.MongoClient")
-    def test_configure_creates_unique_auth_code_index(
-        self, mock_mongo_client: MagicMock, mock_mongo_collections: tuple[MagicMock, dict[str, MagicMock]]
-    ) -> None:
-        mock_client, collections = mock_mongo_collections
-        mock_mongo_client.return_value = mock_client.return_value
-
-        settings = Settings(jwt_secret="test-secret")
-        module = AppModule(settings)
-        module.configure()
-
-        collections["auth_codes"].create_index.assert_any_call("code", unique=True)
-
-    @patch("src.infrastructure.config.dependencies.MongoClient")
-    def test_configure_creates_ttl_index_on_auth_codes(
-        self, mock_mongo_client: MagicMock, mock_mongo_collections: tuple[MagicMock, dict[str, MagicMock]]
-    ) -> None:
-        mock_client, collections = mock_mongo_collections
-        mock_mongo_client.return_value = mock_client.return_value
-
-        settings = Settings(jwt_secret="test-secret")
-        module = AppModule(settings)
-        module.configure()
-
-        collections["auth_codes"].create_index.assert_any_call("expires_at", expireAfterSeconds=0)
-
-    @patch("src.infrastructure.config.dependencies.MongoClient")
-    def test_configure_creates_unique_permission_code_index(
-        self, mock_mongo_client: MagicMock, mock_mongo_collections: tuple[MagicMock, dict[str, MagicMock]]
-    ) -> None:
-        mock_client, collections = mock_mongo_collections
-        mock_mongo_client.return_value = mock_client.return_value
-
-        settings = Settings(jwt_secret="test-secret")
-        module = AppModule(settings)
-        module.configure()
-
-        collections["permissions"].create_index.assert_any_call("code", unique=True)
-
-    @patch("src.infrastructure.config.dependencies.MongoClient")
-    def test_configure_creates_unique_role_name_index(
-        self, mock_mongo_client: MagicMock, mock_mongo_collections: tuple[MagicMock, dict[str, MagicMock]]
-    ) -> None:
-        mock_client, collections = mock_mongo_collections
-        mock_mongo_client.return_value = mock_client.return_value
-
-        settings = Settings(jwt_secret="test-secret")
-        module = AppModule(settings)
-        module.configure()
-
-        collections["roles"].create_index.assert_any_call("name", unique=True)
-
-    @patch("src.infrastructure.config.dependencies.MongoClient")
-    def test_configure_creates_unique_group_name_index(
-        self, mock_mongo_client: MagicMock, mock_mongo_collections: tuple[MagicMock, dict[str, MagicMock]]
-    ) -> None:
-        mock_client, collections = mock_mongo_collections
-        mock_mongo_client.return_value = mock_client.return_value
-
-        settings = Settings(jwt_secret="test-secret")
-        module = AppModule(settings)
-        module.configure()
-
-        collections["groups"].create_index.assert_any_call("name", unique=True)
+        assert module.motor_client is mock_motor_cls.return_value
