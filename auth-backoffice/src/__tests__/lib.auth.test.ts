@@ -62,7 +62,9 @@ beforeEach(() => {
 });
 
 describe("module initialization", () => {
-  it("initializes storage with empty prefix for backward compatibility", () => {
+  it("initializes storage with empty prefix for backward compatibility", async () => {
+    vi.resetModules();
+    await import("@/lib/auth");
     expect(createLocalStorage).toHaveBeenCalledWith("");
   });
 });
