@@ -620,9 +620,29 @@ class TestSeedDataDefinitions:
             "hhh:feature:history_unlimited",
             "hhh:feature:simultaneous_plans",
             "hhh:feature:cargo_limit",
+            "hhh:feature:distance_finder",
         ]
         for code in expected:
             assert code in codes
+
+    def test_distance_finder_permission_exists_in_permissions_list(self) -> None:
+        assert any(p["code"] == "hhh:feature:distance_finder" for p in PERMISSIONS)
+
+    def test_distance_finder_permission_has_description(self) -> None:
+        perm = next(p for p in PERMISSIONS if p["code"] == "hhh:feature:distance_finder")
+        assert isinstance(perm["description"], str)
+        assert len(perm["description"]) > 0
+
+    def test_hhh_feature_premium_role_includes_distance_finder(self) -> None:
+        role = next(r for r in ROLES if r["name"] == "HHH Feature Premium")
+        assert "hhh:feature:distance_finder" in role["permission_codes"]
+
+    def test_distance_finder_not_in_non_premium_roles(self) -> None:
+        for role in ROLES:
+            if role["name"] != "HHH Feature Premium":
+                assert "hhh:feature:distance_finder" not in role["permission_codes"], (
+                    f"Role '{role['name']}' unexpectedly contains hhh:feature:distance_finder"
+                )
 
     def test_import_permissions_exist(self) -> None:
         codes = {p["code"] for p in PERMISSIONS}

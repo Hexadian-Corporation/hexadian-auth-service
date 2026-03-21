@@ -23,6 +23,7 @@ dev = [
     "diff-cover>=9.0",
     "httpx>=0.28",
     "ruff>=0.9",
+    "testcontainers[mongodb]>=4.0.0",
 ]
 
 [project.scripts]
