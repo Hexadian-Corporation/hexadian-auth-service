@@ -1,5 +1,6 @@
 """Integration tests for the RBAC seed script against a real MongoDB instance."""
 
+import asyncio
 import threading
 
 import pytest
@@ -28,14 +29,14 @@ def _make_settings(db: Database) -> Settings:
 
 
 class TestSeedPermissionsIntegration:
-    def test_seed_creates_all_permissions_in_mongodb(self, db: Database) -> None:
+    async def test_seed_creates_all_permissions_in_mongodb(self, db: Database) -> None:
         settings = _make_settings(db)
-        seed(settings)
+        await seed(settings)
         assert db["permissions"].count_documents({}) == len(PERMISSIONS)
 
-    def test_seed_permissions_are_retrievable_by_code(self, db: Database) -> None:
+    async def test_seed_permissions_are_retrievable_by_code(self, db: Database) -> None:
         settings = _make_settings(db)
-        seed(settings)
+        await seed(settings)
         for perm in PERMISSIONS:
             doc = db["permissions"].find_one({"code": perm["code"]})
             assert doc is not None, f"Permission '{perm['code']}' not found in MongoDB"
@@ -43,24 +44,24 @@ class TestSeedPermissionsIntegration:
             assert isinstance(doc["description"], str)
             assert len(doc["description"]) > 0
 
-    def test_seed_permissions_idempotent_no_duplicates(self, db: Database) -> None:
+    async def test_seed_permissions_idempotent_no_duplicates(self, db: Database) -> None:
         settings = _make_settings(db)
-        seed(settings)
-        seed(settings)
+        await seed(settings)
+        await seed(settings)
         assert db["permissions"].count_documents({}) == len(PERMISSIONS)
 
-    def test_seed_permissions_include_distance_finder(self, db: Database) -> None:
+    async def test_seed_permissions_include_distance_finder(self, db: Database) -> None:
         settings = _make_settings(db)
-        seed(settings)
+        await seed(settings)
         doc = db["permissions"].find_one({"code": "hhh:feature:distance_finder"})
         assert doc is not None
         assert doc["code"] == "hhh:feature:distance_finder"
         assert isinstance(doc["description"], str)
         assert len(doc["description"]) > 0
 
-    def test_seed_permissions_include_all_hhh_feature_codes(self, db: Database) -> None:
+    async def test_seed_permissions_include_all_hhh_feature_codes(self, db: Database) -> None:
         settings = _make_settings(db)
-        seed(settings)
+        await seed(settings)
         expected_feature_codes = [
             "hhh:feature:gpu",
             "hhh:feature:step_by_step",
@@ -77,9 +78,9 @@ class TestSeedPermissionsIntegration:
             doc = db["permissions"].find_one({"code": code})
             assert doc is not None, f"Feature permission '{code}' not found in MongoDB"
 
-    def test_permission_documents_have_required_fields(self, db: Database) -> None:
+    async def test_permission_documents_have_required_fields(self, db: Database) -> None:
         settings = _make_settings(db)
-        seed(settings)
+        await seed(settings)
         from bson import ObjectId
 
         for doc in db["permissions"].find({}):
@@ -89,36 +90,36 @@ class TestSeedPermissionsIntegration:
 
 
 class TestSeedRolesIntegration:
-    def test_seed_creates_all_roles_in_mongodb(self, db: Database) -> None:
+    async def test_seed_creates_all_roles_in_mongodb(self, db: Database) -> None:
         settings = _make_settings(db)
-        seed(settings)
+        await seed(settings)
         assert db["roles"].count_documents({}) == len(ROLES)
 
-    def test_seed_roles_idempotent_no_duplicates(self, db: Database) -> None:
+    async def test_seed_roles_idempotent_no_duplicates(self, db: Database) -> None:
         settings = _make_settings(db)
-        seed(settings)
-        seed(settings)
+        await seed(settings)
+        await seed(settings)
         assert db["roles"].count_documents({}) == len(ROLES)
 
-    def test_hhh_feature_premium_role_has_10_permission_ids(self, db: Database) -> None:
+    async def test_hhh_feature_premium_role_has_10_permission_ids(self, db: Database) -> None:
         settings = _make_settings(db)
-        seed(settings)
+        await seed(settings)
         role = db["roles"].find_one({"name": "HHH Feature Premium"})
         assert role is not None
         assert len(role["permission_ids"]) == 10
 
-    def test_hhh_feature_premium_role_includes_distance_finder_permission_id(self, db: Database) -> None:
+    async def test_hhh_feature_premium_role_includes_distance_finder_permission_id(self, db: Database) -> None:
         settings = _make_settings(db)
-        seed(settings)
+        await seed(settings)
         distance_finder_perm = db["permissions"].find_one({"code": "hhh:feature:distance_finder"})
         assert distance_finder_perm is not None
         role = db["roles"].find_one({"name": "HHH Feature Premium"})
         assert role is not None
         assert str(distance_finder_perm["_id"]) in role["permission_ids"]
 
-    def test_role_permission_ids_reference_real_permission_documents(self, db: Database) -> None:
+    async def test_role_permission_ids_reference_real_permission_documents(self, db: Database) -> None:
         settings = _make_settings(db)
-        seed(settings)
+        await seed(settings)
         for role in db["roles"].find({}):
             for perm_id in role["permission_ids"]:
                 from bson import ObjectId
@@ -126,15 +127,15 @@ class TestSeedRolesIntegration:
                 perm = db["permissions"].find_one({"_id": ObjectId(perm_id)})
                 assert perm is not None, f"Role '{role['name']}' references non-existent permission id '{perm_id}'"
 
-    def test_each_role_name_is_unique(self, db: Database) -> None:
+    async def test_each_role_name_is_unique(self, db: Database) -> None:
         settings = _make_settings(db)
-        seed(settings)
+        await seed(settings)
         names = [r["name"] for r in db["roles"].find({})]
         assert len(names) == len(set(names))
 
-    def test_auth_admin_role_has_manage_permissions(self, db: Database) -> None:
+    async def test_auth_admin_role_has_manage_permissions(self, db: Database) -> None:
         settings = _make_settings(db)
-        seed(settings)
+        await seed(settings)
         role = db["roles"].find_one({"name": "Auth Admin"})
         assert role is not None
         # Resolve permission IDs back to codes
@@ -147,29 +148,29 @@ class TestSeedRolesIntegration:
 
 
 class TestSeedGroupsIntegration:
-    def test_seed_creates_all_groups_in_mongodb(self, db: Database) -> None:
+    async def test_seed_creates_all_groups_in_mongodb(self, db: Database) -> None:
         settings = _make_settings(db)
-        seed(settings)
+        await seed(settings)
         assert db["groups"].count_documents({}) == len(GROUPS)
 
-    def test_seed_groups_idempotent_no_duplicates(self, db: Database) -> None:
+    async def test_seed_groups_idempotent_no_duplicates(self, db: Database) -> None:
         settings = _make_settings(db)
-        seed(settings)
-        seed(settings)
+        await seed(settings)
+        await seed(settings)
         assert db["groups"].count_documents({}) == len(GROUPS)
 
-    def test_hexadian_members_group_includes_premium_role(self, db: Database) -> None:
+    async def test_hexadian_members_group_includes_premium_role(self, db: Database) -> None:
         settings = _make_settings(db)
-        seed(settings)
+        await seed(settings)
         group = db["groups"].find_one({"name": "Hexadian Members"})
         assert group is not None
         premium_role = db["roles"].find_one({"name": "HHH Feature Premium"})
         assert premium_role is not None
         assert str(premium_role["_id"]) in group["role_ids"]
 
-    def test_group_role_ids_reference_real_role_documents(self, db: Database) -> None:
+    async def test_group_role_ids_reference_real_role_documents(self, db: Database) -> None:
         settings = _make_settings(db)
-        seed(settings)
+        await seed(settings)
         from bson import ObjectId
 
         for group in db["groups"].find({}):
@@ -179,25 +180,25 @@ class TestSeedGroupsIntegration:
 
 
 class TestFullSeedPipeline:
-    def test_full_seed_pipeline_end_to_end(self, db: Database) -> None:
+    async def test_full_seed_pipeline_end_to_end(self, db: Database) -> None:
         settings = _make_settings(db)
-        seed(settings)
+        await seed(settings)
         assert db["permissions"].count_documents({}) == len(PERMISSIONS)
         assert db["roles"].count_documents({}) == len(ROLES)
         assert db["groups"].count_documents({}) == len(GROUPS)
 
-    def test_full_seed_idempotent_when_run_three_times(self, db: Database) -> None:
+    async def test_full_seed_idempotent_when_run_three_times(self, db: Database) -> None:
         settings = _make_settings(db)
         for _ in range(3):
-            seed(settings)
+            await seed(settings)
         assert db["permissions"].count_documents({}) == len(PERMISSIONS)
         assert db["roles"].count_documents({}) == len(ROLES)
         assert db["groups"].count_documents({}) == len(GROUPS)
 
-    def test_distance_finder_permission_reachable_through_group_chain(self, db: Database) -> None:
+    async def test_distance_finder_permission_reachable_through_group_chain(self, db: Database) -> None:
         """Validates the full permission resolution chain for distance_finder."""
         settings = _make_settings(db)
-        seed(settings)
+        await seed(settings)
         from bson import ObjectId
 
         # Start from "Hexadian Members" group
@@ -224,7 +225,7 @@ class TestFullSeedPipeline:
             "hhh:feature:distance_finder not reachable through Hexadian Members → HHH Feature Premium chain"
         )
 
-    def test_seed_handles_partial_state_gracefully(self, db: Database) -> None:
+    async def test_seed_handles_partial_state_gracefully(self, db: Database) -> None:
         """Seed should fill in missing permissions even when some already exist."""
         settings = _make_settings(db)
         # Insert only the first 10 permissions manually
@@ -232,7 +233,7 @@ class TestFullSeedPipeline:
             db["permissions"].insert_one({"code": perm["code"], "description": perm["description"]})
         assert db["permissions"].count_documents({}) == 10
 
-        seed(settings)
+        await seed(settings)
 
         assert db["permissions"].count_documents({}) == len(PERMISSIONS)
 
@@ -241,14 +242,14 @@ class TestFullSeedPipeline:
         "Would require MongoDB unique indexes at the collection level to prevent this reliably."
     )
     @pytest.mark.parametrize("thread_count", [2])
-    def test_concurrent_seed_does_not_produce_duplicates(self, db: Database, thread_count: int) -> None:
+    async def test_concurrent_seed_does_not_produce_duplicates(self, db: Database, thread_count: int) -> None:
         """Concurrent seed runs should not produce duplicate documents."""
         settings = _make_settings(db)
         errors: list[Exception] = []
 
         def run_seed() -> None:
             try:
-                seed(settings)
+                asyncio.run(seed(settings))
             except Exception as e:  # noqa: BLE001
                 errors.append(e)
 
