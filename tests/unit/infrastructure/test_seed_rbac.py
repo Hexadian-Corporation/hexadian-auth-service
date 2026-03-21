@@ -55,7 +55,7 @@ class TestSeedPermissions:
 
         seed(settings)
 
-        assert mock_collections["permissions"].insert_one.call_count == 45
+        assert mock_collections["permissions"].insert_one.call_count == 46
 
     @patch("src.infrastructure.seed.seed_rbac.MongoClient")
     def test_permission_codes_match_spec(
@@ -526,7 +526,7 @@ class TestSeedDefaults:
 
 class TestSeedDataDefinitions:
     def test_permissions_count(self) -> None:
-        assert len(PERMISSIONS) == 45
+        assert len(PERMISSIONS) == 46
 
     def test_roles_count(self) -> None:
         assert len(ROLES) == 12
