@@ -1,66 +1,57 @@
-interface UserContext {
-  userId: string;
-  username: string;
-  groups: string[];
-  roles: string[];
-  permissions: string[];
-  rsiHandle: string | null;
-  rsiVerified: boolean;
-}
+import {
+  createLocalStorage,
+  extractUserContext,
+  hasAnyPermission as hasAnyPermissionCore,
+  isTokenExpired,
+  type TokenStorage,
+  type UserContext,
+  type TokenResponse,
+} from "@hexadian-corporation/auth-core";
+import { refreshToken as refreshTokenApi } from "@/api/auth";
 
-const ACCESS_TOKEN_KEY = "access_token";
-const REFRESH_TOKEN_KEY = "refresh_token";
+export type { UserContext, TokenResponse };
 
 const PORTAL_URL = import.meta.env.VITE_AUTH_PORTAL_URL ?? "http://localhost:3003";
 
+// Use empty prefix for backward compatibility with existing localStorage keys
+const storage: TokenStorage = createLocalStorage("");
+
+export function storeTokens(tokens: TokenResponse): void {
+  storage.storeTokens(tokens.access_token, tokens.refresh_token);
+}
+
 export function getAccessToken(): string | null {
-  return localStorage.getItem(ACCESS_TOKEN_KEY);
+  return storage.getAccessToken();
+}
+
+export function getRefreshToken(): string | null {
+  return storage.getRefreshToken();
+}
+
+export function clearTokens(): void {
+  storage.clearTokens();
+}
+
+export function parseAccessToken(): UserContext | null {
+  const token = getAccessToken();
+  if (!token) return null;
+  return extractUserContext(token);
 }
 
 export function isAuthenticated(): boolean {
   const token = getAccessToken();
   if (!token) return false;
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1])) as { exp: number };
-    return payload.exp * 1000 > Date.now();
-  } catch {
-    return false;
-  }
+  return !isTokenExpired(token);
 }
 
 export function getUserContext(): UserContext | null {
-  const token = getAccessToken();
-  if (!token) return null;
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    return {
-      userId: payload.sub ?? payload.user_id ?? "",
-      username: payload.username ?? "",
-      groups: payload.groups ?? [],
-      roles: payload.roles ?? [],
-      permissions: payload.permissions ?? [],
-      rsiHandle: payload.rsi_handle ?? null,
-      rsiVerified: payload.rsi_verified ?? false,
-    };
-  } catch {
-    return null;
-  }
+  return parseAccessToken();
 }
 
 export function hasAnyPermission(required: string[]): boolean {
-  const ctx = getUserContext();
-  if (!ctx) return false;
-  return required.some((p) => ctx.permissions.includes(p));
-}
-
-export function storeTokens(accessToken: string, refreshToken: string): void {
-  localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-  localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
-}
-
-export function clearTokens(): void {
-  localStorage.removeItem(ACCESS_TOKEN_KEY);
-  localStorage.removeItem(REFRESH_TOKEN_KEY);
+  const user = parseAccessToken();
+  if (!user) return false;
+  return hasAnyPermissionCore(user, required);
 }
 
 export function redirectToPortal(returnPath = "/"): void {
@@ -69,11 +60,39 @@ export function redirectToPortal(returnPath = "/"): void {
   window.location.href = `${PORTAL_URL}/login?redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`;
 }
 
-export function authFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-  const token = getAccessToken();
+export async function authFetch(
+  input: string | URL | Request,
+  init?: RequestInit,
+): Promise<Response> {
+  const accessToken = getAccessToken();
   const headers = new Headers(init?.headers);
-  if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
+  if (accessToken) {
+    headers.set("Authorization", `Bearer ${accessToken}`);
   }
-  return fetch(input, { ...init, headers });
+
+  let res = await fetch(input, { ...init, headers });
+
+  if (res.status === 401) {
+    const refreshed = await tryRefreshToken();
+    if (refreshed) {
+      headers.set("Authorization", `Bearer ${refreshed}`);
+      res = await fetch(input, { ...init, headers });
+    }
+  }
+
+  return res;
+}
+
+async function tryRefreshToken(): Promise<string | null> {
+  const token = getRefreshToken();
+  if (!token) return null;
+
+  try {
+    const tokens = await refreshTokenApi(token);
+    storeTokens(tokens);
+    return tokens.access_token;
+  } catch {
+    clearTokens();
+    return null;
+  }
 }

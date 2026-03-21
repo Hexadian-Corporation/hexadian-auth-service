@@ -22,8 +22,8 @@ export default function CallbackPage() {
     const state = searchParams.get("state");
     const redirectUri = `${window.location.origin}/callback`;
     exchangeCode(code, redirectUri)
-      .then(({ access_token, refresh_token }) => {
-        storeTokens(access_token, refresh_token);
+      .then((tokens) => {
+        storeTokens(tokens);
         const returnPath = state ? decodeURIComponent(state) : "/";
         navigate(returnPath, { replace: true });
       })
