@@ -89,11 +89,11 @@ def _make_user(**overrides: object) -> User:
 
 
 class TestForgotPassword:
-    def test_forgot_password_success(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
+    async def test_forgot_password_success(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
         user = _make_user()
         mock_repository.find_by_username.return_value = user
 
-        code = service.forgot_password("testuser", "TestPilot")
+        code = await service.forgot_password("testuser", "TestPilot")
 
         assert code.startswith(_VERIFICATION_PREFIX)
         words_part = code[len(_VERIFICATION_PREFIX) :]
@@ -103,33 +103,37 @@ class TestForgotPassword:
         assert user.rsi_verification_code == code
         mock_repository.save.assert_called_once_with(user)
 
-    def test_forgot_password_user_not_found(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
+    async def test_forgot_password_user_not_found(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
         mock_repository.find_by_username.return_value = None
 
         with pytest.raises(UserNotFoundError):
-            service.forgot_password("nonexistent", "SomeHandle")
+            await service.forgot_password("nonexistent", "SomeHandle")
 
-    def test_forgot_password_rsi_handle_mismatch(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
+    async def test_forgot_password_rsi_handle_mismatch(
+        self,
+        service: AuthServiceImpl,
+        mock_repository: MagicMock,
+    ) -> None:
         user = _make_user(rsi_handle="ActualHandle")
         mock_repository.find_by_username.return_value = user
 
         with pytest.raises(RsiHandleMismatchError):
-            service.forgot_password("testuser", "WrongHandle")
+            await service.forgot_password("testuser", "WrongHandle")
 
-    def test_forgot_password_works_for_unverified_user(
+    async def test_forgot_password_works_for_unverified_user(
         self, service: AuthServiceImpl, mock_repository: MagicMock
     ) -> None:
         user = _make_user(rsi_verified=False)
         mock_repository.find_by_username.return_value = user
 
-        code = service.forgot_password("testuser", "TestPilot")
+        code = await service.forgot_password("testuser", "TestPilot")
 
         assert code is not None
         mock_repository.save.assert_called_once()
 
 
 class TestConfirmForgotPassword:
-    def test_confirm_forgot_password_success(
+    async def test_confirm_forgot_password_success(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -142,14 +146,14 @@ class TestConfirmForgotPassword:
         mock_rsi_fetcher.fetch_profile_bio.return_value = f"My bio {code} end"
         mock_repository.save.side_effect = lambda u: u
 
-        service.confirm_forgot_password("testuser", "TestPilot", "new-secure-password")
+        await service.confirm_forgot_password("testuser", "TestPilot", "new-secure-password")
 
         mock_repository.save.assert_called_once()
         saved_user = mock_repository.save.call_args[0][0]
         assert AuthServiceImpl._verify_password("new-secure-password", saved_user.hashed_password)
         assert saved_user.rsi_verification_code is None
 
-    def test_confirm_forgot_password_revokes_all_refresh_tokens(
+    async def test_confirm_forgot_password_revokes_all_refresh_tokens(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -162,35 +166,39 @@ class TestConfirmForgotPassword:
         mock_rsi_fetcher.fetch_profile_bio.return_value = f"My bio {code} end"
         mock_repository.save.side_effect = lambda u: u
 
-        service.confirm_forgot_password("testuser", "TestPilot", "new-secure-password")
+        await service.confirm_forgot_password("testuser", "TestPilot", "new-secure-password")
 
         mock_refresh_token_repository.revoke_all_for_user.assert_called_once_with("user-1")
 
-    def test_confirm_forgot_password_user_not_found(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
+    async def test_confirm_forgot_password_user_not_found(
+        self,
+        service: AuthServiceImpl,
+        mock_repository: MagicMock,
+    ) -> None:
         mock_repository.find_by_username.return_value = None
 
         with pytest.raises(UserNotFoundError):
-            service.confirm_forgot_password("nonexistent", "Handle", "new-password-secure")
+            await service.confirm_forgot_password("nonexistent", "Handle", "new-password-secure")
 
-    def test_confirm_forgot_password_rsi_handle_mismatch(
+    async def test_confirm_forgot_password_rsi_handle_mismatch(
         self, service: AuthServiceImpl, mock_repository: MagicMock
     ) -> None:
         user = _make_user(rsi_handle="ActualHandle", rsi_verification_code="some-code")
         mock_repository.find_by_username.return_value = user
 
         with pytest.raises(RsiHandleMismatchError):
-            service.confirm_forgot_password("testuser", "WrongHandle", "new-password-secure")
+            await service.confirm_forgot_password("testuser", "WrongHandle", "new-password-secure")
 
-    def test_confirm_forgot_password_no_verification_code(
+    async def test_confirm_forgot_password_no_verification_code(
         self, service: AuthServiceImpl, mock_repository: MagicMock
     ) -> None:
         user = _make_user(rsi_verification_code=None)
         mock_repository.find_by_username.return_value = user
 
         with pytest.raises(ValueError, match="No verification code set"):
-            service.confirm_forgot_password("testuser", "TestPilot", "new-password-secure")
+            await service.confirm_forgot_password("testuser", "TestPilot", "new-password-secure")
 
-    def test_confirm_forgot_password_code_not_in_bio(
+    async def test_confirm_forgot_password_code_not_in_bio(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -202,9 +210,9 @@ class TestConfirmForgotPassword:
         mock_rsi_fetcher.fetch_profile_bio.return_value = "Bio without the code"
 
         with pytest.raises(ValueError, match="Verification code not found"):
-            service.confirm_forgot_password("testuser", "TestPilot", "new-password-secure")
+            await service.confirm_forgot_password("testuser", "TestPilot", "new-password-secure")
 
-    def test_confirm_forgot_password_profile_not_found(
+    async def test_confirm_forgot_password_profile_not_found(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -216,9 +224,9 @@ class TestConfirmForgotPassword:
         mock_rsi_fetcher.fetch_profile_bio.return_value = None
 
         with pytest.raises(ValueError, match="Verification code not found"):
-            service.confirm_forgot_password("testuser", "TestPilot", "new-password-secure")
+            await service.confirm_forgot_password("testuser", "TestPilot", "new-password-secure")
 
-    def test_confirm_forgot_password_clears_verification_code(
+    async def test_confirm_forgot_password_clears_verification_code(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -231,7 +239,7 @@ class TestConfirmForgotPassword:
         mock_rsi_fetcher.fetch_profile_bio.return_value = f"Hello {code} world"
         mock_repository.save.side_effect = lambda u: u
 
-        service.confirm_forgot_password("testuser", "TestPilot", "new-secure-password")
+        await service.confirm_forgot_password("testuser", "TestPilot", "new-secure-password")
 
         saved_user = mock_repository.save.call_args[0][0]
         assert saved_user.rsi_verification_code is None

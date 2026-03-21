@@ -186,7 +186,7 @@ class AuthServiceImpl(AuthService):
 
     async def _create_token_pair(self, user: User) -> TokenResponse:
         access_token = await self._generate_access_token(user)
-        refresh = self._generate_refresh_token(user)
+        refresh = await self._generate_refresh_token(user)
         await self._refresh_token_repository.save(refresh)
         return TokenResponse(
             access_token=access_token,

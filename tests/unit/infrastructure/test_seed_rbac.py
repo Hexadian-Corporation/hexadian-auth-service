@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -13,11 +13,18 @@ from src.infrastructure.seed.seed_rbac import (
 
 @pytest.fixture()
 def mock_collections() -> dict[str, MagicMock]:
+    def _make_col() -> MagicMock:
+        col = MagicMock()
+        col.find_one = AsyncMock(return_value=None)
+        col.insert_one = AsyncMock(return_value=MagicMock(inserted_id="default-id"))
+        col.delete_many = AsyncMock(return_value=MagicMock(deleted_count=0))
+        return col
+
     return {
-        "permissions": MagicMock(),
-        "roles": MagicMock(),
-        "groups": MagicMock(),
-        "users": MagicMock(),
+        "permissions": _make_col(),
+        "roles": _make_col(),
+        "groups": _make_col(),
+        "users": _make_col(),
     }
 
 
@@ -34,8 +41,8 @@ def settings() -> Settings:
 
 
 class TestSeedPermissions:
-    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
-    def test_creates_all_37_permissions(
+    @patch("src.infrastructure.seed.seed_rbac.AsyncIOMotorClient")
+    async def test_creates_all_37_permissions(
         self,
         mock_mongo_client: MagicMock,
         mock_db: MagicMock,
@@ -43,22 +50,22 @@ class TestSeedPermissions:
         settings: Settings,
     ) -> None:
         mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
-        mock_collections["permissions"].find_one.return_value = None
-        mock_collections["permissions"].insert_one.return_value = MagicMock(inserted_id="perm-id")
-        mock_collections["roles"].find_one.return_value = None
-        mock_collections["roles"].insert_one.return_value = MagicMock(inserted_id="role-id")
-        mock_collections["groups"].find_one.return_value = None
-        mock_collections["groups"].insert_one.return_value = MagicMock(inserted_id="group-id")
-        mock_collections["users"].find_one.return_value = None
-        mock_collections["users"].insert_one.return_value = MagicMock(inserted_id="user-id")
-        mock_collections["permissions"].delete_many.return_value = MagicMock(deleted_count=0)
+        mock_collections["permissions"].find_one = AsyncMock(return_value=None)
+        mock_collections["permissions"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="perm-id"))
+        mock_collections["roles"].find_one = AsyncMock(return_value=None)
+        mock_collections["roles"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="role-id"))
+        mock_collections["groups"].find_one = AsyncMock(return_value=None)
+        mock_collections["groups"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="group-id"))
+        mock_collections["users"].find_one = AsyncMock(return_value=None)
+        mock_collections["users"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="user-id"))
+        mock_collections["permissions"].delete_many = AsyncMock(return_value=MagicMock(deleted_count=0))
 
-        seed(settings)
+        await seed(settings)
 
         assert mock_collections["permissions"].insert_one.call_count == 46
 
-    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
-    def test_permission_codes_match_spec(
+    @patch("src.infrastructure.seed.seed_rbac.AsyncIOMotorClient")
+    async def test_permission_codes_match_spec(
         self,
         mock_mongo_client: MagicMock,
         mock_db: MagicMock,
@@ -66,23 +73,23 @@ class TestSeedPermissions:
         settings: Settings,
     ) -> None:
         mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
-        mock_collections["permissions"].find_one.return_value = None
-        mock_collections["permissions"].insert_one.return_value = MagicMock(inserted_id="perm-id")
-        mock_collections["roles"].find_one.return_value = None
-        mock_collections["roles"].insert_one.return_value = MagicMock(inserted_id="role-id")
-        mock_collections["groups"].find_one.return_value = None
-        mock_collections["groups"].insert_one.return_value = MagicMock(inserted_id="group-id")
-        mock_collections["users"].find_one.return_value = None
-        mock_collections["users"].insert_one.return_value = MagicMock(inserted_id="user-id")
+        mock_collections["permissions"].find_one = AsyncMock(return_value=None)
+        mock_collections["permissions"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="perm-id"))
+        mock_collections["roles"].find_one = AsyncMock(return_value=None)
+        mock_collections["roles"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="role-id"))
+        mock_collections["groups"].find_one = AsyncMock(return_value=None)
+        mock_collections["groups"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="group-id"))
+        mock_collections["users"].find_one = AsyncMock(return_value=None)
+        mock_collections["users"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="user-id"))
 
-        seed(settings)
+        await seed(settings)
 
         inserted_codes = [c[0][0]["code"] for c in mock_collections["permissions"].insert_one.call_args_list]
         expected_codes = [p["code"] for p in PERMISSIONS]
         assert inserted_codes == expected_codes
 
-    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
-    def test_skips_existing_permissions(
+    @patch("src.infrastructure.seed.seed_rbac.AsyncIOMotorClient")
+    async def test_skips_existing_permissions(
         self,
         mock_mongo_client: MagicMock,
         mock_db: MagicMock,
@@ -90,19 +97,19 @@ class TestSeedPermissions:
         settings: Settings,
     ) -> None:
         mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
-        mock_collections["permissions"].find_one.return_value = {"_id": "existing-id", "code": "x"}
-        mock_collections["roles"].find_one.return_value = {"_id": "existing-role", "name": "x"}
-        mock_collections["groups"].find_one.return_value = {"_id": "existing-group", "name": "x"}
-        mock_collections["users"].find_one.return_value = {"_id": "existing-user", "username": "admin"}
+        mock_collections["permissions"].find_one = AsyncMock(return_value={"_id": "existing-id", "code": "x"})
+        mock_collections["roles"].find_one = AsyncMock(return_value={"_id": "existing-role", "name": "x"})
+        mock_collections["groups"].find_one = AsyncMock(return_value={"_id": "existing-group", "name": "x"})
+        mock_collections["users"].find_one = AsyncMock(return_value={"_id": "existing-user", "username": "admin"})
 
-        seed(settings)
+        await seed(settings)
 
         mock_collections["permissions"].insert_one.assert_not_called()
 
 
 class TestSeedRoles:
-    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
-    def test_creates_11_roles(
+    @patch("src.infrastructure.seed.seed_rbac.AsyncIOMotorClient")
+    async def test_creates_11_roles(
         self,
         mock_mongo_client: MagicMock,
         mock_db: MagicMock,
@@ -110,21 +117,21 @@ class TestSeedRoles:
         settings: Settings,
     ) -> None:
         mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
-        mock_collections["permissions"].find_one.return_value = None
-        mock_collections["permissions"].insert_one.return_value = MagicMock(inserted_id="perm-id")
-        mock_collections["roles"].find_one.return_value = None
-        mock_collections["roles"].insert_one.return_value = MagicMock(inserted_id="role-id")
-        mock_collections["groups"].find_one.return_value = None
-        mock_collections["groups"].insert_one.return_value = MagicMock(inserted_id="group-id")
-        mock_collections["users"].find_one.return_value = None
-        mock_collections["users"].insert_one.return_value = MagicMock(inserted_id="user-id")
+        mock_collections["permissions"].find_one = AsyncMock(return_value=None)
+        mock_collections["permissions"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="perm-id"))
+        mock_collections["roles"].find_one = AsyncMock(return_value=None)
+        mock_collections["roles"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="role-id"))
+        mock_collections["groups"].find_one = AsyncMock(return_value=None)
+        mock_collections["groups"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="group-id"))
+        mock_collections["users"].find_one = AsyncMock(return_value=None)
+        mock_collections["users"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="user-id"))
 
-        seed(settings)
+        await seed(settings)
 
         assert mock_collections["roles"].insert_one.call_count == 12
 
-    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
-    def test_role_names_match_spec(
+    @patch("src.infrastructure.seed.seed_rbac.AsyncIOMotorClient")
+    async def test_role_names_match_spec(
         self,
         mock_mongo_client: MagicMock,
         mock_db: MagicMock,
@@ -132,16 +139,16 @@ class TestSeedRoles:
         settings: Settings,
     ) -> None:
         mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
-        mock_collections["permissions"].find_one.return_value = None
-        mock_collections["permissions"].insert_one.return_value = MagicMock(inserted_id="perm-id")
-        mock_collections["roles"].find_one.return_value = None
-        mock_collections["roles"].insert_one.return_value = MagicMock(inserted_id="role-id")
-        mock_collections["groups"].find_one.return_value = None
-        mock_collections["groups"].insert_one.return_value = MagicMock(inserted_id="group-id")
-        mock_collections["users"].find_one.return_value = None
-        mock_collections["users"].insert_one.return_value = MagicMock(inserted_id="user-id")
+        mock_collections["permissions"].find_one = AsyncMock(return_value=None)
+        mock_collections["permissions"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="perm-id"))
+        mock_collections["roles"].find_one = AsyncMock(return_value=None)
+        mock_collections["roles"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="role-id"))
+        mock_collections["groups"].find_one = AsyncMock(return_value=None)
+        mock_collections["groups"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="group-id"))
+        mock_collections["users"].find_one = AsyncMock(return_value=None)
+        mock_collections["users"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="user-id"))
 
-        seed(settings)
+        await seed(settings)
 
         inserted_names = [c[0][0]["name"] for c in mock_collections["roles"].insert_one.call_args_list]
         assert inserted_names == [
@@ -159,8 +166,8 @@ class TestSeedRoles:
             "HHH Feature Premium",
         ]
 
-    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
-    def test_auth_admin_has_6_permission_ids(
+    @patch("src.infrastructure.seed.seed_rbac.AsyncIOMotorClient")
+    async def test_auth_admin_has_6_permission_ids(
         self,
         mock_mongo_client: MagicMock,
         mock_db: MagicMock,
@@ -169,26 +176,26 @@ class TestSeedRoles:
     ) -> None:
         perm_counter = iter(range(1, 100))
         mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
-        mock_collections["permissions"].find_one.return_value = None
-        mock_collections["permissions"].insert_one.side_effect = lambda _: MagicMock(
-            inserted_id=f"perm-{next(perm_counter)}"
+        mock_collections["permissions"].find_one = AsyncMock(return_value=None)
+        mock_collections["permissions"].insert_one = AsyncMock(
+            side_effect=lambda _: MagicMock(inserted_id=f"perm-{next(perm_counter)}")
         )
-        mock_collections["roles"].find_one.return_value = None
-        mock_collections["roles"].insert_one.return_value = MagicMock(inserted_id="role-id")
-        mock_collections["groups"].find_one.return_value = None
-        mock_collections["groups"].insert_one.return_value = MagicMock(inserted_id="group-id")
-        mock_collections["users"].find_one.return_value = None
-        mock_collections["users"].insert_one.return_value = MagicMock(inserted_id="user-id")
+        mock_collections["roles"].find_one = AsyncMock(return_value=None)
+        mock_collections["roles"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="role-id"))
+        mock_collections["groups"].find_one = AsyncMock(return_value=None)
+        mock_collections["groups"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="group-id"))
+        mock_collections["users"].find_one = AsyncMock(return_value=None)
+        mock_collections["users"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="user-id"))
 
-        seed(settings)
+        await seed(settings)
 
         auth_admin_call = mock_collections["roles"].insert_one.call_args_list[0]
         auth_admin_doc = auth_admin_call[0][0]
         assert auth_admin_doc["name"] == "Auth Admin"
         assert len(auth_admin_doc["permission_ids"]) == 6
 
-    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
-    def test_hhh_contracts_manager_has_3_permission_ids(
+    @patch("src.infrastructure.seed.seed_rbac.AsyncIOMotorClient")
+    async def test_hhh_contracts_manager_has_3_permission_ids(
         self,
         mock_mongo_client: MagicMock,
         mock_db: MagicMock,
@@ -197,26 +204,26 @@ class TestSeedRoles:
     ) -> None:
         perm_counter = iter(range(1, 100))
         mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
-        mock_collections["permissions"].find_one.return_value = None
-        mock_collections["permissions"].insert_one.side_effect = lambda _: MagicMock(
-            inserted_id=f"perm-{next(perm_counter)}"
+        mock_collections["permissions"].find_one = AsyncMock(return_value=None)
+        mock_collections["permissions"].insert_one = AsyncMock(
+            side_effect=lambda _: MagicMock(inserted_id=f"perm-{next(perm_counter)}")
         )
-        mock_collections["roles"].find_one.return_value = None
-        mock_collections["roles"].insert_one.return_value = MagicMock(inserted_id="role-id")
-        mock_collections["groups"].find_one.return_value = None
-        mock_collections["groups"].insert_one.return_value = MagicMock(inserted_id="group-id")
-        mock_collections["users"].find_one.return_value = None
-        mock_collections["users"].insert_one.return_value = MagicMock(inserted_id="user-id")
+        mock_collections["roles"].find_one = AsyncMock(return_value=None)
+        mock_collections["roles"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="role-id"))
+        mock_collections["groups"].find_one = AsyncMock(return_value=None)
+        mock_collections["groups"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="group-id"))
+        mock_collections["users"].find_one = AsyncMock(return_value=None)
+        mock_collections["users"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="user-id"))
 
-        seed(settings)
+        await seed(settings)
 
         contracts_mgr_call = mock_collections["roles"].insert_one.call_args_list[1]
         contracts_mgr_doc = contracts_mgr_call[0][0]
         assert contracts_mgr_doc["name"] == "HHH Contracts Manager"
         assert len(contracts_mgr_doc["permission_ids"]) == 3
 
-    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
-    def test_hhh_algorithm_user_has_2_permission_ids(
+    @patch("src.infrastructure.seed.seed_rbac.AsyncIOMotorClient")
+    async def test_hhh_algorithm_user_has_2_permission_ids(
         self,
         mock_mongo_client: MagicMock,
         mock_db: MagicMock,
@@ -225,26 +232,26 @@ class TestSeedRoles:
     ) -> None:
         perm_counter = iter(range(1, 100))
         mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
-        mock_collections["permissions"].find_one.return_value = None
-        mock_collections["permissions"].insert_one.side_effect = lambda _: MagicMock(
-            inserted_id=f"perm-{next(perm_counter)}"
+        mock_collections["permissions"].find_one = AsyncMock(return_value=None)
+        mock_collections["permissions"].insert_one = AsyncMock(
+            side_effect=lambda _: MagicMock(inserted_id=f"perm-{next(perm_counter)}")
         )
-        mock_collections["roles"].find_one.return_value = None
-        mock_collections["roles"].insert_one.return_value = MagicMock(inserted_id="role-id")
-        mock_collections["groups"].find_one.return_value = None
-        mock_collections["groups"].insert_one.return_value = MagicMock(inserted_id="group-id")
-        mock_collections["users"].find_one.return_value = None
-        mock_collections["users"].insert_one.return_value = MagicMock(inserted_id="user-id")
+        mock_collections["roles"].find_one = AsyncMock(return_value=None)
+        mock_collections["roles"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="role-id"))
+        mock_collections["groups"].find_one = AsyncMock(return_value=None)
+        mock_collections["groups"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="group-id"))
+        mock_collections["users"].find_one = AsyncMock(return_value=None)
+        mock_collections["users"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="user-id"))
 
-        seed(settings)
+        await seed(settings)
 
         algo_user_call = mock_collections["roles"].insert_one.call_args_list[8]
         algo_user_doc = algo_user_call[0][0]
         assert algo_user_doc["name"] == "HHH Algorithm User"
         assert len(algo_user_doc["permission_ids"]) == 2
 
-    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
-    def test_hhh_algorithm_premium_has_4_permission_ids(
+    @patch("src.infrastructure.seed.seed_rbac.AsyncIOMotorClient")
+    async def test_hhh_algorithm_premium_has_4_permission_ids(
         self,
         mock_mongo_client: MagicMock,
         mock_db: MagicMock,
@@ -253,26 +260,26 @@ class TestSeedRoles:
     ) -> None:
         perm_counter = iter(range(1, 100))
         mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
-        mock_collections["permissions"].find_one.return_value = None
-        mock_collections["permissions"].insert_one.side_effect = lambda _: MagicMock(
-            inserted_id=f"perm-{next(perm_counter)}"
+        mock_collections["permissions"].find_one = AsyncMock(return_value=None)
+        mock_collections["permissions"].insert_one = AsyncMock(
+            side_effect=lambda _: MagicMock(inserted_id=f"perm-{next(perm_counter)}")
         )
-        mock_collections["roles"].find_one.return_value = None
-        mock_collections["roles"].insert_one.return_value = MagicMock(inserted_id="role-id")
-        mock_collections["groups"].find_one.return_value = None
-        mock_collections["groups"].insert_one.return_value = MagicMock(inserted_id="group-id")
-        mock_collections["users"].find_one.return_value = None
-        mock_collections["users"].insert_one.return_value = MagicMock(inserted_id="user-id")
+        mock_collections["roles"].find_one = AsyncMock(return_value=None)
+        mock_collections["roles"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="role-id"))
+        mock_collections["groups"].find_one = AsyncMock(return_value=None)
+        mock_collections["groups"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="group-id"))
+        mock_collections["users"].find_one = AsyncMock(return_value=None)
+        mock_collections["users"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="user-id"))
 
-        seed(settings)
+        await seed(settings)
 
         algo_premium_call = mock_collections["roles"].insert_one.call_args_list[9]
         algo_premium_doc = algo_premium_call[0][0]
         assert algo_premium_doc["name"] == "HHH Algorithm Premium"
         assert len(algo_premium_doc["permission_ids"]) == 4
 
-    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
-    def test_hhh_feature_premium_has_9_permission_ids(
+    @patch("src.infrastructure.seed.seed_rbac.AsyncIOMotorClient")
+    async def test_hhh_feature_premium_has_9_permission_ids(
         self,
         mock_mongo_client: MagicMock,
         mock_db: MagicMock,
@@ -281,26 +288,26 @@ class TestSeedRoles:
     ) -> None:
         perm_counter = iter(range(1, 100))
         mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
-        mock_collections["permissions"].find_one.return_value = None
-        mock_collections["permissions"].insert_one.side_effect = lambda _: MagicMock(
-            inserted_id=f"perm-{next(perm_counter)}"
+        mock_collections["permissions"].find_one = AsyncMock(return_value=None)
+        mock_collections["permissions"].insert_one = AsyncMock(
+            side_effect=lambda _: MagicMock(inserted_id=f"perm-{next(perm_counter)}")
         )
-        mock_collections["roles"].find_one.return_value = None
-        mock_collections["roles"].insert_one.return_value = MagicMock(inserted_id="role-id")
-        mock_collections["groups"].find_one.return_value = None
-        mock_collections["groups"].insert_one.return_value = MagicMock(inserted_id="group-id")
-        mock_collections["users"].find_one.return_value = None
-        mock_collections["users"].insert_one.return_value = MagicMock(inserted_id="user-id")
+        mock_collections["roles"].find_one = AsyncMock(return_value=None)
+        mock_collections["roles"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="role-id"))
+        mock_collections["groups"].find_one = AsyncMock(return_value=None)
+        mock_collections["groups"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="group-id"))
+        mock_collections["users"].find_one = AsyncMock(return_value=None)
+        mock_collections["users"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="user-id"))
 
-        seed(settings)
+        await seed(settings)
 
         feature_premium_call = mock_collections["roles"].insert_one.call_args_list[11]
         feature_premium_doc = feature_premium_call[0][0]
         assert feature_premium_doc["name"] == "HHH Feature Premium"
         assert len(feature_premium_doc["permission_ids"]) == 10
 
-    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
-    def test_hhh_data_import_has_8_permission_ids(
+    @patch("src.infrastructure.seed.seed_rbac.AsyncIOMotorClient")
+    async def test_hhh_data_import_has_8_permission_ids(
         self,
         mock_mongo_client: MagicMock,
         mock_db: MagicMock,
@@ -309,26 +316,26 @@ class TestSeedRoles:
     ) -> None:
         perm_counter = iter(range(1, 100))
         mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
-        mock_collections["permissions"].find_one.return_value = None
-        mock_collections["permissions"].insert_one.side_effect = lambda _: MagicMock(
-            inserted_id=f"perm-{next(perm_counter)}"
+        mock_collections["permissions"].find_one = AsyncMock(return_value=None)
+        mock_collections["permissions"].insert_one = AsyncMock(
+            side_effect=lambda _: MagicMock(inserted_id=f"perm-{next(perm_counter)}")
         )
-        mock_collections["roles"].find_one.return_value = None
-        mock_collections["roles"].insert_one.return_value = MagicMock(inserted_id="role-id")
-        mock_collections["groups"].find_one.return_value = None
-        mock_collections["groups"].insert_one.return_value = MagicMock(inserted_id="group-id")
-        mock_collections["users"].find_one.return_value = None
-        mock_collections["users"].insert_one.return_value = MagicMock(inserted_id="user-id")
+        mock_collections["roles"].find_one = AsyncMock(return_value=None)
+        mock_collections["roles"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="role-id"))
+        mock_collections["groups"].find_one = AsyncMock(return_value=None)
+        mock_collections["groups"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="group-id"))
+        mock_collections["users"].find_one = AsyncMock(return_value=None)
+        mock_collections["users"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="user-id"))
 
-        seed(settings)
+        await seed(settings)
 
         data_import_call = mock_collections["roles"].insert_one.call_args_list[10]
         data_import_doc = data_import_call[0][0]
         assert data_import_doc["name"] == "HHH Data Import"
         assert len(data_import_doc["permission_ids"]) == 8
 
-    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
-    def test_skips_existing_roles(
+    @patch("src.infrastructure.seed.seed_rbac.AsyncIOMotorClient")
+    async def test_skips_existing_roles(
         self,
         mock_mongo_client: MagicMock,
         mock_db: MagicMock,
@@ -336,19 +343,19 @@ class TestSeedRoles:
         settings: Settings,
     ) -> None:
         mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
-        mock_collections["permissions"].find_one.return_value = {"_id": "existing-id", "code": "x"}
-        mock_collections["roles"].find_one.return_value = {"_id": "existing-role", "name": "x"}
-        mock_collections["groups"].find_one.return_value = {"_id": "existing-group", "name": "x"}
-        mock_collections["users"].find_one.return_value = {"_id": "existing-user", "username": "admin"}
+        mock_collections["permissions"].find_one = AsyncMock(return_value={"_id": "existing-id", "code": "x"})
+        mock_collections["roles"].find_one = AsyncMock(return_value={"_id": "existing-role", "name": "x"})
+        mock_collections["groups"].find_one = AsyncMock(return_value={"_id": "existing-group", "name": "x"})
+        mock_collections["users"].find_one = AsyncMock(return_value={"_id": "existing-user", "username": "admin"})
 
-        seed(settings)
+        await seed(settings)
 
         mock_collections["roles"].insert_one.assert_not_called()
 
 
 class TestSeedGroups:
-    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
-    def test_creates_3_groups(
+    @patch("src.infrastructure.seed.seed_rbac.AsyncIOMotorClient")
+    async def test_creates_3_groups(
         self,
         mock_mongo_client: MagicMock,
         mock_db: MagicMock,
@@ -356,21 +363,21 @@ class TestSeedGroups:
         settings: Settings,
     ) -> None:
         mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
-        mock_collections["permissions"].find_one.return_value = None
-        mock_collections["permissions"].insert_one.return_value = MagicMock(inserted_id="perm-id")
-        mock_collections["roles"].find_one.return_value = None
-        mock_collections["roles"].insert_one.return_value = MagicMock(inserted_id="role-id")
-        mock_collections["groups"].find_one.return_value = None
-        mock_collections["groups"].insert_one.return_value = MagicMock(inserted_id="group-id")
-        mock_collections["users"].find_one.return_value = None
-        mock_collections["users"].insert_one.return_value = MagicMock(inserted_id="user-id")
+        mock_collections["permissions"].find_one = AsyncMock(return_value=None)
+        mock_collections["permissions"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="perm-id"))
+        mock_collections["roles"].find_one = AsyncMock(return_value=None)
+        mock_collections["roles"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="role-id"))
+        mock_collections["groups"].find_one = AsyncMock(return_value=None)
+        mock_collections["groups"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="group-id"))
+        mock_collections["users"].find_one = AsyncMock(return_value=None)
+        mock_collections["users"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="user-id"))
 
-        seed(settings)
+        await seed(settings)
 
         assert mock_collections["groups"].insert_one.call_count == 3
 
-    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
-    def test_group_names_match_spec(
+    @patch("src.infrastructure.seed.seed_rbac.AsyncIOMotorClient")
+    async def test_group_names_match_spec(
         self,
         mock_mongo_client: MagicMock,
         mock_db: MagicMock,
@@ -378,22 +385,22 @@ class TestSeedGroups:
         settings: Settings,
     ) -> None:
         mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
-        mock_collections["permissions"].find_one.return_value = None
-        mock_collections["permissions"].insert_one.return_value = MagicMock(inserted_id="perm-id")
-        mock_collections["roles"].find_one.return_value = None
-        mock_collections["roles"].insert_one.return_value = MagicMock(inserted_id="role-id")
-        mock_collections["groups"].find_one.return_value = None
-        mock_collections["groups"].insert_one.return_value = MagicMock(inserted_id="group-id")
-        mock_collections["users"].find_one.return_value = None
-        mock_collections["users"].insert_one.return_value = MagicMock(inserted_id="user-id")
+        mock_collections["permissions"].find_one = AsyncMock(return_value=None)
+        mock_collections["permissions"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="perm-id"))
+        mock_collections["roles"].find_one = AsyncMock(return_value=None)
+        mock_collections["roles"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="role-id"))
+        mock_collections["groups"].find_one = AsyncMock(return_value=None)
+        mock_collections["groups"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="group-id"))
+        mock_collections["users"].find_one = AsyncMock(return_value=None)
+        mock_collections["users"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="user-id"))
 
-        seed(settings)
+        await seed(settings)
 
         inserted_names = [c[0][0]["name"] for c in mock_collections["groups"].insert_one.call_args_list]
         assert inserted_names == ["Admins", "Users", "Hexadian Members"]
 
-    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
-    def test_skips_existing_groups(
+    @patch("src.infrastructure.seed.seed_rbac.AsyncIOMotorClient")
+    async def test_skips_existing_groups(
         self,
         mock_mongo_client: MagicMock,
         mock_db: MagicMock,
@@ -401,19 +408,19 @@ class TestSeedGroups:
         settings: Settings,
     ) -> None:
         mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
-        mock_collections["permissions"].find_one.return_value = {"_id": "existing-id", "code": "x"}
-        mock_collections["roles"].find_one.return_value = {"_id": "existing-role", "name": "x"}
-        mock_collections["groups"].find_one.return_value = {"_id": "existing-group", "name": "x"}
-        mock_collections["users"].find_one.return_value = {"_id": "existing-user", "username": "admin"}
+        mock_collections["permissions"].find_one = AsyncMock(return_value={"_id": "existing-id", "code": "x"})
+        mock_collections["roles"].find_one = AsyncMock(return_value={"_id": "existing-role", "name": "x"})
+        mock_collections["groups"].find_one = AsyncMock(return_value={"_id": "existing-group", "name": "x"})
+        mock_collections["users"].find_one = AsyncMock(return_value={"_id": "existing-user", "username": "admin"})
 
-        seed(settings)
+        await seed(settings)
 
         mock_collections["groups"].insert_one.assert_not_called()
 
 
 class TestSeedAdminUser:
-    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
-    def test_creates_admin_user(
+    @patch("src.infrastructure.seed.seed_rbac.AsyncIOMotorClient")
+    async def test_creates_admin_user(
         self,
         mock_mongo_client: MagicMock,
         mock_db: MagicMock,
@@ -421,16 +428,16 @@ class TestSeedAdminUser:
         settings: Settings,
     ) -> None:
         mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
-        mock_collections["permissions"].find_one.return_value = None
-        mock_collections["permissions"].insert_one.return_value = MagicMock(inserted_id="perm-id")
-        mock_collections["roles"].find_one.return_value = None
-        mock_collections["roles"].insert_one.return_value = MagicMock(inserted_id="role-id")
-        mock_collections["groups"].find_one.return_value = None
-        mock_collections["groups"].insert_one.return_value = MagicMock(inserted_id="group-id")
-        mock_collections["users"].find_one.return_value = None
-        mock_collections["users"].insert_one.return_value = MagicMock(inserted_id="user-id")
+        mock_collections["permissions"].find_one = AsyncMock(return_value=None)
+        mock_collections["permissions"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="perm-id"))
+        mock_collections["roles"].find_one = AsyncMock(return_value=None)
+        mock_collections["roles"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="role-id"))
+        mock_collections["groups"].find_one = AsyncMock(return_value=None)
+        mock_collections["groups"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="group-id"))
+        mock_collections["users"].find_one = AsyncMock(return_value=None)
+        mock_collections["users"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="user-id"))
 
-        seed(settings)
+        await seed(settings)
 
         mock_collections["users"].insert_one.assert_called_once()
         admin_doc = mock_collections["users"].insert_one.call_args[0][0]
@@ -441,8 +448,8 @@ class TestSeedAdminUser:
         assert admin_doc["group_ids"] == ["group-id"]
         assert ":" in admin_doc["hashed_password"]
 
-    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
-    def test_skips_existing_admin(
+    @patch("src.infrastructure.seed.seed_rbac.AsyncIOMotorClient")
+    async def test_skips_existing_admin(
         self,
         mock_mongo_client: MagicMock,
         mock_db: MagicMock,
@@ -450,17 +457,17 @@ class TestSeedAdminUser:
         settings: Settings,
     ) -> None:
         mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
-        mock_collections["permissions"].find_one.return_value = {"_id": "existing-id", "code": "x"}
-        mock_collections["roles"].find_one.return_value = {"_id": "existing-role", "name": "x"}
-        mock_collections["groups"].find_one.return_value = {"_id": "existing-group", "name": "x"}
-        mock_collections["users"].find_one.return_value = {"_id": "existing-user", "username": "admin"}
+        mock_collections["permissions"].find_one = AsyncMock(return_value={"_id": "existing-id", "code": "x"})
+        mock_collections["roles"].find_one = AsyncMock(return_value={"_id": "existing-role", "name": "x"})
+        mock_collections["groups"].find_one = AsyncMock(return_value={"_id": "existing-group", "name": "x"})
+        mock_collections["users"].find_one = AsyncMock(return_value={"_id": "existing-user", "username": "admin"})
 
-        seed(settings)
+        await seed(settings)
 
         mock_collections["users"].insert_one.assert_not_called()
 
-    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
-    def test_admin_password_from_settings(
+    @patch("src.infrastructure.seed.seed_rbac.AsyncIOMotorClient")
+    async def test_admin_password_from_settings(
         self,
         mock_mongo_client: MagicMock,
         mock_db: MagicMock,
@@ -468,16 +475,16 @@ class TestSeedAdminUser:
     ) -> None:
         custom_settings = Settings(jwt_secret="test-secret", admin_password="custom-pw-123")
         mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
-        mock_collections["permissions"].find_one.return_value = None
-        mock_collections["permissions"].insert_one.return_value = MagicMock(inserted_id="perm-id")
-        mock_collections["roles"].find_one.return_value = None
-        mock_collections["roles"].insert_one.return_value = MagicMock(inserted_id="role-id")
-        mock_collections["groups"].find_one.return_value = None
-        mock_collections["groups"].insert_one.return_value = MagicMock(inserted_id="group-id")
-        mock_collections["users"].find_one.return_value = None
-        mock_collections["users"].insert_one.return_value = MagicMock(inserted_id="user-id")
+        mock_collections["permissions"].find_one = AsyncMock(return_value=None)
+        mock_collections["permissions"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="perm-id"))
+        mock_collections["roles"].find_one = AsyncMock(return_value=None)
+        mock_collections["roles"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="role-id"))
+        mock_collections["groups"].find_one = AsyncMock(return_value=None)
+        mock_collections["groups"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="group-id"))
+        mock_collections["users"].find_one = AsyncMock(return_value=None)
+        mock_collections["users"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="user-id"))
 
-        seed(custom_settings)
+        await seed(custom_settings)
 
         admin_doc = mock_collections["users"].insert_one.call_args[0][0]
         # Verify password was hashed (salt:hash format)
@@ -487,8 +494,8 @@ class TestSeedAdminUser:
 
 
 class TestSeedIdempotent:
-    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
-    def test_full_idempotent_run_no_inserts(
+    @patch("src.infrastructure.seed.seed_rbac.AsyncIOMotorClient")
+    async def test_full_idempotent_run_no_inserts(
         self,
         mock_mongo_client: MagicMock,
         mock_db: MagicMock,
@@ -497,12 +504,12 @@ class TestSeedIdempotent:
     ) -> None:
         """Running seed when all data exists should not insert anything."""
         mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
-        mock_collections["permissions"].find_one.return_value = {"_id": "existing-id", "code": "x"}
-        mock_collections["roles"].find_one.return_value = {"_id": "existing-role", "name": "x"}
-        mock_collections["groups"].find_one.return_value = {"_id": "existing-group", "name": "x"}
-        mock_collections["users"].find_one.return_value = {"_id": "existing-user", "username": "admin"}
+        mock_collections["permissions"].find_one = AsyncMock(return_value={"_id": "existing-id", "code": "x"})
+        mock_collections["roles"].find_one = AsyncMock(return_value={"_id": "existing-role", "name": "x"})
+        mock_collections["groups"].find_one = AsyncMock(return_value={"_id": "existing-group", "name": "x"})
+        mock_collections["users"].find_one = AsyncMock(return_value={"_id": "existing-user", "username": "admin"})
 
-        seed(settings)
+        await seed(settings)
 
         mock_collections["permissions"].insert_one.assert_not_called()
         mock_collections["roles"].insert_one.assert_not_called()
@@ -511,104 +518,106 @@ class TestSeedIdempotent:
 
 
 class TestSeedDefaults:
-    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
-    def test_seed_uses_default_settings_when_none(self, mock_mongo_client: MagicMock) -> None:
+    @patch("src.infrastructure.seed.seed_rbac.AsyncIOMotorClient")
+    async def test_seed_uses_default_settings_when_none(self, mock_mongo_client: MagicMock) -> None:
         mock_db = MagicMock()
         mock_col = MagicMock()
-        mock_col.find_one.return_value = {"_id": "x"}
+        mock_col.find_one = AsyncMock(return_value={"_id": "x"})
+        mock_col.insert_one = AsyncMock(return_value=MagicMock(inserted_id="id"))
+        mock_col.delete_many = AsyncMock(return_value=MagicMock(deleted_count=0))
         mock_db.__getitem__ = MagicMock(return_value=mock_col)
         mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
 
-        seed(None)
+        await seed(None)
 
         mock_mongo_client.assert_called_once()
 
 
 class TestSeedDataDefinitions:
-    def test_permissions_count(self) -> None:
+    async def test_permissions_count(self) -> None:
         assert len(PERMISSIONS) == 46
 
-    def test_roles_count(self) -> None:
+    async def test_roles_count(self) -> None:
         assert len(ROLES) == 12
 
-    def test_groups_count(self) -> None:
+    async def test_groups_count(self) -> None:
         assert len(GROUPS) == 3
 
-    def test_all_permission_codes_unique(self) -> None:
+    async def test_all_permission_codes_unique(self) -> None:
         codes = [p["code"] for p in PERMISSIONS]
         assert len(codes) == len(set(codes))
 
-    def test_all_role_names_unique(self) -> None:
+    async def test_all_role_names_unique(self) -> None:
         names = [r["name"] for r in ROLES]
         assert len(names) == len(set(names))
 
-    def test_all_group_names_unique(self) -> None:
+    async def test_all_group_names_unique(self) -> None:
         names = [g["name"] for g in GROUPS]
         assert len(names) == len(set(names))
 
-    def test_role_permission_codes_are_valid(self) -> None:
+    async def test_role_permission_codes_are_valid(self) -> None:
         valid_codes = {p["code"] for p in PERMISSIONS}
         for role in ROLES:
             for code in role["permission_codes"]:
                 assert code in valid_codes, f"Role '{role['name']}' has invalid permission code: {code}"
 
-    def test_group_role_names_are_valid(self) -> None:
+    async def test_group_role_names_are_valid(self) -> None:
         valid_names = {r["name"] for r in ROLES}
         for group in GROUPS:
             for name in group["role_names"]:
                 assert name in valid_names, f"Group '{group['name']}' has invalid role name: {name}"
 
-    def test_groups_have_auto_assign_apps_field(self) -> None:
+    async def test_groups_have_auto_assign_apps_field(self) -> None:
         for group in GROUPS:
             assert "auto_assign_apps" in group, f"Group '{group['name']}' missing auto_assign_apps"
             assert isinstance(group["auto_assign_apps"], list)
 
-    def test_users_group_auto_assign_apps(self) -> None:
+    async def test_users_group_auto_assign_apps(self) -> None:
         users_group = next(g for g in GROUPS if g["name"] == "Users")
         assert "hhh-frontend" in users_group["auto_assign_apps"]
         assert "hhh-backoffice" not in users_group["auto_assign_apps"]
 
-    def test_admins_group_has_empty_auto_assign_apps(self) -> None:
+    async def test_admins_group_has_empty_auto_assign_apps(self) -> None:
         admins_group = next(g for g in GROUPS if g["name"] == "Admins")
         assert admins_group["auto_assign_apps"] == []
 
-    def test_algorithm_user_role_includes_routes_write(self) -> None:
+    async def test_algorithm_user_role_includes_routes_write(self) -> None:
         algo_user = next(r for r in ROLES if r["name"] == "HHH Algorithm User")
         assert "hhh:algorithm:dijkstra" in algo_user["permission_codes"]
         assert "hhh:routes:write" in algo_user["permission_codes"]
 
-    def test_admins_group_includes_algorithm_and_feature_premium(self) -> None:
+    async def test_admins_group_includes_algorithm_and_feature_premium(self) -> None:
         admins = next(g for g in GROUPS if g["name"] == "Admins")
         assert "HHH Algorithm Premium" in admins["role_names"]
         assert "HHH Feature Premium" in admins["role_names"]
 
-    def test_admins_group_has_10_roles(self) -> None:
+    async def test_admins_group_has_10_roles(self) -> None:
         admins = next(g for g in GROUPS if g["name"] == "Admins")
         assert len(admins["role_names"]) == 10
 
-    def test_users_group_has_algorithm_user_not_contracts_manager(self) -> None:
+    async def test_users_group_has_algorithm_user_not_contracts_manager(self) -> None:
         users = next(g for g in GROUPS if g["name"] == "Users")
         assert "HHH Algorithm User" in users["role_names"]
         assert "HHH Contracts Manager" not in users["role_names"]
 
-    def test_hexadian_members_group_exists_not_content_managers(self) -> None:
+    async def test_hexadian_members_group_exists_not_content_managers(self) -> None:
         group_names = [g["name"] for g in GROUPS]
         assert "Hexadian Members" in group_names
         assert "Content Managers" not in group_names
 
-    def test_hexadian_members_group_roles(self) -> None:
+    async def test_hexadian_members_group_roles(self) -> None:
         members = next(g for g in GROUPS if g["name"] == "Hexadian Members")
         assert members["role_names"] == ["HHH Viewer", "HHH Algorithm Premium", "HHH Feature Premium"]
         assert members["auto_assign_apps"] == []
 
-    def test_algorithm_permissions_exist(self) -> None:
+    async def test_algorithm_permissions_exist(self) -> None:
         codes = {p["code"] for p in PERMISSIONS}
         assert "hhh:algorithm:dijkstra" in codes
         assert "hhh:algorithm:astar" in codes
         assert "hhh:algorithm:aco" in codes
         assert "hhh:algorithm:ford_fulkerson" in codes
 
-    def test_feature_permissions_exist(self) -> None:
+    async def test_feature_permissions_exist(self) -> None:
         codes = {p["code"] for p in PERMISSIONS}
         expected = [
             "hhh:feature:gpu",
@@ -625,26 +634,26 @@ class TestSeedDataDefinitions:
         for code in expected:
             assert code in codes
 
-    def test_distance_finder_permission_exists_in_permissions_list(self) -> None:
+    async def test_distance_finder_permission_exists_in_permissions_list(self) -> None:
         assert any(p["code"] == "hhh:feature:distance_finder" for p in PERMISSIONS)
 
-    def test_distance_finder_permission_has_description(self) -> None:
+    async def test_distance_finder_permission_has_description(self) -> None:
         perm = next(p for p in PERMISSIONS if p["code"] == "hhh:feature:distance_finder")
         assert isinstance(perm["description"], str)
         assert len(perm["description"]) > 0
 
-    def test_hhh_feature_premium_role_includes_distance_finder(self) -> None:
+    async def test_hhh_feature_premium_role_includes_distance_finder(self) -> None:
         role = next(r for r in ROLES if r["name"] == "HHH Feature Premium")
         assert "hhh:feature:distance_finder" in role["permission_codes"]
 
-    def test_distance_finder_not_in_non_premium_roles(self) -> None:
+    async def test_distance_finder_not_in_non_premium_roles(self) -> None:
         for role in ROLES:
             if role["name"] != "HHH Feature Premium":
                 assert "hhh:feature:distance_finder" not in role["permission_codes"], (
                     f"Role '{role['name']}' unexpectedly contains hhh:feature:distance_finder"
                 )
 
-    def test_import_permissions_exist(self) -> None:
+    async def test_import_permissions_exist(self) -> None:
         codes = {p["code"] for p in PERMISSIONS}
         expected = [
             "hhh:locations:import",
@@ -659,15 +668,15 @@ class TestSeedDataDefinitions:
         for code in expected:
             assert code in codes
 
-    def test_hhh_data_import_role_has_8_permissions(self) -> None:
+    async def test_hhh_data_import_role_has_8_permissions(self) -> None:
         role = next(r for r in ROLES if r["name"] == "HHH Data Import")
         assert len(role["permission_codes"]) == 8
 
-    def test_admins_group_includes_data_import_role(self) -> None:
+    async def test_admins_group_includes_data_import_role(self) -> None:
         admins = next(g for g in GROUPS if g["name"] == "Admins")
         assert "HHH Data Import" in admins["role_names"]
 
-    def test_no_deprecated_permission_codes(self) -> None:
+    async def test_no_deprecated_permission_codes(self) -> None:
         codes = {p["code"] for p in PERMISSIONS}
         deprecated = [
             "hhh:locations:read",
@@ -680,29 +689,29 @@ class TestSeedDataDefinitions:
         for code in deprecated:
             assert code not in codes
 
-    def test_hexadian_members_group_exists(self) -> None:
+    async def test_hexadian_members_group_exists(self) -> None:
         names = {g["name"] for g in GROUPS}
         assert "Hexadian Members" in names
         assert "Content Managers" not in names
 
-    def test_hexadian_members_has_premium_roles(self) -> None:
+    async def test_hexadian_members_has_premium_roles(self) -> None:
         hm = next(g for g in GROUPS if g["name"] == "Hexadian Members")
         assert "HHH Algorithm Premium" in hm["role_names"]
         assert "HHH Feature Premium" in hm["role_names"]
 
-    def test_admins_has_premium_roles(self) -> None:
+    async def test_admins_has_premium_roles(self) -> None:
         admins = next(g for g in GROUPS if g["name"] == "Admins")
         assert "HHH Algorithm Premium" in admins["role_names"]
         assert "HHH Feature Premium" in admins["role_names"]
 
-    def test_users_has_basic_algorithm(self) -> None:
+    async def test_users_has_basic_algorithm(self) -> None:
         users = next(g for g in GROUPS if g["name"] == "Users")
         assert "HHH Algorithm User" in users["role_names"]
 
 
 class TestSeedCleanup:
-    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
-    def test_cleanup_deletes_stale_permissions(
+    @patch("src.infrastructure.seed.seed_rbac.AsyncIOMotorClient")
+    async def test_cleanup_deletes_stale_permissions(
         self,
         mock_mongo_client: MagicMock,
         mock_db: MagicMock,
@@ -711,17 +720,17 @@ class TestSeedCleanup:
     ) -> None:
         """Cleanup step removes permissions not in the current PERMISSIONS list."""
         mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
-        mock_collections["permissions"].find_one.return_value = None
-        mock_collections["permissions"].insert_one.return_value = MagicMock(inserted_id="perm-id")
-        mock_collections["roles"].find_one.return_value = None
-        mock_collections["roles"].insert_one.return_value = MagicMock(inserted_id="role-id")
-        mock_collections["groups"].find_one.return_value = None
-        mock_collections["groups"].insert_one.return_value = MagicMock(inserted_id="group-id")
-        mock_collections["users"].find_one.return_value = None
-        mock_collections["users"].insert_one.return_value = MagicMock(inserted_id="user-id")
-        mock_collections["permissions"].delete_many.return_value = MagicMock(deleted_count=3)
+        mock_collections["permissions"].find_one = AsyncMock(return_value=None)
+        mock_collections["permissions"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="perm-id"))
+        mock_collections["roles"].find_one = AsyncMock(return_value=None)
+        mock_collections["roles"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="role-id"))
+        mock_collections["groups"].find_one = AsyncMock(return_value=None)
+        mock_collections["groups"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="group-id"))
+        mock_collections["users"].find_one = AsyncMock(return_value=None)
+        mock_collections["users"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="user-id"))
+        mock_collections["permissions"].delete_many = AsyncMock(return_value=MagicMock(deleted_count=3))
 
-        seed(settings)
+        await seed(settings)
 
         mock_collections["permissions"].delete_many.assert_called_once()
         call_filter = mock_collections["permissions"].delete_many.call_args[0][0]
@@ -729,8 +738,8 @@ class TestSeedCleanup:
         current_codes = {p["code"] for p in PERMISSIONS}
         assert set(call_filter["code"]["$nin"]) == current_codes
 
-    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
-    def test_cleanup_called_even_when_no_stale_permissions(
+    @patch("src.infrastructure.seed.seed_rbac.AsyncIOMotorClient")
+    async def test_cleanup_called_even_when_no_stale_permissions(
         self,
         mock_mongo_client: MagicMock,
         mock_db: MagicMock,
@@ -739,18 +748,18 @@ class TestSeedCleanup:
     ) -> None:
         """Cleanup step is always called, even if nothing needs to be deleted."""
         mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
-        mock_collections["permissions"].find_one.return_value = {"_id": "x", "code": "x"}
-        mock_collections["roles"].find_one.return_value = {"_id": "x", "name": "x"}
-        mock_collections["groups"].find_one.return_value = {"_id": "x", "name": "x"}
-        mock_collections["users"].find_one.return_value = {"_id": "x", "username": "admin"}
-        mock_collections["permissions"].delete_many.return_value = MagicMock(deleted_count=0)
+        mock_collections["permissions"].find_one = AsyncMock(return_value={"_id": "x", "code": "x"})
+        mock_collections["roles"].find_one = AsyncMock(return_value={"_id": "x", "name": "x"})
+        mock_collections["groups"].find_one = AsyncMock(return_value={"_id": "x", "name": "x"})
+        mock_collections["users"].find_one = AsyncMock(return_value={"_id": "x", "username": "admin"})
+        mock_collections["permissions"].delete_many = AsyncMock(return_value=MagicMock(deleted_count=0))
 
-        seed(settings)
+        await seed(settings)
 
         mock_collections["permissions"].delete_many.assert_called_once()
 
-    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
-    def test_cleanup_deletes_stale_roles(
+    @patch("src.infrastructure.seed.seed_rbac.AsyncIOMotorClient")
+    async def test_cleanup_deletes_stale_roles(
         self,
         mock_mongo_client: MagicMock,
         mock_db: MagicMock,
@@ -759,17 +768,17 @@ class TestSeedCleanup:
     ) -> None:
         """Cleanup step removes roles not in the current ROLES list (e.g. Auth User Manager)."""
         mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
-        mock_collections["permissions"].find_one.return_value = None
-        mock_collections["permissions"].insert_one.return_value = MagicMock(inserted_id="perm-id")
-        mock_collections["roles"].find_one.return_value = None
-        mock_collections["roles"].insert_one.return_value = MagicMock(inserted_id="role-id")
-        mock_collections["groups"].find_one.return_value = None
-        mock_collections["groups"].insert_one.return_value = MagicMock(inserted_id="group-id")
-        mock_collections["users"].find_one.return_value = None
-        mock_collections["users"].insert_one.return_value = MagicMock(inserted_id="user-id")
-        mock_collections["roles"].delete_many.return_value = MagicMock(deleted_count=2)
+        mock_collections["permissions"].find_one = AsyncMock(return_value=None)
+        mock_collections["permissions"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="perm-id"))
+        mock_collections["roles"].find_one = AsyncMock(return_value=None)
+        mock_collections["roles"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="role-id"))
+        mock_collections["groups"].find_one = AsyncMock(return_value=None)
+        mock_collections["groups"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="group-id"))
+        mock_collections["users"].find_one = AsyncMock(return_value=None)
+        mock_collections["users"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="user-id"))
+        mock_collections["roles"].delete_many = AsyncMock(return_value=MagicMock(deleted_count=2))
 
-        seed(settings)
+        await seed(settings)
 
         mock_collections["roles"].delete_many.assert_called_once()
         call_filter = mock_collections["roles"].delete_many.call_args[0][0]
@@ -777,8 +786,8 @@ class TestSeedCleanup:
         current_names = {r["name"] for r in ROLES}
         assert set(call_filter["name"]["$nin"]) == current_names
 
-    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
-    def test_cleanup_deletes_stale_groups(
+    @patch("src.infrastructure.seed.seed_rbac.AsyncIOMotorClient")
+    async def test_cleanup_deletes_stale_groups(
         self,
         mock_mongo_client: MagicMock,
         mock_db: MagicMock,
@@ -787,17 +796,17 @@ class TestSeedCleanup:
     ) -> None:
         """Cleanup step removes groups not in the current GROUPS list (e.g. Content Managers)."""
         mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
-        mock_collections["permissions"].find_one.return_value = None
-        mock_collections["permissions"].insert_one.return_value = MagicMock(inserted_id="perm-id")
-        mock_collections["roles"].find_one.return_value = None
-        mock_collections["roles"].insert_one.return_value = MagicMock(inserted_id="role-id")
-        mock_collections["groups"].find_one.return_value = None
-        mock_collections["groups"].insert_one.return_value = MagicMock(inserted_id="group-id")
-        mock_collections["users"].find_one.return_value = None
-        mock_collections["users"].insert_one.return_value = MagicMock(inserted_id="user-id")
-        mock_collections["groups"].delete_many.return_value = MagicMock(deleted_count=1)
+        mock_collections["permissions"].find_one = AsyncMock(return_value=None)
+        mock_collections["permissions"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="perm-id"))
+        mock_collections["roles"].find_one = AsyncMock(return_value=None)
+        mock_collections["roles"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="role-id"))
+        mock_collections["groups"].find_one = AsyncMock(return_value=None)
+        mock_collections["groups"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="group-id"))
+        mock_collections["users"].find_one = AsyncMock(return_value=None)
+        mock_collections["users"].insert_one = AsyncMock(return_value=MagicMock(inserted_id="user-id"))
+        mock_collections["groups"].delete_many = AsyncMock(return_value=MagicMock(deleted_count=1))
 
-        seed(settings)
+        await seed(settings)
 
         mock_collections["groups"].delete_many.assert_called_once()
         call_filter = mock_collections["groups"].delete_many.call_args[0][0]

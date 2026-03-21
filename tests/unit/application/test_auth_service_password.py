@@ -89,7 +89,7 @@ def _make_user(**overrides: object) -> User:
 
 
 class TestChangePassword:
-    def test_change_password_success(
+    async def test_change_password_success(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -99,13 +99,13 @@ class TestChangePassword:
         mock_repository.find_by_id.return_value = user
         mock_repository.save.side_effect = lambda u: u
 
-        service.change_password("user-1", "old-secret", "new-secret-password")
+        await service.change_password("user-1", "old-secret", "new-secret-password")
 
         mock_repository.save.assert_called_once()
         saved_user = mock_repository.save.call_args[0][0]
         assert AuthServiceImpl._verify_password("new-secret-password", saved_user.hashed_password)
 
-    def test_change_password_revokes_all_refresh_tokens(
+    async def test_change_password_revokes_all_refresh_tokens(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -115,11 +115,11 @@ class TestChangePassword:
         mock_repository.find_by_id.return_value = user
         mock_repository.save.side_effect = lambda u: u
 
-        service.change_password("user-1", "old-secret", "new-secret-password")
+        await service.change_password("user-1", "old-secret", "new-secret-password")
 
         mock_refresh_token_repository.revoke_all_for_user.assert_called_once_with("user-1")
 
-    def test_change_password_wrong_old_password_raises(
+    async def test_change_password_wrong_old_password_raises(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -128,9 +128,9 @@ class TestChangePassword:
         mock_repository.find_by_id.return_value = user
 
         with pytest.raises(InvalidPasswordError, match="Old password is incorrect"):
-            service.change_password("user-1", "wrong", "new-secret-password")
+            await service.change_password("user-1", "wrong", "new-secret-password")
 
-    def test_change_password_weak_new_password_raises(
+    async def test_change_password_weak_new_password_raises(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -139,9 +139,9 @@ class TestChangePassword:
         mock_repository.find_by_id.return_value = user
 
         with pytest.raises(InvalidPasswordError, match="at least 8 characters"):
-            service.change_password("user-1", "old-secret", "short")
+            await service.change_password("user-1", "old-secret", "short")
 
-    def test_change_password_user_not_found_raises(
+    async def test_change_password_user_not_found_raises(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -149,11 +149,11 @@ class TestChangePassword:
         mock_repository.find_by_id.return_value = None
 
         with pytest.raises(UserNotFoundError):
-            service.change_password("nonexistent", "old", "new-secret-password")
+            await service.change_password("nonexistent", "old", "new-secret-password")
 
 
 class TestResetPassword:
-    def test_reset_password_success(
+    async def test_reset_password_success(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -163,13 +163,13 @@ class TestResetPassword:
         mock_repository.find_by_id.return_value = user
         mock_repository.save.side_effect = lambda u: u
 
-        service.reset_password("user-1", "new-admin-password")
+        await service.reset_password("user-1", "new-admin-password")
 
         mock_repository.save.assert_called_once()
         saved_user = mock_repository.save.call_args[0][0]
         assert AuthServiceImpl._verify_password("new-admin-password", saved_user.hashed_password)
 
-    def test_reset_password_revokes_all_refresh_tokens(
+    async def test_reset_password_revokes_all_refresh_tokens(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -179,11 +179,11 @@ class TestResetPassword:
         mock_repository.find_by_id.return_value = user
         mock_repository.save.side_effect = lambda u: u
 
-        service.reset_password("user-1", "new-admin-password")
+        await service.reset_password("user-1", "new-admin-password")
 
         mock_refresh_token_repository.revoke_all_for_user.assert_called_once_with("user-1")
 
-    def test_reset_password_weak_new_password_raises(
+    async def test_reset_password_weak_new_password_raises(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -192,9 +192,9 @@ class TestResetPassword:
         mock_repository.find_by_id.return_value = user
 
         with pytest.raises(InvalidPasswordError, match="at least 8 characters"):
-            service.reset_password("user-1", "short")
+            await service.reset_password("user-1", "short")
 
-    def test_reset_password_user_not_found_raises(
+    async def test_reset_password_user_not_found_raises(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -202,4 +202,4 @@ class TestResetPassword:
         mock_repository.find_by_id.return_value = None
 
         with pytest.raises(UserNotFoundError):
-            service.reset_password("nonexistent", "new-admin-password")
+            await service.reset_password("nonexistent", "new-admin-password")
