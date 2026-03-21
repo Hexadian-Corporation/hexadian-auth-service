@@ -1,12 +1,17 @@
-import type { LoginRequest, LoginResponse } from "@/types/auth";
+import type { TokenResponse } from "@/lib/auth";
 import { authFetch } from "@/lib/auth";
 
-const API_BASE = "/api/auth";
+const API_BASE = import.meta.env.VITE_AUTH_API_URL ?? "/api/auth";
+
+export interface LoginRequest {
+  username: string;
+  password: string;
+}
 
 export async function exchangeCode(
   code: string,
   redirectUri: string,
-): Promise<{ access_token: string; refresh_token: string }> {
+): Promise<TokenResponse> {
   const response = await fetch(`${API_BASE}/token/exchange`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -15,10 +20,10 @@ export async function exchangeCode(
   if (!response.ok) {
     throw new Error(`Token exchange failed: ${response.statusText}`);
   }
-  return response.json() as Promise<{ access_token: string; refresh_token: string }>;
+  return response.json() as Promise<TokenResponse>;
 }
 
-export async function login(credentials: LoginRequest): Promise<LoginResponse> {
+export async function login(credentials: LoginRequest): Promise<TokenResponse> {
   const response = await fetch(`${API_BASE}/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -27,18 +32,19 @@ export async function login(credentials: LoginRequest): Promise<LoginResponse> {
   if (!response.ok) {
     throw new Error(`Login failed: ${response.statusText}`);
   }
-  return response.json() as Promise<LoginResponse>;
+  return response.json() as Promise<TokenResponse>;
 }
 
-export async function refreshToken(): Promise<LoginResponse> {
-  const response = await fetch(`${API_BASE}/refresh`, {
+export async function refreshToken(refreshToken: string): Promise<TokenResponse> {
+  const response = await fetch(`${API_BASE}/token/refresh`, {
     method: "POST",
-    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refresh_token: refreshToken }),
   });
   if (!response.ok) {
     throw new Error(`Token refresh failed: ${response.statusText}`);
   }
-  return response.json() as Promise<LoginResponse>;
+  return response.json() as Promise<TokenResponse>;
 }
 
 export async function changePassword(oldPassword: string, newPassword: string): Promise<void> {

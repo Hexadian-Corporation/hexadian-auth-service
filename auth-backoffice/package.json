@@ -15,6 +15,8 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@hexadian-corporation/auth-core": "file:./vendor/auth-core",
+    "@hexadian-corporation/auth-react": "github:Hexadian-Corporation/hexadian-auth-client#main/packages/react",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.577.0",

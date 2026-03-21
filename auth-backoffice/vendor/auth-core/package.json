@@ -1,0 +1,15 @@
+{
+  "name": "@hexadian-corporation/auth-core",
+  "version": "0.0.0",
+  "description": "Framework-agnostic auth utilities for Hexadian Auth Service (vendored)",
+  "type": "module",
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./index.js",
+      "types": "./index.d.ts"
+    }
+  },
+  "license": "SEE LICENSE IN LICENSE"
+}
