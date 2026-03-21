@@ -74,37 +74,49 @@ def service(
 
 
 class TestUpdateUserUsername:
-    def test_update_username_success(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
+    async def test_update_username_success(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
         updated_user = User(id="user-1", username="newname", rsi_handle="Pilot")
         mock_repository.find_by_username.return_value = None
         mock_repository.update.return_value = updated_user
 
-        result = service.update_user("user-1", {"username": "newname"})
+        result = await service.update_user("user-1", {"username": "newname"})
 
         assert result.username == "newname"
         mock_repository.update.assert_called_once_with("user-1", {"username": "newname"})
 
-    def test_update_username_same_user_keeps_own(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
+    async def test_update_username_same_user_keeps_own(
+        self,
+        service: AuthServiceImpl,
+        mock_repository: MagicMock,
+    ) -> None:
         existing = User(id="user-1", username="samename")
         mock_repository.find_by_username.return_value = existing
         updated_user = User(id="user-1", username="samename")
         mock_repository.update.return_value = updated_user
 
-        result = service.update_user("user-1", {"username": "samename"})
+        result = await service.update_user("user-1", {"username": "samename"})
 
         assert result.username == "samename"
         mock_repository.update.assert_called_once()
 
-    def test_update_username_duplicate_raises_409(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
+    async def test_update_username_duplicate_raises_409(
+        self,
+        service: AuthServiceImpl,
+        mock_repository: MagicMock,
+    ) -> None:
         other_user = User(id="user-2", username="taken")
         mock_repository.find_by_username.return_value = other_user
 
         with pytest.raises(UserAlreadyExistsError):
-            service.update_user("user-1", {"username": "taken"})
+            await service.update_user("user-1", {"username": "taken"})
 
 
 class TestUpdateUserRsiHandle:
-    def test_update_rsi_handle_resets_verification(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
+    async def test_update_rsi_handle_resets_verification(
+        self,
+        service: AuthServiceImpl,
+        mock_repository: MagicMock,
+    ) -> None:
         updated_user = User(
             id="user-1",
             username="test",
@@ -114,7 +126,7 @@ class TestUpdateUserRsiHandle:
         )
         mock_repository.update.return_value = updated_user
 
-        result = service.update_user("user-1", {"rsi_handle": "NewHandle"})
+        result = await service.update_user("user-1", {"rsi_handle": "NewHandle"})
 
         assert result.rsi_verified is False
         mock_repository.update.assert_called_once_with(
@@ -122,41 +134,41 @@ class TestUpdateUserRsiHandle:
             {"rsi_handle": "NewHandle", "rsi_verified": False, "rsi_verification_code": None},
         )
 
-    def test_update_rsi_handle_invalid_format_raises(self, service: AuthServiceImpl) -> None:
+    async def test_update_rsi_handle_invalid_format_raises(self, service: AuthServiceImpl) -> None:
         with pytest.raises(ValueError, match="Invalid RSI handle format"):
-            service.update_user("user-1", {"rsi_handle": "ab"})
+            await service.update_user("user-1", {"rsi_handle": "ab"})
 
-    def test_update_rsi_handle_special_chars_raises(self, service: AuthServiceImpl) -> None:
+    async def test_update_rsi_handle_special_chars_raises(self, service: AuthServiceImpl) -> None:
         with pytest.raises(ValueError, match="Invalid RSI handle format"):
-            service.update_user("user-1", {"rsi_handle": "bad handle!"})
+            await service.update_user("user-1", {"rsi_handle": "bad handle!"})
 
-    def test_update_rsi_handle_too_long_raises(self, service: AuthServiceImpl) -> None:
+    async def test_update_rsi_handle_too_long_raises(self, service: AuthServiceImpl) -> None:
         with pytest.raises(ValueError, match="Invalid RSI handle format"):
-            service.update_user("user-1", {"rsi_handle": "a" * 31})
+            await service.update_user("user-1", {"rsi_handle": "a" * 31})
 
 
 class TestUpdateUserGeneral:
-    def test_update_user_not_found_raises(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
+    async def test_update_user_not_found_raises(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
         mock_repository.find_by_username.return_value = None
         mock_repository.update.return_value = None
 
         with pytest.raises(UserNotFoundError):
-            service.update_user("nonexistent", {"username": "newname"})
+            await service.update_user("nonexistent", {"username": "newname"})
 
-    def test_update_disallowed_field_raises(self, service: AuthServiceImpl) -> None:
+    async def test_update_disallowed_field_raises(self, service: AuthServiceImpl) -> None:
         with pytest.raises(ValueError, match="Field not editable"):
-            service.update_user("user-1", {"hashed_password": "evil"})
+            await service.update_user("user-1", {"hashed_password": "evil"})
 
-    def test_update_empty_dict_returns_user(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
+    async def test_update_empty_dict_returns_user(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
         user = User(id="user-1", username="test")
         mock_repository.find_by_id.return_value = user
 
-        result = service.update_user("user-1", {})
+        result = await service.update_user("user-1", {})
 
         assert result.id == "user-1"
         mock_repository.update.assert_not_called()
 
-    def test_update_both_fields(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
+    async def test_update_both_fields(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
         updated_user = User(
             id="user-1",
             username="newname",
@@ -166,7 +178,7 @@ class TestUpdateUserGeneral:
         mock_repository.find_by_username.return_value = None
         mock_repository.update.return_value = updated_user
 
-        result = service.update_user("user-1", {"username": "newname", "rsi_handle": "NewHandle"})
+        result = await service.update_user("user-1", {"username": "newname", "rsi_handle": "NewHandle"})
 
         assert result.username == "newname"
         assert result.rsi_handle == "NewHandle"

@@ -93,7 +93,7 @@ def _make_user(**overrides: object) -> User:
 
 
 class TestAuthenticate:
-    def test_authenticate_returns_token_response(
+    async def test_authenticate_returns_token_response(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -104,14 +104,14 @@ class TestAuthenticate:
         mock_repository.find_by_username.return_value = user
         mock_refresh_token_repository.save.side_effect = lambda t: t
 
-        result = service.authenticate("testuser", "secret")
+        result = await service.authenticate("testuser", "secret")
 
         assert result.token_type == "bearer"
         assert result.expires_in == 900
         assert isinstance(result.access_token, str)
         assert isinstance(result.refresh_token, str)
 
-    def test_authenticate_access_token_has_correct_claims(
+    async def test_authenticate_access_token_has_correct_claims(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -122,7 +122,7 @@ class TestAuthenticate:
         mock_repository.find_by_username.return_value = user
         mock_refresh_token_repository.save.side_effect = lambda t: t
 
-        result = service.authenticate("testuser", "secret")
+        result = await service.authenticate("testuser", "secret")
 
         decoded = jwt.decode(result.access_token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
         assert decoded["sub"] == "user-1"
@@ -135,7 +135,7 @@ class TestAuthenticate:
         assert "iat" in decoded
         assert "exp" in decoded
 
-    def test_authenticate_access_token_expires_in_15_minutes(
+    async def test_authenticate_access_token_expires_in_15_minutes(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -146,14 +146,14 @@ class TestAuthenticate:
         mock_repository.find_by_username.return_value = user
         mock_refresh_token_repository.save.side_effect = lambda t: t
 
-        result = service.authenticate("testuser", "secret")
+        result = await service.authenticate("testuser", "secret")
 
         decoded = jwt.decode(result.access_token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
         exp = decoded["exp"]
         iat = decoded["iat"]
         assert exp - iat == 15 * 60
 
-    def test_authenticate_saves_refresh_token(
+    async def test_authenticate_saves_refresh_token(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -163,14 +163,14 @@ class TestAuthenticate:
         mock_repository.find_by_username.return_value = user
         mock_refresh_token_repository.save.side_effect = lambda t: t
 
-        service.authenticate("testuser", "secret")
+        await service.authenticate("testuser", "secret")
 
         mock_refresh_token_repository.save.assert_called_once()
         saved_token = mock_refresh_token_repository.save.call_args[0][0]
         assert saved_token.user_id == "user-1"
         assert len(saved_token.token) == 36  # UUID format
 
-    def test_authenticate_invalid_credentials_raises(
+    async def test_authenticate_invalid_credentials_raises(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -178,9 +178,9 @@ class TestAuthenticate:
         mock_repository.find_by_username.return_value = None
 
         with pytest.raises(InvalidCredentialsError):
-            service.authenticate("testuser", "wrong")
+            await service.authenticate("testuser", "wrong")
 
-    def test_authenticate_wrong_password_raises(
+    async def test_authenticate_wrong_password_raises(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -189,11 +189,11 @@ class TestAuthenticate:
         mock_repository.find_by_username.return_value = user
 
         with pytest.raises(InvalidCredentialsError):
-            service.authenticate("testuser", "wrong")
+            await service.authenticate("testuser", "wrong")
 
 
 class TestRefreshToken:
-    def test_refresh_token_returns_new_token_pair(
+    async def test_refresh_token_returns_new_token_pair(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -211,13 +211,13 @@ class TestRefreshToken:
         mock_repository.find_by_id.return_value = user
         mock_refresh_token_repository.save.side_effect = lambda t: t
 
-        result = service.refresh_token("old-refresh-token")
+        result = await service.refresh_token("old-refresh-token")
 
         assert result.token_type == "bearer"
         assert result.access_token is not None
         assert result.refresh_token != "old-refresh-token"
 
-    def test_refresh_token_revokes_old_token(
+    async def test_refresh_token_revokes_old_token(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -234,11 +234,11 @@ class TestRefreshToken:
         mock_repository.find_by_id.return_value = user
         mock_refresh_token_repository.save.side_effect = lambda t: t
 
-        service.refresh_token("old-refresh-token")
+        await service.refresh_token("old-refresh-token")
 
         mock_refresh_token_repository.revoke.assert_called_once_with("old-refresh-token")
 
-    def test_refresh_token_not_found_raises(
+    async def test_refresh_token_not_found_raises(
         self,
         service: AuthServiceImpl,
         mock_refresh_token_repository: MagicMock,
@@ -246,9 +246,9 @@ class TestRefreshToken:
         mock_refresh_token_repository.find_by_token.return_value = None
 
         with pytest.raises(RefreshTokenNotFoundError):
-            service.refresh_token("nonexistent")
+            await service.refresh_token("nonexistent")
 
-    def test_refresh_token_revoked_raises(
+    async def test_refresh_token_revoked_raises(
         self,
         service: AuthServiceImpl,
         mock_refresh_token_repository: MagicMock,
@@ -263,9 +263,9 @@ class TestRefreshToken:
         mock_refresh_token_repository.find_by_token.return_value = existing
 
         with pytest.raises(RefreshTokenNotFoundError):
-            service.refresh_token("revoked-token")
+            await service.refresh_token("revoked-token")
 
-    def test_refresh_token_expired_raises(
+    async def test_refresh_token_expired_raises(
         self,
         service: AuthServiceImpl,
         mock_refresh_token_repository: MagicMock,
@@ -279,9 +279,9 @@ class TestRefreshToken:
         mock_refresh_token_repository.find_by_token.return_value = existing
 
         with pytest.raises(RefreshTokenNotFoundError):
-            service.refresh_token("expired-token")
+            await service.refresh_token("expired-token")
 
-    def test_refresh_token_user_not_found_raises(
+    async def test_refresh_token_user_not_found_raises(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -297,9 +297,9 @@ class TestRefreshToken:
         mock_repository.find_by_id.return_value = None
 
         with pytest.raises(UserNotFoundError):
-            service.refresh_token("valid-token")
+            await service.refresh_token("valid-token")
 
-    def test_refresh_token_re_resolves_user_claims(
+    async def test_refresh_token_re_resolves_user_claims(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -317,14 +317,14 @@ class TestRefreshToken:
         mock_repository.find_by_id.return_value = user
         mock_refresh_token_repository.save.side_effect = lambda t: t
 
-        result = service.refresh_token("old-token")
+        result = await service.refresh_token("old-token")
 
         decoded = jwt.decode(result.access_token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
         assert decoded["rsi_verified"] is True
 
 
 class TestRevokeToken:
-    def test_revoke_token_success(
+    async def test_revoke_token_success(
         self,
         service: AuthServiceImpl,
         mock_refresh_token_repository: MagicMock,
@@ -336,11 +336,11 @@ class TestRevokeToken:
         )
         mock_refresh_token_repository.find_by_token.return_value = existing
 
-        service.revoke_token("token-to-revoke")
+        await service.revoke_token("token-to-revoke")
 
         mock_refresh_token_repository.revoke.assert_called_once_with("token-to-revoke")
 
-    def test_revoke_token_not_found_raises(
+    async def test_revoke_token_not_found_raises(
         self,
         service: AuthServiceImpl,
         mock_refresh_token_repository: MagicMock,
@@ -348,11 +348,11 @@ class TestRevokeToken:
         mock_refresh_token_repository.find_by_token.return_value = None
 
         with pytest.raises(RefreshTokenNotFoundError):
-            service.revoke_token("nonexistent")
+            await service.revoke_token("nonexistent")
 
 
 class TestRbacClaims:
-    def test_login_jwt_contains_rbac_claims(
+    async def test_login_jwt_contains_rbac_claims(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -369,14 +369,14 @@ class TestRbacClaims:
             permissions=["hhh:contracts:read", "hhh:contracts:write"],
         )
 
-        result = service.authenticate("testuser", "secret")
+        result = await service.authenticate("testuser", "secret")
 
         decoded = jwt.decode(result.access_token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
         assert decoded["groups"] == ["Admins"]
         assert decoded["roles"] == ["Super Admin"]
         assert decoded["permissions"] == ["hhh:contracts:read", "hhh:contracts:write"]
 
-    def test_refresh_re_resolves_rbac_claims_from_db(
+    async def test_refresh_re_resolves_rbac_claims_from_db(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -400,7 +400,7 @@ class TestRbacClaims:
             permissions=["hhh:contracts:read"],
         )
 
-        result = service.refresh_token("old-token")
+        result = await service.refresh_token("old-token")
 
         decoded = jwt.decode(result.access_token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
         assert decoded["groups"] == ["Users"]
@@ -408,7 +408,7 @@ class TestRbacClaims:
         assert decoded["permissions"] == ["hhh:contracts:read"]
         mock_rbac_service.resolve_rbac_claims.assert_called_once_with(user.id)
 
-    def test_token_with_no_groups_has_empty_claims(
+    async def test_token_with_no_groups_has_empty_claims(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -421,14 +421,14 @@ class TestRbacClaims:
         mock_refresh_token_repository.save.side_effect = lambda t: t
         mock_rbac_service.resolve_rbac_claims.return_value = RbacClaims()
 
-        result = service.authenticate("testuser", "secret")
+        result = await service.authenticate("testuser", "secret")
 
         decoded = jwt.decode(result.access_token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
         assert decoded["groups"] == []
         assert decoded["roles"] == []
         assert decoded["permissions"] == []
 
-    def test_token_with_multiple_groups_deduplicates_permissions(
+    async def test_token_with_multiple_groups_deduplicates_permissions(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -445,14 +445,14 @@ class TestRbacClaims:
             permissions=["hhh:contracts:read", "hhh:contracts:write", "auth:users:admin"],
         )
 
-        result = service.authenticate("testuser", "secret")
+        result = await service.authenticate("testuser", "secret")
 
         decoded = jwt.decode(result.access_token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
         assert decoded["groups"] == ["Admins", "Users"]
         assert decoded["roles"] == ["Super Admin", "Member"]
         assert decoded["permissions"] == ["hhh:contracts:read", "hhh:contracts:write", "auth:users:admin"]
 
-    def test_refresh_picks_up_permission_changes(
+    async def test_refresh_picks_up_permission_changes(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -469,7 +469,7 @@ class TestRbacClaims:
             roles=["Member"],
             permissions=["hhh:contracts:read"],
         )
-        login_result = service.authenticate("testuser", "secret")
+        login_result = await service.authenticate("testuser", "secret")
         login_decoded = jwt.decode(login_result.access_token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
         assert login_decoded["permissions"] == ["hhh:contracts:read"]
 
@@ -487,7 +487,7 @@ class TestRbacClaims:
             roles=["Super Admin", "Member"],
             permissions=["hhh:contracts:read", "hhh:contracts:write", "auth:users:admin"],
         )
-        refresh_result = service.refresh_token(login_result.refresh_token)
+        refresh_result = await service.refresh_token(login_result.refresh_token)
         refresh_decoded = jwt.decode(
             refresh_result.access_token, settings.jwt_secret, algorithms=[settings.jwt_algorithm]
         )

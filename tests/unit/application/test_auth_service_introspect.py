@@ -104,7 +104,7 @@ def _make_access_token(settings: Settings, **overrides: object) -> str:
 
 
 class TestIntrospectTokenActiveUser:
-    def test_valid_token_active_user_returns_active_true(
+    async def test_valid_token_active_user_returns_active_true(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -113,7 +113,7 @@ class TestIntrospectTokenActiveUser:
         token = _make_access_token(settings)
         mock_repository.find_by_id.return_value = _make_user()
 
-        result = service.introspect_token(token)
+        result = await service.introspect_token(token)
 
         assert result.active is True
         assert result.sub == "user-1"
@@ -128,7 +128,7 @@ class TestIntrospectTokenActiveUser:
         assert result.iat is not None
         assert result.reason is None
 
-    def test_valid_token_active_user_calls_find_by_id(
+    async def test_valid_token_active_user_calls_find_by_id(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -137,13 +137,13 @@ class TestIntrospectTokenActiveUser:
         token = _make_access_token(settings)
         mock_repository.find_by_id.return_value = _make_user()
 
-        service.introspect_token(token)
+        await service.introspect_token(token)
 
         mock_repository.find_by_id.assert_called_once_with("user-1")
 
 
 class TestIntrospectTokenDeactivatedUser:
-    def test_valid_token_deactivated_user_returns_active_false_with_reason(
+    async def test_valid_token_deactivated_user_returns_active_false_with_reason(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -152,13 +152,13 @@ class TestIntrospectTokenDeactivatedUser:
         token = _make_access_token(settings)
         mock_repository.find_by_id.return_value = _make_user(is_active=False)
 
-        result = service.introspect_token(token)
+        result = await service.introspect_token(token)
 
         assert result.active is False
         assert result.sub == "user-1"
         assert result.reason == "user_deactivated"
 
-    def test_valid_token_nonexistent_user_returns_active_false_with_reason(
+    async def test_valid_token_nonexistent_user_returns_active_false_with_reason(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -167,7 +167,7 @@ class TestIntrospectTokenDeactivatedUser:
         token = _make_access_token(settings)
         mock_repository.find_by_id.return_value = None
 
-        result = service.introspect_token(token)
+        result = await service.introspect_token(token)
 
         assert result.active is False
         assert result.sub == "user-1"
@@ -175,7 +175,7 @@ class TestIntrospectTokenDeactivatedUser:
 
 
 class TestIntrospectTokenInvalidTokens:
-    def test_expired_token_returns_active_false(
+    async def test_expired_token_returns_active_false(
         self,
         service: AuthServiceImpl,
         settings: Settings,
@@ -185,13 +185,13 @@ class TestIntrospectTokenInvalidTokens:
             exp=datetime.now(tz=UTC) - timedelta(minutes=1),
         )
 
-        result = service.introspect_token(token)
+        result = await service.introspect_token(token)
 
         assert result.active is False
         assert result.sub is None
         assert result.reason is None
 
-    def test_invalid_signature_returns_active_false(
+    async def test_invalid_signature_returns_active_false(
         self,
         service: AuthServiceImpl,
         settings: Settings,
@@ -202,30 +202,30 @@ class TestIntrospectTokenInvalidTokens:
             algorithm="HS256",
         )
 
-        result = service.introspect_token(token)
+        result = await service.introspect_token(token)
 
         assert result.active is False
         assert result.sub is None
 
-    def test_malformed_token_returns_active_false(
+    async def test_malformed_token_returns_active_false(
         self,
         service: AuthServiceImpl,
     ) -> None:
-        result = service.introspect_token("not-a-valid-jwt")
+        result = await service.introspect_token("not-a-valid-jwt")
 
         assert result.active is False
         assert result.sub is None
 
-    def test_empty_token_returns_active_false(
+    async def test_empty_token_returns_active_false(
         self,
         service: AuthServiceImpl,
     ) -> None:
-        result = service.introspect_token("")
+        result = await service.introspect_token("")
 
         assert result.active is False
         assert result.sub is None
 
-    def test_token_without_sub_returns_active_false(
+    async def test_token_without_sub_returns_active_false(
         self,
         service: AuthServiceImpl,
         settings: Settings,
@@ -236,7 +236,7 @@ class TestIntrospectTokenInvalidTokens:
             algorithm=settings.jwt_algorithm,
         )
 
-        result = service.introspect_token(token)
+        result = await service.introspect_token(token)
 
         assert result.active is False
         assert result.sub is None

@@ -205,7 +205,9 @@ async def get_group(group_id: str) -> GroupDTO:
 )
 async def update_group(group_id: str, dto: GroupCreateDTO) -> GroupDTO:
     try:
-        group = await _rbac_service.update_group(group_id, dto.name, dto.description, dto.role_ids, dto.auto_assign_apps)
+        group = await _rbac_service.update_group(
+            group_id, dto.name, dto.description, dto.role_ids, dto.auto_assign_apps
+        )
     except GroupNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     return RbacApiMapper.group_to_dto(group)

@@ -76,11 +76,11 @@ def service(
 
 
 class TestStartVerification:
-    def test_start_verification_success(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
+    async def test_start_verification_success(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
         user = User(id="user-1", username="test")
         mock_repository.find_by_id.return_value = user
 
-        code = service.start_verification("user-1", "ValidHandle")
+        code = await service.start_verification("user-1", "ValidHandle")
 
         assert code.startswith(_VERIFICATION_PREFIX)
         words_part = code[len(_VERIFICATION_PREFIX) :]
@@ -92,47 +92,51 @@ class TestStartVerification:
         assert user.rsi_verified is False
         mock_repository.save.assert_called_once_with(user)
 
-    def test_start_verification_invalid_handle_too_short(self, service: AuthServiceImpl) -> None:
+    async def test_start_verification_invalid_handle_too_short(self, service: AuthServiceImpl) -> None:
         with pytest.raises(ValueError, match="Invalid RSI handle format"):
-            service.start_verification("user-1", "ab")
+            await service.start_verification("user-1", "ab")
 
-    def test_start_verification_invalid_handle_special_chars(self, service: AuthServiceImpl) -> None:
+    async def test_start_verification_invalid_handle_special_chars(self, service: AuthServiceImpl) -> None:
         with pytest.raises(ValueError, match="Invalid RSI handle format"):
-            service.start_verification("user-1", "bad handle!")
+            await service.start_verification("user-1", "bad handle!")
 
-    def test_start_verification_invalid_handle_too_long(self, service: AuthServiceImpl) -> None:
+    async def test_start_verification_invalid_handle_too_long(self, service: AuthServiceImpl) -> None:
         with pytest.raises(ValueError, match="Invalid RSI handle format"):
-            service.start_verification("user-1", "a" * 31)
+            await service.start_verification("user-1", "a" * 31)
 
-    def test_start_verification_user_not_found(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
+    async def test_start_verification_user_not_found(
+        self,
+        service: AuthServiceImpl,
+        mock_repository: MagicMock,
+    ) -> None:
         mock_repository.find_by_id.return_value = None
 
         with pytest.raises(UserNotFoundError):
-            service.start_verification("nonexistent", "ValidHandle")
+            await service.start_verification("nonexistent", "ValidHandle")
 
-    def test_start_verification_resets_verified_flag(
+    async def test_start_verification_resets_verified_flag(
         self, service: AuthServiceImpl, mock_repository: MagicMock
     ) -> None:
         user = User(id="user-1", username="test", rsi_verified=True)
         mock_repository.find_by_id.return_value = user
 
-        service.start_verification("user-1", "NewHandle")
+        await service.start_verification("user-1", "NewHandle")
 
         assert user.rsi_verified is False
 
-    def test_start_verification_valid_handle_formats(
+    async def test_start_verification_valid_handle_formats(
         self, service: AuthServiceImpl, mock_repository: MagicMock
     ) -> None:
         user = User(id="user-1", username="test")
         mock_repository.find_by_id.return_value = user
 
         for handle in ["abc", "My-Handle_123", "A" * 30]:
-            code = service.start_verification("user-1", handle)
+            code = await service.start_verification("user-1", handle)
             assert code is not None
 
 
 class TestConfirmVerification:
-    def test_confirm_verification_success(
+    async def test_confirm_verification_success(
         self, service: AuthServiceImpl, mock_repository: MagicMock, mock_rsi_fetcher: MagicMock
     ) -> None:
         code = "hxn_alpha-brave-delta-ember"
@@ -145,13 +149,13 @@ class TestConfirmVerification:
         mock_repository.find_by_id.return_value = user
         mock_rsi_fetcher.fetch_profile_bio.return_value = f"My bio text {code} more text"
 
-        result = service.confirm_verification("user-1")
+        result = await service.confirm_verification("user-1")
 
         assert result is True
         assert user.rsi_verified is True
         mock_repository.save.assert_called_once_with(user)
 
-    def test_confirm_verification_code_not_found(
+    async def test_confirm_verification_code_not_found(
         self, service: AuthServiceImpl, mock_repository: MagicMock, mock_rsi_fetcher: MagicMock
     ) -> None:
         code = "hxn_alpha-brave-delta-ember"
@@ -164,13 +168,13 @@ class TestConfirmVerification:
         mock_repository.find_by_id.return_value = user
         mock_rsi_fetcher.fetch_profile_bio.return_value = "Some bio without the code"
 
-        result = service.confirm_verification("user-1")
+        result = await service.confirm_verification("user-1")
 
         assert result is False
         assert user.rsi_verified is False
         mock_repository.save.assert_not_called()
 
-    def test_confirm_verification_profile_not_found(
+    async def test_confirm_verification_profile_not_found(
         self, service: AuthServiceImpl, mock_repository: MagicMock, mock_rsi_fetcher: MagicMock
     ) -> None:
         code = "hxn_alpha-brave-delta-ember"
@@ -183,25 +187,29 @@ class TestConfirmVerification:
         mock_repository.find_by_id.return_value = user
         mock_rsi_fetcher.fetch_profile_bio.return_value = None
 
-        result = service.confirm_verification("user-1")
+        result = await service.confirm_verification("user-1")
 
         assert result is False
         assert user.rsi_verified is False
 
-    def test_confirm_verification_user_not_found(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
+    async def test_confirm_verification_user_not_found(
+        self,
+        service: AuthServiceImpl,
+        mock_repository: MagicMock,
+    ) -> None:
         mock_repository.find_by_id.return_value = None
 
         with pytest.raises(UserNotFoundError):
-            service.confirm_verification("nonexistent")
+            await service.confirm_verification("nonexistent")
 
-    def test_confirm_verification_not_started(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
+    async def test_confirm_verification_not_started(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
         user = User(id="user-1", username="test")
         mock_repository.find_by_id.return_value = user
 
         with pytest.raises(ValueError, match="Verification not started"):
-            service.confirm_verification("user-1")
+            await service.confirm_verification("user-1")
 
-    def test_confirm_verification_persists_verified_to_db(
+    async def test_confirm_verification_persists_verified_to_db(
         self, service: AuthServiceImpl, mock_repository: MagicMock, mock_rsi_fetcher: MagicMock
     ) -> None:
         code = "hxn_alpha-brave-delta-ember"
@@ -215,7 +223,7 @@ class TestConfirmVerification:
         mock_repository.find_by_id.return_value = user
         mock_rsi_fetcher.fetch_profile_bio.return_value = f"Hello! {code} Bye!"
 
-        service.confirm_verification("user-1")
+        await service.confirm_verification("user-1")
 
         saved_user = mock_repository.save.call_args[0][0]
         assert saved_user.rsi_verified is True
@@ -223,61 +231,65 @@ class TestConfirmVerification:
 
 
 class TestRegister:
-    def test_register_success(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
+    async def test_register_success(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
         mock_repository.find_by_username.return_value = None
         mock_repository.save.side_effect = lambda u: setattr(u, "id", "new-id") or u
 
-        user = service.register("newuser", "securepassword", "ValidPilot")
+        user = await service.register("newuser", "securepassword", "ValidPilot")
 
         assert user.username == "newuser"
         assert user.rsi_handle == "ValidPilot"
         assert not hasattr(user, "email")
         mock_repository.save.assert_called_once()
 
-    def test_register_duplicate_username_raises(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
+    async def test_register_duplicate_username_raises(
+        self,
+        service: AuthServiceImpl,
+        mock_repository: MagicMock,
+    ) -> None:
         mock_repository.find_by_username.return_value = User(id="existing", username="taken")
 
         with pytest.raises(UserAlreadyExistsError):
-            service.register("taken", "pw", "Pilot123")
+            await service.register("taken", "pw", "Pilot123")
 
-    def test_register_invalid_rsi_handle_raises(self, service: AuthServiceImpl) -> None:
+    async def test_register_invalid_rsi_handle_raises(self, service: AuthServiceImpl) -> None:
         with pytest.raises(ValueError, match="Invalid RSI handle format"):
-            service.register("user", "pw", "ab")
+            await service.register("user", "pw", "ab")
 
-    def test_register_invalid_rsi_handle_special_chars_raises(self, service: AuthServiceImpl) -> None:
+    async def test_register_invalid_rsi_handle_special_chars_raises(self, service: AuthServiceImpl) -> None:
         with pytest.raises(ValueError, match="Invalid RSI handle format"):
-            service.register("user", "pw", "bad handle!")
+            await service.register("user", "pw", "bad handle!")
 
-    def test_register_invalid_rsi_handle_too_long_raises(self, service: AuthServiceImpl) -> None:
+    async def test_register_invalid_rsi_handle_too_long_raises(self, service: AuthServiceImpl) -> None:
         with pytest.raises(ValueError, match="Invalid RSI handle format"):
-            service.register("user", "pw", "a" * 31)
+            await service.register("user", "pw", "a" * 31)
 
-    def test_register_assigns_users_group(
+    async def test_register_assigns_users_group(
         self, service: AuthServiceImpl, mock_repository: MagicMock, mock_group_repository: MagicMock
     ) -> None:
         mock_repository.find_by_username.return_value = None
         mock_repository.save.side_effect = lambda u: setattr(u, "id", "new-id") or u
         mock_group_repository.find_by_name.return_value = Group(id="group-users-id", name="Users")
 
-        user = service.register("newuser", "pw", "ValidPilot")
+        user = await service.register("newuser", "pw", "ValidPilot")
 
         mock_group_repository.find_by_name.assert_called_once_with("Users")
         assert user.group_ids == ["group-users-id"]
 
-    def test_register_no_users_group_succeeds(
+    async def test_register_no_users_group_succeeds(
         self, service: AuthServiceImpl, mock_repository: MagicMock, mock_group_repository: MagicMock
     ) -> None:
         mock_repository.find_by_username.return_value = None
         mock_repository.save.side_effect = lambda u: setattr(u, "id", "new-id") or u
         mock_group_repository.find_by_name.return_value = None
 
-        user = service.register("newuser", "pw", "ValidPilot")
+        user = await service.register("newuser", "pw", "ValidPilot")
 
         assert user.group_ids == []
 
 
 class TestRegisterWithAppId:
-    def test_valid_app_id_assigns_matching_groups(
+    async def test_valid_app_id_assigns_matching_groups(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -294,13 +306,13 @@ class TestRegisterWithAppId:
         mock_group_repository.find_by_name.return_value = users_group
 
         sig = sign_app_id("hhh-frontend", settings.app_signing_secret)
-        user = service.register("newuser", "pw", "ValidPilot", app_id="hhh-frontend", app_signature=sig)
+        user = await service.register("newuser", "pw", "ValidPilot", app_id="hhh-frontend", app_signature=sig)
 
         assert "g-users" in user.group_ids
         assert "g-hhh" in user.group_ids
         assert len(user.group_ids) == 2
 
-    def test_valid_app_id_deduplicates_users_group(
+    async def test_valid_app_id_deduplicates_users_group(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -316,23 +328,27 @@ class TestRegisterWithAppId:
         mock_group_repository.find_by_name.return_value = users_group
 
         sig = sign_app_id("hhh-frontend", settings.app_signing_secret)
-        user = service.register("newuser", "pw", "ValidPilot", app_id="hhh-frontend", app_signature=sig)
+        user = await service.register("newuser", "pw", "ValidPilot", app_id="hhh-frontend", app_signature=sig)
 
         assert user.group_ids == ["g-users"]
 
-    def test_invalid_signature_raises_403(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
+    async def test_invalid_signature_raises_403(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
         mock_repository.find_by_username.return_value = None
 
         with pytest.raises(InvalidAppSignatureError):
-            service.register("newuser", "pw", "ValidPilot", app_id="hhh-frontend", app_signature="bad-sig")
+            await service.register("newuser", "pw", "ValidPilot", app_id="hhh-frontend", app_signature="bad-sig")
 
-    def test_app_id_without_signature_raises_403(self, service: AuthServiceImpl, mock_repository: MagicMock) -> None:
+    async def test_app_id_without_signature_raises_403(
+        self,
+        service: AuthServiceImpl,
+        mock_repository: MagicMock,
+    ) -> None:
         mock_repository.find_by_username.return_value = None
 
         with pytest.raises(InvalidAppSignatureError):
-            service.register("newuser", "pw", "ValidPilot", app_id="hhh-frontend", app_signature=None)
+            await service.register("newuser", "pw", "ValidPilot", app_id="hhh-frontend", app_signature=None)
 
-    def test_app_id_no_matching_groups_still_gets_users(
+    async def test_app_id_no_matching_groups_still_gets_users(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -347,11 +363,11 @@ class TestRegisterWithAppId:
         mock_group_repository.find_by_name.return_value = Group(id="g-users", name="Users")
 
         sig = sign_app_id("unknown-app", settings.app_signing_secret)
-        user = service.register("newuser", "pw", "ValidPilot", app_id="unknown-app", app_signature=sig)
+        user = await service.register("newuser", "pw", "ValidPilot", app_id="unknown-app", app_signature=sig)
 
         assert user.group_ids == ["g-users"]
 
-    def test_no_app_id_backward_compatible(
+    async def test_no_app_id_backward_compatible(
         self,
         service: AuthServiceImpl,
         mock_repository: MagicMock,
@@ -361,7 +377,7 @@ class TestRegisterWithAppId:
         mock_repository.save.side_effect = lambda u: setattr(u, "id", "new-id") or u
         mock_group_repository.find_by_name.return_value = Group(id="g-users", name="Users")
 
-        user = service.register("newuser", "pw", "ValidPilot")
+        user = await service.register("newuser", "pw", "ValidPilot")
 
         mock_group_repository.find_by_app_id.assert_not_called()
         assert user.group_ids == ["g-users"]
