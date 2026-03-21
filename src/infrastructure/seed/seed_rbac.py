@@ -1,7 +1,8 @@
+import asyncio
 import hashlib
 import secrets
 
-from pymongo import MongoClient
+from motor.motor_asyncio import AsyncIOMotorClient
 
 from src.infrastructure.config.settings import Settings
 
@@ -237,11 +238,11 @@ def _hash_password(password: str) -> str:
     return f"{salt}:{hashed.hex()}"
 
 
-def seed(settings: Settings | None = None) -> None:
+async def seed(settings: Settings | None = None) -> None:
     if settings is None:
         settings = Settings()
 
-    client: MongoClient = MongoClient(settings.mongo_uri)
+    client: AsyncIOMotorClient = AsyncIOMotorClient(settings.mongo_uri)
     try:
         db = client[settings.mongo_db]
 
@@ -250,67 +251,73 @@ def seed(settings: Settings | None = None) -> None:
         groups_col = db["groups"]
         users_col = db["users"]
 
-        # --- Permissions ---
-        perm_id_map: dict[str, str] = {}
-        for perm in PERMISSIONS:
-            existing = permissions_col.find_one({"code": perm["code"]})
+        # ==================== PHASE 1: Permissions ====================
+        # Each permission is independent — parallelise get-or-create
+        async def _ensure_permission(perm: dict[str, str]) -> tuple[str, str]:
+            existing = await permissions_col.find_one({"code": perm["code"]})
             if existing:
-                perm_id_map[perm["code"]] = str(existing["_id"])
-            else:
-                result = permissions_col.insert_one({"code": perm["code"], "description": perm["description"]})
-                perm_id_map[perm["code"]] = str(result.inserted_id)
+                return perm["code"], str(existing["_id"])
+            result = await permissions_col.insert_one({"code": perm["code"], "description": perm["description"]})
+            return perm["code"], str(result.inserted_id)
+
+        perm_pairs = await asyncio.gather(*[_ensure_permission(p) for p in PERMISSIONS])
+        perm_id_map: dict[str, str] = dict(perm_pairs)
         print(f"Permissions: {len(perm_id_map)} ready")
 
-        # --- Roles ---
-        role_id_map: dict[str, str] = {}
-        for role_def in ROLES:
+        # ==================== PHASE 2: Roles ====================
+        # All roles are independent given perm_id_map — parallelise
+        async def _ensure_role(role_def: dict[str, object]) -> tuple[str, str]:
             name = str(role_def["name"])
-            existing = roles_col.find_one({"name": name})
+            existing = await roles_col.find_one({"name": name})
             if existing:
-                role_id_map[name] = str(existing["_id"])
-            else:
-                permission_codes = role_def["permission_codes"]
-                assert isinstance(permission_codes, list)
-                permission_ids = [perm_id_map[code] for code in permission_codes]
-                result = roles_col.insert_one(
-                    {
-                        "name": name,
-                        "description": role_def["description"],
-                        "permission_ids": permission_ids,
-                    }
-                )
-                role_id_map[name] = str(result.inserted_id)
+                return name, str(existing["_id"])
+            permission_codes = role_def["permission_codes"]
+            assert isinstance(permission_codes, list)
+            permission_ids = [perm_id_map[code] for code in permission_codes]
+            result = await roles_col.insert_one(
+                {
+                    "name": name,
+                    "description": role_def["description"],
+                    "permission_ids": permission_ids,
+                }
+            )
+            return name, str(result.inserted_id)
+
+        role_pairs = await asyncio.gather(*[_ensure_role(r) for r in ROLES])
+        role_id_map: dict[str, str] = dict(role_pairs)
         print(f"Roles: {len(role_id_map)} ready")
 
-        # --- Groups ---
-        group_id_map: dict[str, str] = {}
-        for group_def in GROUPS:
+        # ==================== PHASE 3: Groups ====================
+        # All groups are independent given role_id_map — parallelise
+        async def _ensure_group(group_def: dict[str, object]) -> tuple[str, str]:
             name = str(group_def["name"])
-            existing = groups_col.find_one({"name": name})
+            existing = await groups_col.find_one({"name": name})
             if existing:
-                group_id_map[name] = str(existing["_id"])
-            else:
-                role_names = group_def["role_names"]
-                assert isinstance(role_names, list)
-                role_ids = [role_id_map[rn] for rn in role_names]
-                auto_assign_apps = group_def.get("auto_assign_apps", [])
-                assert isinstance(auto_assign_apps, list)
-                result = groups_col.insert_one(
-                    {
-                        "name": name,
-                        "description": group_def["description"],
-                        "role_ids": role_ids,
-                        "auto_assign_apps": auto_assign_apps,
-                    }
-                )
-                group_id_map[name] = str(result.inserted_id)
+                return name, str(existing["_id"])
+            role_names = group_def["role_names"]
+            assert isinstance(role_names, list)
+            role_ids = [role_id_map[rn] for rn in role_names]
+            auto_assign_apps = group_def.get("auto_assign_apps", [])
+            assert isinstance(auto_assign_apps, list)
+            result = await groups_col.insert_one(
+                {
+                    "name": name,
+                    "description": group_def["description"],
+                    "role_ids": role_ids,
+                    "auto_assign_apps": auto_assign_apps,
+                }
+            )
+            return name, str(result.inserted_id)
+
+        group_pairs = await asyncio.gather(*[_ensure_group(g) for g in GROUPS])
+        group_id_map: dict[str, str] = dict(group_pairs)
         print(f"Groups: {len(group_id_map)} ready")
 
         # --- Admin User ---
-        admin_exists = users_col.find_one({"username": "admin"})
+        admin_exists = await users_col.find_one({"username": "admin"})
         if not admin_exists:
             hashed = _hash_password(settings.admin_password)
-            users_col.insert_one(
+            await users_col.insert_one(
                 {
                     "username": "admin",
                     "hashed_password": hashed,
@@ -327,21 +334,21 @@ def seed(settings: Settings | None = None) -> None:
 
         # --- Cleanup: remove stale permissions no longer in the spec ---
         current_codes = {p["code"] for p in PERMISSIONS}
-        result = permissions_col.delete_many({"code": {"$nin": list(current_codes)}})
-        if result.deleted_count:
-            print(f"Cleaned up {result.deleted_count} stale permission(s)")
+        cleanup_result = await permissions_col.delete_many({"code": {"$nin": list(current_codes)}})
+        if cleanup_result.deleted_count:
+            print(f"Cleaned up {cleanup_result.deleted_count} stale permission(s)")
 
         # --- Cleanup: remove deprecated roles no longer in the spec ---
         current_role_names = {str(r["name"]) for r in ROLES}
-        result = roles_col.delete_many({"name": {"$nin": list(current_role_names)}})
-        if result.deleted_count:
-            print(f"Cleaned up {result.deleted_count} stale role(s)")
+        cleanup_result = await roles_col.delete_many({"name": {"$nin": list(current_role_names)}})
+        if cleanup_result.deleted_count:
+            print(f"Cleaned up {cleanup_result.deleted_count} stale role(s)")
 
         # --- Cleanup: remove deprecated groups no longer in the spec ---
         current_group_names = {str(g["name"]) for g in GROUPS}
-        result = groups_col.delete_many({"name": {"$nin": list(current_group_names)}})
-        if result.deleted_count:
-            print(f"Cleaned up {result.deleted_count} stale group(s)")
+        cleanup_result = await groups_col.delete_many({"name": {"$nin": list(current_group_names)}})
+        if cleanup_result.deleted_count:
+            print(f"Cleaned up {cleanup_result.deleted_count} stale group(s)")
 
         print("Seed complete")
     finally:
@@ -349,4 +356,4 @@ def seed(settings: Settings | None = None) -> None:
 
 
 if __name__ == "__main__":
-    seed()
+    asyncio.run(seed())

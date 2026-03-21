@@ -1,6 +1,6 @@
 from bson import ObjectId
+from motor.motor_asyncio import AsyncIOMotorCollection
 from pymongo import ReturnDocument
-from pymongo.collection import Collection
 from pymongo.errors import DuplicateKeyError
 
 from src.application.ports.outbound.user_repository import UserRepository
@@ -10,16 +10,16 @@ from src.infrastructure.adapters.outbound.persistence.user_persistence_mapper im
 
 
 class MongoUserRepository(UserRepository):
-    def __init__(self, collection: Collection) -> None:
+    def __init__(self, collection: AsyncIOMotorCollection) -> None:
         self._collection = collection
 
-    def save(self, user: User) -> User:
+    async def save(self, user: User) -> User:
         doc = UserPersistenceMapper.to_document(user)
         try:
             if user.id:
-                self._collection.replace_one({"_id": ObjectId(user.id)}, doc, upsert=True)
+                await self._collection.replace_one({"_id": ObjectId(user.id)}, doc, upsert=True)
                 return user
-            result = self._collection.insert_one(doc)
+            result = await self._collection.insert_one(doc)
             user.id = str(result.inserted_id)
             return user
         except DuplicateKeyError as exc:
@@ -28,34 +28,35 @@ class MongoUserRepository(UserRepository):
                 raise UserAlreadyExistsError(user.rsi_handle, field="rsi_handle") from exc
             raise UserAlreadyExistsError(user.username, field="username") from exc
 
-    def find_by_id(self, user_id: str) -> User | None:
-        doc = self._collection.find_one({"_id": ObjectId(user_id)})
+    async def find_by_id(self, user_id: str) -> User | None:
+        doc = await self._collection.find_one({"_id": ObjectId(user_id)})
         if doc is None:
             return None
         return UserPersistenceMapper.to_domain(doc)
 
-    def find_by_username(self, username: str) -> User | None:
-        doc = self._collection.find_one({"username": username})
+    async def find_by_username(self, username: str) -> User | None:
+        doc = await self._collection.find_one({"username": username})
         if doc is None:
             return None
         return UserPersistenceMapper.to_domain(doc)
 
-    def find_by_rsi_handle(self, rsi_handle: str) -> User | None:
-        doc = self._collection.find_one({"rsi_handle": rsi_handle})
+    async def find_by_rsi_handle(self, rsi_handle: str) -> User | None:
+        doc = await self._collection.find_one({"rsi_handle": rsi_handle})
         if doc is None:
             return None
         return UserPersistenceMapper.to_domain(doc)
 
-    def find_all(self) -> list[User]:
-        return [UserPersistenceMapper.to_domain(doc) for doc in self._collection.find()]
+    async def find_all(self) -> list[User]:
+        docs = await self._collection.find().to_list(length=None)
+        return [UserPersistenceMapper.to_domain(doc) for doc in docs]
 
-    def delete(self, user_id: str) -> bool:
-        result = self._collection.delete_one({"_id": ObjectId(user_id)})
+    async def delete(self, user_id: str) -> bool:
+        result = await self._collection.delete_one({"_id": ObjectId(user_id)})
         return result.deleted_count > 0
 
-    def update(self, user_id: str, fields: dict) -> User | None:
+    async def update(self, user_id: str, fields: dict) -> User | None:
         try:
-            result = self._collection.find_one_and_update(
+            result = await self._collection.find_one_and_update(
                 {"_id": ObjectId(user_id)},
                 {"$set": fields},
                 return_document=ReturnDocument.AFTER,

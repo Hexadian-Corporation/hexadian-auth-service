@@ -24,8 +24,8 @@ def init_settings_router(settings_service: PortalSettingsService) -> None:
     "/portal",
     response_model=PortalRedirectDTO,
 )
-def get_portal_redirect() -> PortalRedirectDTO:
-    settings = _settings_service.get_settings()
+async def get_portal_redirect() -> PortalRedirectDTO:
+    settings = await _settings_service.get_settings()
     return PortalRedirectDTO(default_redirect_url=settings.default_redirect_url)
 
 
@@ -34,8 +34,8 @@ def get_portal_redirect() -> PortalRedirectDTO:
     response_model=PortalSettingsDTO,
     dependencies=_manage,
 )
-def get_settings() -> PortalSettingsDTO:
-    settings = _settings_service.get_settings()
+async def get_settings() -> PortalSettingsDTO:
+    settings = await _settings_service.get_settings()
     return PortalSettingsDTO(_id=settings.id, default_redirect_url=settings.default_redirect_url)
 
 
@@ -44,6 +44,6 @@ def get_settings() -> PortalSettingsDTO:
     response_model=PortalSettingsDTO,
     dependencies=_manage,
 )
-def update_settings(dto: PortalSettingsUpdateDTO) -> PortalSettingsDTO:
-    settings = _settings_service.update_settings(dto.default_redirect_url)
+async def update_settings(dto: PortalSettingsUpdateDTO) -> PortalSettingsDTO:
+    settings = await _settings_service.update_settings(dto.default_redirect_url)
     return PortalSettingsDTO(_id=settings.id, default_redirect_url=settings.default_redirect_url)

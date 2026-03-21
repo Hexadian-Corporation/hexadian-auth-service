@@ -45,8 +45,8 @@ def init_rbac_router(rbac_service: RbacService) -> None:
     status_code=201,
     dependencies=_manage,
 )
-def create_permission(dto: PermissionCreateDTO) -> PermissionDTO:
-    permission = _rbac_service.create_permission(dto.code, dto.description)
+async def create_permission(dto: PermissionCreateDTO) -> PermissionDTO:
+    permission = await _rbac_service.create_permission(dto.code, dto.description)
     return RbacApiMapper.permission_to_dto(permission)
 
 
@@ -55,8 +55,8 @@ def create_permission(dto: PermissionCreateDTO) -> PermissionDTO:
     response_model=list[PermissionDTO],
     dependencies=_manage,
 )
-def list_permissions() -> list[PermissionDTO]:
-    return [RbacApiMapper.permission_to_dto(p) for p in _rbac_service.list_permissions()]
+async def list_permissions() -> list[PermissionDTO]:
+    return [RbacApiMapper.permission_to_dto(p) for p in await _rbac_service.list_permissions()]
 
 
 @rbac_router.get(
@@ -64,9 +64,9 @@ def list_permissions() -> list[PermissionDTO]:
     response_model=PermissionDTO,
     dependencies=_manage,
 )
-def get_permission(permission_id: str) -> PermissionDTO:
+async def get_permission(permission_id: str) -> PermissionDTO:
     try:
-        permission = _rbac_service.get_permission(permission_id)
+        permission = await _rbac_service.get_permission(permission_id)
     except PermissionNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     return RbacApiMapper.permission_to_dto(permission)
@@ -77,9 +77,9 @@ def get_permission(permission_id: str) -> PermissionDTO:
     response_model=PermissionDTO,
     dependencies=_manage,
 )
-def update_permission(permission_id: str, dto: PermissionCreateDTO) -> PermissionDTO:
+async def update_permission(permission_id: str, dto: PermissionCreateDTO) -> PermissionDTO:
     try:
-        permission = _rbac_service.update_permission(permission_id, dto.code, dto.description)
+        permission = await _rbac_service.update_permission(permission_id, dto.code, dto.description)
     except PermissionNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     return RbacApiMapper.permission_to_dto(permission)
@@ -90,9 +90,9 @@ def update_permission(permission_id: str, dto: PermissionCreateDTO) -> Permissio
     status_code=204,
     dependencies=_manage,
 )
-def delete_permission(permission_id: str) -> None:
+async def delete_permission(permission_id: str) -> None:
     try:
-        _rbac_service.delete_permission(permission_id)
+        await _rbac_service.delete_permission(permission_id)
     except PermissionNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
@@ -108,8 +108,8 @@ def delete_permission(permission_id: str) -> None:
     status_code=201,
     dependencies=_manage,
 )
-def create_role(dto: RoleCreateDTO) -> RoleDTO:
-    role = _rbac_service.create_role(dto.name, dto.description, dto.permission_ids)
+async def create_role(dto: RoleCreateDTO) -> RoleDTO:
+    role = await _rbac_service.create_role(dto.name, dto.description, dto.permission_ids)
     return RbacApiMapper.role_to_dto(role)
 
 
@@ -118,8 +118,8 @@ def create_role(dto: RoleCreateDTO) -> RoleDTO:
     response_model=list[RoleDTO],
     dependencies=_manage,
 )
-def list_roles() -> list[RoleDTO]:
-    return [RbacApiMapper.role_to_dto(r) for r in _rbac_service.list_roles()]
+async def list_roles() -> list[RoleDTO]:
+    return [RbacApiMapper.role_to_dto(r) for r in await _rbac_service.list_roles()]
 
 
 @rbac_router.get(
@@ -127,9 +127,9 @@ def list_roles() -> list[RoleDTO]:
     response_model=RoleDTO,
     dependencies=_manage,
 )
-def get_role(role_id: str) -> RoleDTO:
+async def get_role(role_id: str) -> RoleDTO:
     try:
-        role = _rbac_service.get_role(role_id)
+        role = await _rbac_service.get_role(role_id)
     except RoleNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     return RbacApiMapper.role_to_dto(role)
@@ -140,9 +140,9 @@ def get_role(role_id: str) -> RoleDTO:
     response_model=RoleDTO,
     dependencies=_manage,
 )
-def update_role(role_id: str, dto: RoleCreateDTO) -> RoleDTO:
+async def update_role(role_id: str, dto: RoleCreateDTO) -> RoleDTO:
     try:
-        role = _rbac_service.update_role(role_id, dto.name, dto.description, dto.permission_ids)
+        role = await _rbac_service.update_role(role_id, dto.name, dto.description, dto.permission_ids)
     except RoleNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     return RbacApiMapper.role_to_dto(role)
@@ -153,9 +153,9 @@ def update_role(role_id: str, dto: RoleCreateDTO) -> RoleDTO:
     status_code=204,
     dependencies=_manage,
 )
-def delete_role(role_id: str) -> None:
+async def delete_role(role_id: str) -> None:
     try:
-        _rbac_service.delete_role(role_id)
+        await _rbac_service.delete_role(role_id)
     except RoleNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
@@ -171,8 +171,8 @@ def delete_role(role_id: str) -> None:
     status_code=201,
     dependencies=_manage,
 )
-def create_group(dto: GroupCreateDTO) -> GroupDTO:
-    group = _rbac_service.create_group(dto.name, dto.description, dto.role_ids, dto.auto_assign_apps)
+async def create_group(dto: GroupCreateDTO) -> GroupDTO:
+    group = await _rbac_service.create_group(dto.name, dto.description, dto.role_ids, dto.auto_assign_apps)
     return RbacApiMapper.group_to_dto(group)
 
 
@@ -181,8 +181,8 @@ def create_group(dto: GroupCreateDTO) -> GroupDTO:
     response_model=list[GroupDTO],
     dependencies=_manage,
 )
-def list_groups() -> list[GroupDTO]:
-    return [RbacApiMapper.group_to_dto(g) for g in _rbac_service.list_groups()]
+async def list_groups() -> list[GroupDTO]:
+    return [RbacApiMapper.group_to_dto(g) for g in await _rbac_service.list_groups()]
 
 
 @rbac_router.get(
@@ -190,9 +190,9 @@ def list_groups() -> list[GroupDTO]:
     response_model=GroupDTO,
     dependencies=_manage,
 )
-def get_group(group_id: str) -> GroupDTO:
+async def get_group(group_id: str) -> GroupDTO:
     try:
-        group = _rbac_service.get_group(group_id)
+        group = await _rbac_service.get_group(group_id)
     except GroupNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     return RbacApiMapper.group_to_dto(group)
@@ -203,9 +203,9 @@ def get_group(group_id: str) -> GroupDTO:
     response_model=GroupDTO,
     dependencies=_manage,
 )
-def update_group(group_id: str, dto: GroupCreateDTO) -> GroupDTO:
+async def update_group(group_id: str, dto: GroupCreateDTO) -> GroupDTO:
     try:
-        group = _rbac_service.update_group(group_id, dto.name, dto.description, dto.role_ids, dto.auto_assign_apps)
+        group = await _rbac_service.update_group(group_id, dto.name, dto.description, dto.role_ids, dto.auto_assign_apps)
     except GroupNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     return RbacApiMapper.group_to_dto(group)
@@ -216,9 +216,9 @@ def update_group(group_id: str, dto: GroupCreateDTO) -> GroupDTO:
     status_code=204,
     dependencies=_manage,
 )
-def delete_group(group_id: str) -> None:
+async def delete_group(group_id: str) -> None:
     try:
-        _rbac_service.delete_group(group_id)
+        await _rbac_service.delete_group(group_id)
     except GroupNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
@@ -233,9 +233,9 @@ def delete_group(group_id: str) -> None:
     status_code=204,
     dependencies=_user_admin,
 )
-def assign_user_to_group(user_id: str, dto: UserGroupAssignDTO) -> None:
+async def assign_user_to_group(user_id: str, dto: UserGroupAssignDTO) -> None:
     try:
-        _rbac_service.assign_user_to_group(user_id, dto.group_id)
+        await _rbac_service.assign_user_to_group(user_id, dto.group_id)
     except UserNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except GroupNotFoundError as exc:
@@ -247,9 +247,9 @@ def assign_user_to_group(user_id: str, dto: UserGroupAssignDTO) -> None:
     status_code=204,
     dependencies=_user_admin,
 )
-def remove_user_from_group(user_id: str, group_id: str) -> None:
+async def remove_user_from_group(user_id: str, group_id: str) -> None:
     try:
-        _rbac_service.remove_user_from_group(user_id, group_id)
+        await _rbac_service.remove_user_from_group(user_id, group_id)
     except UserNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
@@ -263,14 +263,14 @@ def remove_user_from_group(user_id: str, group_id: str) -> None:
     "/users/{user_id}/permissions",
     response_model=ResolvedPermissionsDTO,
 )
-def get_resolved_permissions(
+async def get_resolved_permissions(
     user_id: str,
     user_ctx: Annotated[UserContext, Depends(_stub_jwt_auth)],
 ) -> ResolvedPermissionsDTO:
     if user_ctx.user_id != user_id and "auth:users:read" not in user_ctx.permissions:
         raise HTTPException(status_code=403, detail="Missing required permission: auth:users:read")
     try:
-        codes = _rbac_service.resolve_permissions(user_id)
+        codes = await _rbac_service.resolve_permissions(user_id)
     except UserNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     return ResolvedPermissionsDTO(user_id=user_id, permissions=codes)

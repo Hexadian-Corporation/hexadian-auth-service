@@ -52,9 +52,9 @@ def init_router(auth_service: AuthService) -> None:
 
 
 @router.post("/register", response_model=UserDTO, status_code=201)
-def register(dto: RegisterDTO) -> UserDTO:
+async def register(dto: RegisterDTO) -> UserDTO:
     try:
-        user = _auth_service.register(dto.username, dto.password, dto.rsi_handle, dto.app_id, dto.app_signature)
+        user = await _auth_service.register(dto.username, dto.password, dto.rsi_handle, dto.app_id, dto.app_signature)
     except InvalidAppSignatureError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     except UserAlreadyExistsError as exc:
@@ -64,9 +64,9 @@ def register(dto: RegisterDTO) -> UserDTO:
 
 
 @router.post("/login", response_model=TokenDTO)
-def login(dto: LoginDTO) -> TokenDTO:
+async def login(dto: LoginDTO) -> TokenDTO:
     try:
-        token_response = _auth_service.authenticate(dto.username, dto.password)
+        token_response = await _auth_service.authenticate(dto.username, dto.password)
     except InvalidCredentialsError as exc:
         raise HTTPException(status_code=401, detail=str(exc)) from exc
     return TokenDTO(
@@ -78,9 +78,9 @@ def login(dto: LoginDTO) -> TokenDTO:
 
 
 @router.post("/token/refresh", response_model=TokenDTO)
-def refresh_token(dto: RefreshTokenDTO) -> TokenDTO:
+async def refresh_token(dto: RefreshTokenDTO) -> TokenDTO:
     try:
-        token_response = _auth_service.refresh_token(dto.refresh_token)
+        token_response = await _auth_service.refresh_token(dto.refresh_token)
     except RefreshTokenNotFoundError as exc:
         raise HTTPException(status_code=401, detail=str(exc)) from exc
     except UserNotFoundError as exc:
@@ -94,39 +94,39 @@ def refresh_token(dto: RefreshTokenDTO) -> TokenDTO:
 
 
 @router.post("/token/revoke", status_code=204)
-def revoke_token(dto: RefreshTokenDTO) -> None:
+async def revoke_token(dto: RefreshTokenDTO) -> None:
     try:
-        _auth_service.revoke_token(dto.refresh_token)
+        await _auth_service.revoke_token(dto.refresh_token)
     except RefreshTokenNotFoundError as exc:
         raise HTTPException(status_code=401, detail=str(exc)) from exc
 
 
 @router.get("/users/{user_id}", response_model=UserDTO)
-def get_user(user_id: str, user_ctx: Annotated[UserContext, Depends(_stub_jwt_auth)]) -> UserDTO:
+async def get_user(user_id: str, user_ctx: Annotated[UserContext, Depends(_stub_jwt_auth)]) -> UserDTO:
     if user_ctx.user_id != user_id and "auth:users:read" not in user_ctx.permissions:
         raise HTTPException(status_code=403, detail="Missing required permission: auth:users:read")
     try:
-        target_user = _auth_service.get_user(user_id)
+        target_user = await _auth_service.get_user(user_id)
     except UserNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     return AuthApiMapper.to_dto(target_user)
 
 
 @router.get("/users", response_model=list[UserDTO], dependencies=_users_read)
-def list_users() -> list[UserDTO]:
-    return [AuthApiMapper.to_dto(u) for u in _auth_service.list_users()]
+async def list_users() -> list[UserDTO]:
+    return [AuthApiMapper.to_dto(u) for u in await _auth_service.list_users()]
 
 
 @router.delete("/users/{user_id}", status_code=204, dependencies=_users_admin)
-def delete_user(user_id: str) -> None:
+async def delete_user(user_id: str) -> None:
     try:
-        _auth_service.delete_user(user_id)
+        await _auth_service.delete_user(user_id)
     except UserNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
 @router.put("/users/{user_id}", response_model=UserDTO)
-def update_user(
+async def update_user(
     user_id: str,
     dto: UserUpdateDTO,
     user_ctx: Annotated[UserContext, Depends(_stub_jwt_auth)],
@@ -135,7 +135,7 @@ def update_user(
         raise HTTPException(status_code=403, detail="Missing required permission: auth:users:admin")
     updates = dto.model_dump(exclude_none=True)
     try:
-        user = _auth_service.update_user(user_id, updates)
+        user = await _auth_service.update_user(user_id, updates)
     except UserNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except UserAlreadyExistsError as exc:
@@ -147,9 +147,9 @@ def update_user(
 
 
 @router.post("/verify/start", response_model=VerificationResultDTO, dependencies=[Depends(_stub_jwt_auth)])
-def start_verification(dto: StartVerificationDTO, user_id: str) -> VerificationResultDTO:
+async def start_verification(dto: StartVerificationDTO, user_id: str) -> VerificationResultDTO:
     try:
-        code = _auth_service.start_verification(user_id, dto.rsi_handle)
+        code = await _auth_service.start_verification(user_id, dto.rsi_handle)
     except UserNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ValueError as exc:
@@ -165,9 +165,9 @@ def start_verification(dto: StartVerificationDTO, user_id: str) -> VerificationR
 
 
 @router.post("/verify/confirm", response_model=VerificationResultDTO, dependencies=[Depends(_stub_jwt_auth)])
-def confirm_verification(user_id: str) -> VerificationResultDTO:
+async def confirm_verification(user_id: str) -> VerificationResultDTO:
     try:
-        verified = _auth_service.confirm_verification(user_id)
+        verified = await _auth_service.confirm_verification(user_id)
     except UserNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ValueError as exc:
@@ -178,9 +178,9 @@ def confirm_verification(user_id: str) -> VerificationResultDTO:
 
 
 @router.post("/authorize", response_model=AuthorizeResponseDTO)
-def authorize(dto: AuthorizeDTO) -> AuthorizeResponseDTO:
+async def authorize(dto: AuthorizeDTO) -> AuthorizeResponseDTO:
     try:
-        auth_code = _auth_service.authorize(dto.username, dto.password, dto.redirect_uri, dto.state)
+        auth_code = await _auth_service.authorize(dto.username, dto.password, dto.redirect_uri, dto.state)
     except InvalidCredentialsError as exc:
         raise HTTPException(status_code=401, detail=str(exc)) from exc
     except InvalidRedirectUriError as exc:
@@ -193,9 +193,9 @@ def authorize(dto: AuthorizeDTO) -> AuthorizeResponseDTO:
 
 
 @router.post("/token/exchange", response_model=TokenDTO)
-def exchange_token(dto: TokenExchangeDTO) -> TokenDTO:
+async def exchange_token(dto: TokenExchangeDTO) -> TokenDTO:
     try:
-        token_response = _auth_service.exchange_code(dto.code, dto.redirect_uri)
+        token_response = await _auth_service.exchange_code(dto.code, dto.redirect_uri)
     except InvalidAuthCodeError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except UserNotFoundError as exc:
@@ -209,12 +209,12 @@ def exchange_token(dto: TokenExchangeDTO) -> TokenDTO:
 
 
 @router.post("/password/change", status_code=204)
-def change_password(
+async def change_password(
     dto: PasswordChangeDTO,
     user_ctx: Annotated[UserContext, Depends(_stub_jwt_auth)],
 ) -> None:
     try:
-        _auth_service.change_password(user_ctx.user_id, dto.old_password, dto.new_password)
+        await _auth_service.change_password(user_ctx.user_id, dto.old_password, dto.new_password)
     except UserNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except InvalidPasswordError as exc:
@@ -226,9 +226,9 @@ def change_password(
     status_code=204,
     dependencies=_users_admin,
 )
-def reset_password(user_id: str, dto: PasswordResetDTO) -> None:
+async def reset_password(user_id: str, dto: PasswordResetDTO) -> None:
     try:
-        _auth_service.reset_password(user_id, dto.new_password)
+        await _auth_service.reset_password(user_id, dto.new_password)
     except UserNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except InvalidPasswordError as exc:
@@ -236,9 +236,9 @@ def reset_password(user_id: str, dto: PasswordResetDTO) -> None:
 
 
 @router.post("/password/forgot", response_model=ForgotPasswordResultDTO)
-def forgot_password(dto: ForgotPasswordDTO) -> ForgotPasswordResultDTO:
+async def forgot_password(dto: ForgotPasswordDTO) -> ForgotPasswordResultDTO:
     try:
-        code = _auth_service.forgot_password(dto.username, dto.rsi_handle)
+        code = await _auth_service.forgot_password(dto.username, dto.rsi_handle)
     except UserNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except RsiHandleMismatchError as exc:
@@ -253,9 +253,9 @@ def forgot_password(dto: ForgotPasswordDTO) -> ForgotPasswordResultDTO:
 
 
 @router.post("/password/forgot-confirm", status_code=204)
-def confirm_forgot_password(dto: ForgotPasswordConfirmDTO) -> None:
+async def confirm_forgot_password(dto: ForgotPasswordConfirmDTO) -> None:
     try:
-        _auth_service.confirm_forgot_password(dto.username, dto.rsi_handle, dto.new_password)
+        await _auth_service.confirm_forgot_password(dto.username, dto.rsi_handle, dto.new_password)
     except UserNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except RsiHandleMismatchError as exc:
@@ -265,8 +265,8 @@ def confirm_forgot_password(dto: ForgotPasswordConfirmDTO) -> None:
 
 
 @router.post("/token/introspect", response_model=TokenIntrospectResponseDTO)
-def introspect_token(dto: TokenIntrospectRequestDTO) -> TokenIntrospectResponseDTO:
-    result = _auth_service.introspect_token(dto.token)
+async def introspect_token(dto: TokenIntrospectRequestDTO) -> TokenIntrospectResponseDTO:
+    result = await _auth_service.introspect_token(dto.token)
     return TokenIntrospectResponseDTO(
         active=result.active,
         sub=result.sub,

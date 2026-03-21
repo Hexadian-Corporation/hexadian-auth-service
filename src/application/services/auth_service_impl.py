@@ -103,7 +103,7 @@ class AuthServiceImpl(AuthService):
         self._rbac_service = rbac_service
         self._settings = settings
 
-    def register(
+    async def register(
         self, username: str, password: str, rsi_handle: str, app_id: str | None = None, app_signature: str | None = None
     ) -> User:
         if not _RSI_HANDLE_PATTERN.match(rsi_handle):
@@ -112,7 +112,7 @@ class AuthServiceImpl(AuthService):
             app_signature is None or not verify_app_signature(app_id, app_signature, self._settings.app_signing_secret)
         ):
             raise InvalidAppSignatureError()
-        if self._repository.find_by_username(username) is not None:
+        if await self._repository.find_by_username(username) is not None:
             raise UserAlreadyExistsError(username)
         hashed = self._hash_password(password)
         user = User(username=username, hashed_password=hashed, rsi_handle=rsi_handle)
@@ -121,49 +121,49 @@ class AuthServiceImpl(AuthService):
         seen_ids: set[str] = set()
 
         if app_id is not None:
-            matched_groups = self._group_repository.find_by_app_id(app_id)
+            matched_groups = await self._group_repository.find_by_app_id(app_id)
             for g in matched_groups:
                 if g.id not in seen_ids:
                     seen_ids.add(g.id)
                     group_ids.append(g.id)
 
-        users_group = self._group_repository.find_by_name("Users")
+        users_group = await self._group_repository.find_by_name("Users")
         if users_group is not None and users_group.id not in seen_ids:
             seen_ids.add(users_group.id)
             group_ids.append(users_group.id)
 
         user.group_ids = group_ids
-        return self._repository.save(user)
+        return await self._repository.save(user)
 
-    def authenticate(self, username: str, password: str) -> TokenResponse:
-        user = self._repository.find_by_username(username)
+    async def authenticate(self, username: str, password: str) -> TokenResponse:
+        user = await self._repository.find_by_username(username)
         if user is None or not self._verify_password(password, user.hashed_password):
             raise InvalidCredentialsError()
-        return self._create_token_pair(user)
+        return await self._create_token_pair(user)
 
-    def refresh_token(self, token: str) -> TokenResponse:
-        existing = self._refresh_token_repository.find_by_token(token)
+    async def refresh_token(self, token: str) -> TokenResponse:
+        existing = await self._refresh_token_repository.find_by_token(token)
         if existing is None or existing.revoked:
             raise RefreshTokenNotFoundError(token)
         if existing.expires_at < datetime.now(tz=UTC):
             raise RefreshTokenNotFoundError(token)
 
-        user = self._repository.find_by_id(existing.user_id)
+        user = await self._repository.find_by_id(existing.user_id)
         if user is None:
             raise UserNotFoundError(existing.user_id)
 
-        self._refresh_token_repository.revoke(token)
-        return self._create_token_pair(user)
+        await self._refresh_token_repository.revoke(token)
+        return await self._create_token_pair(user)
 
-    def revoke_token(self, token: str) -> None:
-        existing = self._refresh_token_repository.find_by_token(token)
+    async def revoke_token(self, token: str) -> None:
+        existing = await self._refresh_token_repository.find_by_token(token)
         if existing is None:
             raise RefreshTokenNotFoundError(token)
-        self._refresh_token_repository.revoke(token)
+        await self._refresh_token_repository.revoke(token)
 
-    def _generate_access_token(self, user: User) -> str:
+    async def _generate_access_token(self, user: User) -> str:
         now = datetime.now(tz=UTC)
-        claims = self._rbac_service.resolve_rbac_claims(user.id)
+        claims = await self._rbac_service.resolve_rbac_claims(user.id)
         payload = {
             "sub": user.id,
             "username": user.username,
@@ -177,39 +177,39 @@ class AuthServiceImpl(AuthService):
         }
         return jwt.encode(payload, self._settings.jwt_secret, algorithm=self._settings.jwt_algorithm)
 
-    def _generate_refresh_token(self, user: User) -> RefreshToken:
+    async def _generate_refresh_token(self, user: User) -> RefreshToken:
         return RefreshToken(
             user_id=user.id,
             token=str(uuid.uuid4()),
             expires_at=datetime.now(tz=UTC) + timedelta(days=self._settings.jwt_refresh_expiration_days),
         )
 
-    def _create_token_pair(self, user: User) -> TokenResponse:
-        access_token = self._generate_access_token(user)
+    async def _create_token_pair(self, user: User) -> TokenResponse:
+        access_token = await self._generate_access_token(user)
         refresh = self._generate_refresh_token(user)
-        self._refresh_token_repository.save(refresh)
+        await self._refresh_token_repository.save(refresh)
         return TokenResponse(
             access_token=access_token,
             refresh_token=refresh.token,
             expires_in=self._settings.jwt_expiration_minutes * 60,
         )
 
-    def get_user(self, user_id: str) -> User:
-        user = self._repository.find_by_id(user_id)
+    async def get_user(self, user_id: str) -> User:
+        user = await self._repository.find_by_id(user_id)
         if user is None:
             raise UserNotFoundError(user_id)
         return user
 
-    def list_users(self) -> list[User]:
-        return self._repository.find_all()
+    async def list_users(self) -> list[User]:
+        return await self._repository.find_all()
 
-    def delete_user(self, user_id: str) -> None:
-        if not self._repository.delete(user_id):
+    async def delete_user(self, user_id: str) -> None:
+        if not await self._repository.delete(user_id):
             raise UserNotFoundError(user_id)
 
     _ALLOWED_UPDATE_FIELDS = {"username", "rsi_handle"}
 
-    def update_user(self, user_id: str, updates: dict) -> User:
+    async def update_user(self, user_id: str, updates: dict) -> User:
         fields: dict = {}
         for key in updates:
             if key not in self._ALLOWED_UPDATE_FIELDS:
@@ -225,15 +225,15 @@ class AuthServiceImpl(AuthService):
 
         if "username" in updates:
             username = updates["username"]
-            existing = self._repository.find_by_username(username)
+            existing = await self._repository.find_by_username(username)
             if existing is not None and existing.id != user_id:
                 raise UserAlreadyExistsError(username)
             fields["username"] = username
 
         if not fields:
-            return self.get_user(user_id)
+            return await self.get_user(user_id)
 
-        user = self._repository.update(user_id, fields)
+        user = await self._repository.update(user_id, fields)
         if user is None:
             raise UserNotFoundError(user_id)
         return user
@@ -250,11 +250,11 @@ class AuthServiceImpl(AuthService):
         actual_hash = hashlib.pbkdf2_hmac("sha256", password.encode(), salt.encode(), 100_000)
         return secrets.compare_digest(actual_hash.hex(), expected_hash)
 
-    def start_verification(self, user_id: str, rsi_handle: str) -> str:
+    async def start_verification(self, user_id: str, rsi_handle: str) -> str:
         if not _RSI_HANDLE_PATTERN.match(rsi_handle):
             raise ValueError(f"Invalid RSI handle format: {rsi_handle}")
 
-        user = self._repository.find_by_id(user_id)
+        user = await self._repository.find_by_id(user_id)
         if user is None:
             raise UserNotFoundError(user_id)
 
@@ -262,31 +262,31 @@ class AuthServiceImpl(AuthService):
         user.rsi_handle = rsi_handle
         user.rsi_verification_code = code
         user.rsi_verified = False
-        self._repository.save(user)
+        await self._repository.save(user)
         return code
 
-    def confirm_verification(self, user_id: str) -> bool:
-        user = self._repository.find_by_id(user_id)
+    async def confirm_verification(self, user_id: str) -> bool:
+        user = await self._repository.find_by_id(user_id)
         if user is None:
             raise UserNotFoundError(user_id)
 
         if not user.rsi_handle or not user.rsi_verification_code:
             raise ValueError("Verification not started. Call start_verification first.")
 
-        bio = self._rsi_profile_fetcher.fetch_profile_bio(user.rsi_handle)
+        bio = await self._rsi_profile_fetcher.fetch_profile_bio(user.rsi_handle)
         if bio is not None and user.rsi_verification_code in bio:
             user.rsi_verified = True
-            self._repository.save(user)
+            await self._repository.save(user)
             return True
         return False
 
-    def authorize(self, username: str, password: str, redirect_uri: str, state: str) -> AuthCode:
+    async def authorize(self, username: str, password: str, redirect_uri: str, state: str) -> AuthCode:
         # TODO: Consider PKCE for enhanced security
-        user = self._repository.find_by_username(username)
+        user = await self._repository.find_by_username(username)
         if user is None or not self._verify_password(password, user.hashed_password):
             raise InvalidCredentialsError()
 
-        self._validate_redirect_uri(redirect_uri)
+        await self._validate_redirect_uri(redirect_uri)
 
         code = secrets.token_urlsafe(32)
         auth_code = AuthCode(
@@ -295,11 +295,11 @@ class AuthServiceImpl(AuthService):
             redirect_uri=redirect_uri,
             state=state,
         )
-        return self._auth_code_repository.save(auth_code)
+        return await self._auth_code_repository.save(auth_code)
 
-    def exchange_code(self, code: str, redirect_uri: str) -> TokenResponse:
+    async def exchange_code(self, code: str, redirect_uri: str) -> TokenResponse:
         # TODO: Consider PKCE for enhanced security
-        auth_code = self._auth_code_repository.find_by_code(code)
+        auth_code = await self._auth_code_repository.find_by_code(code)
         if auth_code is None:
             raise InvalidAuthCodeError()
         if auth_code.used:
@@ -309,22 +309,22 @@ class AuthServiceImpl(AuthService):
         if auth_code.redirect_uri != redirect_uri:
             raise InvalidAuthCodeError("Redirect URI mismatch")
 
-        self._auth_code_repository.mark_used(code)
+        await self._auth_code_repository.mark_used(code)
 
-        user = self._repository.find_by_id(auth_code.user_id)
+        user = await self._repository.find_by_id(auth_code.user_id)
         if user is None:
             raise UserNotFoundError(auth_code.user_id)
 
-        return self._create_token_pair(user)
+        return await self._create_token_pair(user)
 
-    def _validate_redirect_uri(self, redirect_uri: str) -> None:
+    async def _validate_redirect_uri(self, redirect_uri: str) -> None:
         parsed = urlparse(redirect_uri)
         origin = f"{parsed.scheme}://{parsed.netloc}"
         if origin not in self._settings.allowed_redirect_origins:
             raise InvalidRedirectUriError(redirect_uri)
 
-    def change_password(self, user_id: str, old_password: str, new_password: str) -> None:
-        user = self._repository.find_by_id(user_id)
+    async def change_password(self, user_id: str, old_password: str, new_password: str) -> None:
+        user = await self._repository.find_by_id(user_id)
         if user is None:
             raise UserNotFoundError(user_id)
         if not self._verify_password(old_password, user.hashed_password):
@@ -332,47 +332,47 @@ class AuthServiceImpl(AuthService):
         if len(new_password) < 8:
             raise InvalidPasswordError("New password must be at least 8 characters")
         user.hashed_password = self._hash_password(new_password)
-        self._repository.save(user)
-        self._refresh_token_repository.revoke_all_for_user(user_id)
+        await self._repository.save(user)
+        await self._refresh_token_repository.revoke_all_for_user(user_id)
 
-    def reset_password(self, user_id: str, new_password: str) -> None:
-        user = self._repository.find_by_id(user_id)
+    async def reset_password(self, user_id: str, new_password: str) -> None:
+        user = await self._repository.find_by_id(user_id)
         if user is None:
             raise UserNotFoundError(user_id)
         if len(new_password) < 8:
             raise InvalidPasswordError("New password must be at least 8 characters")
         user.hashed_password = self._hash_password(new_password)
-        self._repository.save(user)
-        self._refresh_token_repository.revoke_all_for_user(user_id)
+        await self._repository.save(user)
+        await self._refresh_token_repository.revoke_all_for_user(user_id)
 
-    def forgot_password(self, username: str, rsi_handle: str) -> str:
-        user = self._repository.find_by_username(username)
+    async def forgot_password(self, username: str, rsi_handle: str) -> str:
+        user = await self._repository.find_by_username(username)
         if user is None:
             raise UserNotFoundError(username)
         if user.rsi_handle != rsi_handle:
             raise RsiHandleMismatchError(username)
         code = _generate_verification_code()
         user.rsi_verification_code = code
-        self._repository.save(user)
+        await self._repository.save(user)
         return code
 
-    def confirm_forgot_password(self, username: str, rsi_handle: str, new_password: str) -> None:
-        user = self._repository.find_by_username(username)
+    async def confirm_forgot_password(self, username: str, rsi_handle: str, new_password: str) -> None:
+        user = await self._repository.find_by_username(username)
         if user is None:
             raise UserNotFoundError(username)
         if user.rsi_handle != rsi_handle:
             raise RsiHandleMismatchError(username)
         if not user.rsi_verification_code:
             raise ValueError("No verification code set. Call forgot_password first.")
-        bio = self._rsi_profile_fetcher.fetch_profile_bio(user.rsi_handle)
+        bio = await self._rsi_profile_fetcher.fetch_profile_bio(user.rsi_handle)
         if bio is None or user.rsi_verification_code not in bio:
             raise ValueError("Verification code not found in RSI profile bio.")
         user.hashed_password = self._hash_password(new_password)
         user.rsi_verification_code = None
-        self._repository.save(user)
-        self._refresh_token_repository.revoke_all_for_user(user.id)
+        await self._repository.save(user)
+        await self._refresh_token_repository.revoke_all_for_user(user.id)
 
-    def introspect_token(self, token: str) -> IntrospectionResult:
+    async def introspect_token(self, token: str) -> IntrospectionResult:
         try:
             claims = jwt.decode(
                 token,
@@ -386,7 +386,7 @@ class AuthServiceImpl(AuthService):
         if user_id is None:
             return IntrospectionResult(active=False)
 
-        user = self._repository.find_by_id(user_id)
+        user = await self._repository.find_by_id(user_id)
         if user is None or not user.is_active:
             return IntrospectionResult(
                 active=False,
