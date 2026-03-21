@@ -55,7 +55,7 @@ class TestSeedPermissions:
 
         seed(settings)
 
-        assert mock_collections["permissions"].insert_one.call_count == 37
+        assert mock_collections["permissions"].insert_one.call_count == 45
 
     @patch("src.infrastructure.seed.seed_rbac.MongoClient")
     def test_permission_codes_match_spec(
@@ -121,7 +121,7 @@ class TestSeedRoles:
 
         seed(settings)
 
-        assert mock_collections["roles"].insert_one.call_count == 11
+        assert mock_collections["roles"].insert_one.call_count == 12
 
     @patch("src.infrastructure.seed.seed_rbac.MongoClient")
     def test_role_names_match_spec(
@@ -155,6 +155,7 @@ class TestSeedRoles:
             "HHH Viewer",
             "HHH Algorithm User",
             "HHH Algorithm Premium",
+            "HHH Data Import",
             "HHH Feature Premium",
         ]
 
@@ -293,10 +294,38 @@ class TestSeedRoles:
 
         seed(settings)
 
-        feature_premium_call = mock_collections["roles"].insert_one.call_args_list[10]
+        feature_premium_call = mock_collections["roles"].insert_one.call_args_list[11]
         feature_premium_doc = feature_premium_call[0][0]
         assert feature_premium_doc["name"] == "HHH Feature Premium"
         assert len(feature_premium_doc["permission_ids"]) == 9
+
+    @patch("src.infrastructure.seed.seed_rbac.MongoClient")
+    def test_hhh_data_import_has_8_permission_ids(
+        self,
+        mock_mongo_client: MagicMock,
+        mock_db: MagicMock,
+        mock_collections: dict[str, MagicMock],
+        settings: Settings,
+    ) -> None:
+        perm_counter = iter(range(1, 100))
+        mock_mongo_client.return_value.__getitem__ = MagicMock(return_value=mock_db)
+        mock_collections["permissions"].find_one.return_value = None
+        mock_collections["permissions"].insert_one.side_effect = lambda _: MagicMock(
+            inserted_id=f"perm-{next(perm_counter)}"
+        )
+        mock_collections["roles"].find_one.return_value = None
+        mock_collections["roles"].insert_one.return_value = MagicMock(inserted_id="role-id")
+        mock_collections["groups"].find_one.return_value = None
+        mock_collections["groups"].insert_one.return_value = MagicMock(inserted_id="group-id")
+        mock_collections["users"].find_one.return_value = None
+        mock_collections["users"].insert_one.return_value = MagicMock(inserted_id="user-id")
+
+        seed(settings)
+
+        data_import_call = mock_collections["roles"].insert_one.call_args_list[10]
+        data_import_doc = data_import_call[0][0]
+        assert data_import_doc["name"] == "HHH Data Import"
+        assert len(data_import_doc["permission_ids"]) == 8
 
     @patch("src.infrastructure.seed.seed_rbac.MongoClient")
     def test_skips_existing_roles(
@@ -497,10 +526,10 @@ class TestSeedDefaults:
 
 class TestSeedDataDefinitions:
     def test_permissions_count(self) -> None:
-        assert len(PERMISSIONS) == 37
+        assert len(PERMISSIONS) == 45
 
     def test_roles_count(self) -> None:
-        assert len(ROLES) == 11
+        assert len(ROLES) == 12
 
     def test_groups_count(self) -> None:
         assert len(GROUPS) == 3
@@ -553,9 +582,9 @@ class TestSeedDataDefinitions:
         assert "HHH Algorithm Premium" in admins["role_names"]
         assert "HHH Feature Premium" in admins["role_names"]
 
-    def test_admins_group_has_9_roles(self) -> None:
+    def test_admins_group_has_10_roles(self) -> None:
         admins = next(g for g in GROUPS if g["name"] == "Admins")
-        assert len(admins["role_names"]) == 9
+        assert len(admins["role_names"]) == 10
 
     def test_users_group_has_algorithm_user_not_contracts_manager(self) -> None:
         users = next(g for g in GROUPS if g["name"] == "Users")
@@ -594,6 +623,29 @@ class TestSeedDataDefinitions:
         ]
         for code in expected:
             assert code in codes
+
+    def test_import_permissions_exist(self) -> None:
+        codes = {p["code"] for p in PERMISSIONS}
+        expected = [
+            "hhh:locations:import",
+            "hhh:distances:import",
+            "hhh:ships:import",
+            "hhh:commodities:import",
+            "hhh:contracts:import",
+            "hhh:contracts:clone",
+            "hhh:data:full-sync",
+            "hhh:data:sync",
+        ]
+        for code in expected:
+            assert code in codes
+
+    def test_hhh_data_import_role_has_8_permissions(self) -> None:
+        role = next(r for r in ROLES if r["name"] == "HHH Data Import")
+        assert len(role["permission_codes"]) == 8
+
+    def test_admins_group_includes_data_import_role(self) -> None:
+        admins = next(g for g in GROUPS if g["name"] == "Admins")
+        assert "HHH Data Import" in admins["role_names"]
 
     def test_no_deprecated_permission_codes(self) -> None:
         codes = {p["code"] for p in PERMISSIONS}
