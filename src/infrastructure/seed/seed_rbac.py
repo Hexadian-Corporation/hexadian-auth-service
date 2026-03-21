@@ -45,6 +45,15 @@ PERMISSIONS: list[dict[str, str]] = [
     {"code": "hhh:feature:history_unlimited", "description": "Unlimited flight plan history"},
     {"code": "hhh:feature:simultaneous_plans", "description": "Multiple simultaneous flight plans"},
     {"code": "hhh:feature:cargo_limit", "description": "Custom cargo limit below ship capacity"},
+    # --- Import / sync permissions (M30) ---
+    {"code": "hhh:locations:import", "description": "Bulk import locations"},
+    {"code": "hhh:distances:import", "description": "Bulk import distances"},
+    {"code": "hhh:ships:import", "description": "Bulk import ships"},
+    {"code": "hhh:commodities:import", "description": "Bulk import commodities"},
+    {"code": "hhh:contracts:import", "description": "Bulk import game contracts"},
+    {"code": "hhh:contracts:clone", "description": "Clone a contract"},
+    {"code": "hhh:data:full-sync", "description": "Full-sync mode (deprecate absent items)"},
+    {"code": "hhh:data:sync", "description": "Trigger dataminer sync"},
 ]
 
 ROLES: list[dict[str, object]] = [
@@ -147,6 +156,21 @@ ROLES: list[dict[str, object]] = [
             "hhh:algorithm:ford_fulkerson",
         ],
     },
+    # --- Data import / sync roles (M30) ---
+    {
+        "name": "HHH Data Import",
+        "description": "Import and sync game data: locations, distances, ships, commodities, contracts",
+        "permission_codes": [
+            "hhh:locations:import",
+            "hhh:distances:import",
+            "hhh:ships:import",
+            "hhh:commodities:import",
+            "hhh:contracts:import",
+            "hhh:contracts:clone",
+            "hhh:data:full-sync",
+            "hhh:data:sync",
+        ],
+    },
     # --- Feature roles (premium) ---
     {
         "name": "HHH Feature Premium",
@@ -177,6 +201,7 @@ GROUPS: list[dict[str, object]] = [
             "HHH Ships Manager",
             "HHH Graphs Manager",
             "HHH Routes Manager",
+            "HHH Data Import",
             "HHH Algorithm Premium",
             "HHH Feature Premium",
         ],
