@@ -45,6 +45,7 @@ PERMISSIONS: list[dict[str, str]] = [
     {"code": "hhh:feature:history_unlimited", "description": "Unlimited flight plan history"},
     {"code": "hhh:feature:simultaneous_plans", "description": "Multiple simultaneous flight plans"},
     {"code": "hhh:feature:cargo_limit", "description": "Custom cargo limit below ship capacity"},
+    {"code": "hhh:feature:distance_finder", "description": "Distance Finder: shortest path between any two locations"},
     # --- Import / sync permissions (M30) ---
     {"code": "hhh:locations:import", "description": "Bulk import locations"},
     {"code": "hhh:distances:import", "description": "Bulk import distances"},
@@ -185,6 +186,7 @@ ROLES: list[dict[str, object]] = [
             "hhh:feature:history_unlimited",
             "hhh:feature:simultaneous_plans",
             "hhh:feature:cargo_limit",
+            "hhh:feature:distance_finder",
         ],
     },
 ]
