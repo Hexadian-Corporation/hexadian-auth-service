@@ -55,7 +55,7 @@ class TestSeedPermissions:
 
         seed(settings)
 
-        assert mock_collections["permissions"].insert_one.call_count == 45
+        assert mock_collections["permissions"].insert_one.call_count == 46
 
     @patch("src.infrastructure.seed.seed_rbac.MongoClient")
     def test_permission_codes_match_spec(
@@ -297,7 +297,7 @@ class TestSeedRoles:
         feature_premium_call = mock_collections["roles"].insert_one.call_args_list[11]
         feature_premium_doc = feature_premium_call[0][0]
         assert feature_premium_doc["name"] == "HHH Feature Premium"
-        assert len(feature_premium_doc["permission_ids"]) == 9
+        assert len(feature_premium_doc["permission_ids"]) == 10
 
     @patch("src.infrastructure.seed.seed_rbac.MongoClient")
     def test_hhh_data_import_has_8_permission_ids(
@@ -526,7 +526,7 @@ class TestSeedDefaults:
 
 class TestSeedDataDefinitions:
     def test_permissions_count(self) -> None:
-        assert len(PERMISSIONS) == 45
+        assert len(PERMISSIONS) == 46
 
     def test_roles_count(self) -> None:
         assert len(ROLES) == 12
